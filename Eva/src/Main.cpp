@@ -1,8 +1,9 @@
 ﻿#include "iostream"
 #include "vector"
 #include "map"
+#include <stack>
 #define DEBUG 1
-enum class TokenType {
+enum class TokenType : uint8_t {
 	// Single-character tokens.
 	LEFT_PAREN, RIGHT_PAREN,
 	LEFT_BRACE, RIGHT_BRACE,
@@ -22,6 +23,16 @@ enum class TokenType {
 	TRUE, VAR, WHILE,
 	ERROR,
 	END
+};
+enum  InCode
+{
+	CONST_VALUE =1 ,
+	ADD =2,
+	DIVIDE = 3,
+	MULTIPLY= 4,
+	SUBSTRACT = 5,
+	RETURN = 6,
+
 };
 static std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::LEFT_PAREN, "LEFT_PAREN"},
@@ -291,20 +302,6 @@ void ParseOperator()
 	}
 }
 
-//<expr> :: = <term> <expr_tail>
-//
-//<expr_tail> :: = +<term> <expr_tail>
-//| -<term> <expr_tail>
-//| <empty>
-//
-//<term> :: = <factor> <term_tail>
-//
-//<term_tail> :: = *<factor> <term_tail>
-//| / <factor> <term_tail>
-//| <empty>
-//
-//<factor> :: = (<expr>)
-//| Num
 
 
 
@@ -320,6 +317,7 @@ void ParseOperator()
 //| "(" expression ")";
 
 // either a value or new expression
+Expression* ParseExpression();
 Expression* UnaryOp();
 Expression* Value();
 Expression* Factor()
@@ -363,8 +361,23 @@ Expression* UnaryOp()
 Expression* Value()
 {
 	Expression* node = new Expression();
-	node->value = currentToken->value;
+	node->type = currentToken->type;
+	if (currentToken->type == TokenType::NUMBER)
+	{
+		node->value = currentToken->value;
+	}
+	if (currentToken->type == TokenType::LEFT_PAREN)
+	{
+		currentToken += 1;
+		node = ParseExpression();
+		currentToken += 1;
+		if (currentToken->type != TokenType::RIGHT_PAREN)
+		{
+			std::cout << "error: expected right )\n";
+		}
+	}
 	return node;
+	
 }
 
 
@@ -396,6 +409,113 @@ Expression* ParseExpression()
 	Expression* term = Term();
 	return term;
 }
+
+
+std::vector< uint8_t> opCode;
+std::vector<float> constants;
+std::stack<float> vmStack;
+
+void Execute()
+{
+	int ipIndex = 0;
+	while (true)
+	{
+		auto inst = opCode[ipIndex];
+		switch (inst)
+		{
+		case InCode::CONST_VALUE:
+		{
+			vmStack.push(constants[opCode[++ipIndex]]);
+			++ipIndex;
+			break;
+		}
+		case InCode::ADD:
+		{
+			auto v = vmStack.top();
+			vmStack.pop();
+			auto v2 = vmStack.top();
+			vmStack.pop();
+			vmStack.push(v+v2);
+			++ipIndex;
+			break;
+		}
+		case InCode::SUBSTRACT:
+		{
+			auto v = vmStack.top();
+			vmStack.pop();
+			auto v2 = vmStack.top();
+			vmStack.pop();
+			vmStack.push(v2-v);
+			++ipIndex;
+			break;
+		}
+		case InCode::MULTIPLY:
+		{
+			auto v = vmStack.top();
+			vmStack.pop();
+			auto v2 = vmStack.top();
+			vmStack.pop();
+			vmStack.push(v*v2);
+			++ipIndex;
+			break;
+		}
+		case InCode::DIVIDE:
+		{
+			auto v = vmStack.top();
+			vmStack.pop();
+			auto v2 = vmStack.top();
+			vmStack.pop();
+			vmStack.push(v2/v);
+			++ipIndex;
+			break;
+		}
+		case InCode::RETURN:
+		{
+			return;
+		}
+		default:
+			break;
+		}
+	}
+}
+void Generate(Expression* tree)
+{
+	if (!tree) return;
+
+	if (tree->type == TokenType::PLUS )
+	{
+		Generate(tree->left);
+		Generate(tree->right);
+		opCode.push_back((uint8_t)InCode::ADD);
+	}
+	else if (tree->type == TokenType::STAR)
+	{
+		Generate(tree->left);
+		Generate(tree->right);
+		opCode.push_back((uint8_t)InCode::MULTIPLY);
+	}
+	else if (tree->type == TokenType::MINUS)
+	{
+		Generate(tree->left);
+		Generate(tree->right);
+		opCode.push_back((uint8_t)InCode::SUBSTRACT);
+	}
+	else if ( tree->type == TokenType::SLASH )
+	{
+		Generate(tree->left);
+		Generate(tree->right);
+		opCode.push_back((uint8_t)InCode::DIVIDE);
+	}
+	else if (tree->type == TokenType::NUMBER)
+	{
+		opCode.push_back((uint8_t)InCode::CONST_VALUE);
+		constants.push_back(tree->value);
+		opCode.push_back(constants.size()-1);
+	}
+	
+
+}
+
 void Print(Expression* tree, int level = 0) {
 	if (tree) {
 		// Print indentation
@@ -447,6 +567,10 @@ int main(int argc, const char* argv[])
 				
 			}
 			tokens.emplace_back(TokenType::END);
+
+
+
+
 		#if DEBUG
 			for (auto token : tokens)
 			{
@@ -455,11 +579,20 @@ int main(int argc, const char* argv[])
 
 			std::cout << "\n";
 		#endif // DEBUG
-			currentToken = tokens.data();
+		currentToken = tokens.data();
 		Expression* tree = ParseExpression();
 		Print(tree);
-			tokens.clear();
+
+		Generate(tree);
+		opCode.push_back((uint8_t)InCode::RETURN);
+		Execute();
+		std::cout << "result: " << vmStack.top() << std::endl;
+		tokens.clear(); opCode.clear();
+		while (vmStack.empty() == false)
+		{
+			vmStack.pop();
 		}
+	}
 		
 	}
 	else
