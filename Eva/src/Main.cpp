@@ -31,7 +31,8 @@ enum  InCode
 	DIVIDE = 3,
 	MULTIPLY= 4,
 	SUBSTRACT = 5,
-	RETURN = 6,
+	NEGATE = 6,
+	RETURN = 7,
 
 };
 static std::map<TokenType, std::string> tokenStrings = {
@@ -128,20 +129,20 @@ void EatWhiteSpace()
 	while (true)
 	{
 
-		switch (*startSymbol) {
+		switch (*currentSymbol) {
 		case ' ':
 		case '\r':
 		case '\t':
-			startSymbol++;
+			currentSymbol++;
 			break;
 		case '\n':
-			startSymbol++;
+			currentSymbol++;
 			break;
 		default:
 			return;
 		}
 	}
-	currentSymbol = startSymbol;
+	startSymbol= currentSymbol ;
 }
 
 static char PeekNext()
@@ -186,6 +187,7 @@ void ParseNumber()
 void ParseOperator()
 {
 	// check if operator
+	EatWhiteSpace();
 	if (Peek() == '\0') return;
 	switch (Peek())
 	{
@@ -331,7 +333,7 @@ Expression* Factor()
 
 		auto operation = nextToken->type;
 		currentToken+=2;
-		auto right = UnaryOp();
+		auto right = Factor();
 		auto parent = new Expression();
 		parent->left = left;
 		parent->right = right;
@@ -350,9 +352,11 @@ Expression* UnaryOp()
 	{
 		auto prevOp = currentToken->type;
 		currentToken++;
+		Expression* parent = new Expression();
 		Expression* right = UnaryOp();
-		right->type = prevOp;
-		return right;
+		parent->type = prevOp;
+		parent->left = right;
+		return parent;
 	}
 
 	return Value();
@@ -392,7 +396,7 @@ Expression* Term()
 
 		auto operation = nextToken->type;
 		currentToken += 2;
-		auto right = Factor();
+		auto right = Term();
 		auto parent = new Expression();
 		parent->left = left;
 		parent->right = right;
@@ -415,6 +419,18 @@ std::vector< uint8_t> opCode;
 std::vector<float> constants;
 std::stack<float> vmStack;
 
+
+#define BINARY_OP(operation)\
+{\
+auto v = vmStack.top();\
+vmStack.pop();\
+auto v2 = vmStack.top();\
+vmStack.pop();\
+vmStack.push(v2 operation v);\
+++ipIndex;\
+}\
+while(false)
+
 void Execute()
 {
 	int ipIndex = 0;
@@ -431,41 +447,29 @@ void Execute()
 		}
 		case InCode::ADD:
 		{
-			auto v = vmStack.top();
-			vmStack.pop();
-			auto v2 = vmStack.top();
-			vmStack.pop();
-			vmStack.push(v+v2);
-			++ipIndex;
+			BINARY_OP(+);
 			break;
 		}
 		case InCode::SUBSTRACT:
 		{
-			auto v = vmStack.top();
-			vmStack.pop();
-			auto v2 = vmStack.top();
-			vmStack.pop();
-			vmStack.push(v2-v);
-			++ipIndex;
+			BINARY_OP(-);
 			break;
 		}
 		case InCode::MULTIPLY:
 		{
-			auto v = vmStack.top();
-			vmStack.pop();
-			auto v2 = vmStack.top();
-			vmStack.pop();
-			vmStack.push(v*v2);
-			++ipIndex;
+			BINARY_OP(*);
 			break;
 		}
 		case InCode::DIVIDE:
 		{
-			auto v = vmStack.top();
+			BINARY_OP(/);
+			break;
+		}
+		case InCode::NEGATE:
+		{
+			auto value = vmStack.top();
 			vmStack.pop();
-			auto v2 = vmStack.top();
-			vmStack.pop();
-			vmStack.push(v2/v);
+			vmStack.push(-value);
 			++ipIndex;
 			break;
 		}
@@ -497,8 +501,17 @@ void Generate(Expression* tree)
 	else if (tree->type == TokenType::MINUS)
 	{
 		Generate(tree->left);
-		Generate(tree->right);
-		opCode.push_back((uint8_t)InCode::SUBSTRACT);
+		
+		if (tree->right)
+		{
+			Generate(tree->right);
+			opCode.push_back((uint8_t)InCode::SUBSTRACT);
+		}
+		else
+		{
+			opCode.push_back((uint8_t)InCode::NEGATE);
+		}
+
 	}
 	else if ( tree->type == TokenType::SLASH )
 	{
