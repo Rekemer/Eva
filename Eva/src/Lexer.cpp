@@ -1,8 +1,8 @@
-#include"Parser.h"
+#include"Lexer.h"
 #include <iostream>
 
 // eat comments too?
-void Parser::EatWhiteSpace()
+void Lexer::EatWhiteSpace()
 {
 	while (true)
 	{
@@ -24,17 +24,38 @@ void Parser::EatWhiteSpace()
 }
 
 
- char Parser::Peek(int offset)
+ char Lexer::Peek(int offset)
 {
 	return *(currentSymbol+ offset);
 }
 
-void Parser::Eat()
+void Lexer::Eat()
 {
 	currentSymbol++;
 }
 
-void Parser::ParseNumber()
+void Lexer::ParseAlpha()
+{
+	auto isAlpha = [](char c) {return c >= 'A' && c <= 'Z' || c>='a' && c <= 'z'; };
+	if (isAlpha(Peek()))
+	{
+		while (isAlpha(Peek()))
+		{
+			Eat();
+		}
+	}
+	if (memcmp(startSymbol, "true",4) == 0)
+	{
+		tokens.push_back(CreateToken(TokenType::TRUE, ValueContainer{true}));
+	}
+	else if (memcmp(startSymbol, "false",5) == 0)
+	{
+		tokens.push_back(CreateToken(TokenType::FALSE, ValueContainer{ false }));
+	}
+	startSymbol = currentSymbol;
+}
+
+void Lexer::ParseNumber()
 {
 
 	// check if number
@@ -55,11 +76,13 @@ void Parser::ParseNumber()
 			}
 		}
 		float floatValue = std::strtof(startSymbol, nullptr);
-		tokens.push_back(CreateToken(TokenType::NUMBER, floatValue));
+		ValueContainer v{floatValue};
+		tokens.push_back(CreateToken(TokenType::NUMBER, v));
+		startSymbol = currentSymbol;
 	}
 }
 
-void Parser::ParseOperator()
+void Lexer::ParseOperator()
 {
 	// check if operator
 	EatWhiteSpace();
@@ -148,8 +171,8 @@ void Parser::ParseOperator()
 		{
 			tokens.emplace_back(TokenType::GREATER);
 
-			break;
 		}
+			break;
 	}
 	case '<':
 	{
@@ -161,6 +184,19 @@ void Parser::ParseOperator()
 		else
 		{
 			tokens.emplace_back(TokenType::LESS);
+		}
+		break;
+	}
+	case '=':
+	{
+		if (Peek(1) != '\0' && Peek(1) == '=')
+		{
+			tokens.emplace_back(TokenType::EQUAL_EQUAL);
+			Eat();
+		}
+		else
+		{
+			tokens.emplace_back(TokenType::EQUAL);
 		}
 		break;
 	}
@@ -179,7 +215,7 @@ void Parser::ParseOperator()
 	}
 }
 
-void Parser::Parse(const char* source)
+void Lexer::Parse(const char* source)
 {
 	startSymbol = source;
 	panic = false;
@@ -190,6 +226,7 @@ void Parser::Parse(const char* source)
 
 		startSymbol = currentSymbol;
 
+		ParseAlpha();
 		ParseNumber();
 		ParseOperator();
 		if (panic)

@@ -1,7 +1,8 @@
 #pragma once
 #include"Tokens.h"
 #include <vector>
-class Parser
+// lexer 
+class Lexer
 {
 public:
 	void Parse(const char* source);
@@ -9,6 +10,7 @@ public:
 private:
 	void ParseOperator();
 	void ParseNumber();
+	void ParseAlpha();
 	void Eat();
 	void EatWhiteSpace();
 	char Peek(int offset = 0);

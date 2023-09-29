@@ -129,14 +129,15 @@
   <ItemGroup>
     <ClCompile Include="src\Expression.cpp" />
     <ClCompile Include="src\Main.cpp" />
-    <ClCompile Include="src\Parser.cpp" />
+    <ClCompile Include="src\Lexer.cpp" />
     <ClCompile Include="src\Tokens.cpp" />
     <ClCompile Include="src\VirtualMachine.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Expression.h" />
-    <ClInclude Include="src\Parser.h" />
+    <ClInclude Include="src\Lexer.h" />
     <ClInclude Include="src\Tokens.h" />
+    <ClInclude Include="src\Value.h" />
     <ClInclude Include="src\VirtualMachine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

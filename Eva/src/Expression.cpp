@@ -1,6 +1,8 @@
 #include"Expression.h"
 #include<iostream>
-Expression* Factor(const Token* currentToken)
+Expression* UnaryOp( Token*& currentToken);
+Expression* Value( Token*& currentToken);
+ Expression* Factor( Token*& currentToken)
 {
 	auto left = UnaryOp(currentToken);
 	auto nextToken = (currentToken + 1);
@@ -23,9 +25,9 @@ Expression* Factor(const Token* currentToken)
 }
 
 
-Expression* UnaryOp(const Token*  currentToken)
+ Expression* UnaryOp( Token*&  currentToken)
 {
-	bool isUnary = currentToken->type == TokenType::MINUS ? true : false;
+	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
 	if (isUnary)
 	{
 		auto prevOp = currentToken->type;
@@ -40,22 +42,30 @@ Expression* UnaryOp(const Token*  currentToken)
 	return Value(currentToken);
 }
 
-Expression* Value(const Token* currentToken)
+static Expression* Value( Token*& currentToken)
 {
 	Expression* node = new Expression();
 	node->type = currentToken->type;
 	if (currentToken->type == TokenType::NUMBER)
 	{
-		node->value = currentToken->value;
+		node->value = std::move(currentToken->value);
 	}
-	if (currentToken->type == TokenType::LEFT_PAREN)
+	else if (currentToken->type == TokenType::FALSE)
+	{
+		node->value = std::move(currentToken->value);
+	}
+	else if  (currentToken->type == TokenType::TRUE)
+	{
+		node->value = std::move(currentToken->value);
+	}
+	else if (currentToken->type == TokenType::LEFT_PAREN)
 	{
 		currentToken += 1;
 		node = ParseExpression(currentToken);
 		currentToken += 1;
 		if (currentToken->type != TokenType::RIGHT_PAREN)
 		{
-			std::cout << "error: expected right )\n";
+			std::cout << "error: expected  )\n";
 		}
 	}
 	return node;
@@ -79,7 +89,7 @@ void Print(Expression* tree, int level) {
 		Print(tree->right, level + 1);
 	}
 }
-Expression* Term(const Token* currentToken)
+ Expression* Term( Token*& currentToken)
 {
 	auto left = Factor(currentToken);
 	auto nextToken = (currentToken + 1);
@@ -101,9 +111,55 @@ Expression* Term(const Token* currentToken)
 	return left;
 }
 
-Expression* ParseExpression(const Token* currentToken)
+ Expression* Comparison( Token*& currentToken)
+ {
+	 auto left = Term(currentToken);
+	 auto nextToken = (currentToken + 1);
+	 bool isCompare = nextToken->type == TokenType::LESS ||
+		 nextToken->type == TokenType::LESS_EQUAL || nextToken->type == TokenType::GREATER ||
+		 nextToken->type == TokenType::GREATER_EQUAL;
+	 if (isCompare)
+	 {
+
+		 auto operation = nextToken->type;
+		 currentToken += 2;
+		 auto right = Comparison(currentToken);
+		 auto parent = new Expression();
+		 parent->left = left;
+		 parent->right = right;
+		 parent->type = operation;
+		 return parent;
+
+	 }
+	 return left;
+ }
+
+
+ Expression* Equality( Token*& currentToken)
+ {
+	 auto left = Comparison(currentToken);
+	 auto nextToken = (currentToken + 1);
+	 bool isCompare = nextToken->type == TokenType::EQUAL_EQUAL ||
+		 nextToken->type == TokenType::BANG_EQUAL;
+	 if (isCompare)
+	 {
+
+		 auto operation = nextToken->type;
+		 currentToken += 2;
+		 auto right = Equality(currentToken);
+		 auto parent = new Expression();
+		 parent->left = left;
+		 parent->right = right;
+		 parent->type = operation;
+		 return parent;
+
+	 }
+	 return left;
+ }
+
+Expression* ParseExpression( Token*& currentToken)
 {
 
-	Expression* term = Term(currentToken);
+	Expression* term = Equality(currentToken);
 	return term;
 }

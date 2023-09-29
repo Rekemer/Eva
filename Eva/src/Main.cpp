@@ -3,7 +3,7 @@
 #include "Tokens.h"
 #include "Expression.h"
 #include "VirtualMachine.h"
-#include "Parser.h"
+#include "Lexer.h"
 #include <stack>
 #define DEBUG 1
 
@@ -23,12 +23,12 @@ int main(int argc, const char* argv[])
 			{
 				break;
 			}
-			Parser parser;
+			Lexer parser;
 			parser.Parse(line);
 
 		
 
-			const auto tokens = parser.GetTokens();
+			auto tokens = parser.GetTokens();
 			#if DEBUG
 				for (auto token : tokens)
 				{
@@ -37,14 +37,17 @@ int main(int argc, const char* argv[])
 
 				std::cout << "\n";
 			#endif // DEBUG
-			VirtualMachine vm;
-			Expression* tree = ParseExpression(tokens.data());
+			
+			Token* ptr = &tokens[0];
+			Expression* tree = ParseExpression(ptr);
 			Print(tree);
 
+			VirtualMachine vm;
 			vm.GenerateBytecode(tree);
 			
-			vm.Execute();
-			std::cout << "result: " << vm.GetStack().top() << std::endl;
+			vm.Execute(); 
+			auto res = vm.GetStack().top();
+			std::cout << "result: " << res << std::endl;
 		}
 	}
 	

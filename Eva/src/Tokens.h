@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <string>
 #include <map>
-
+#include "Value.h"
 enum class TokenType : uint8_t {
 	// Single-character tokens.
 	LEFT_PAREN, RIGHT_PAREN,
@@ -28,18 +28,15 @@ enum class TokenType : uint8_t {
 
 struct Token
 {
-	Token(TokenType type) : type{ type }
-	{
-
-	}
+	Token(TokenType type) : type{type} {};
+	Token(TokenType type, ValueContainer value) : type{ type }, value{value} {};
 	TokenType type;
-	float value = 0;
+	ValueContainer value;
 };
 
-inline Token CreateToken(TokenType type, float value)
+inline Token CreateToken(TokenType type, ValueContainer value)
 {
-	Token token{ type };
-	token.value = value;
+	Token token{ type,value};
 	return token;
 }
 
