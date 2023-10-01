@@ -34,8 +34,31 @@ void Lexer::Eat()
 	currentSymbol++;
 }
 
+void Lexer::ParseString()
+{
+	if (Peek() == '"')
+	{
+
+	}
+}
+void Lexer::ParseBool()
+{
+	if (memcmp(startSymbol, "true", 4) == 0)
+	{
+		tokens.push_back(CreateToken(TokenType::TRUE, ValueContainer{ true }));
+	}
+	else if (memcmp(startSymbol, "false", 5) == 0)
+	{
+		tokens.push_back(CreateToken(TokenType::FALSE, ValueContainer{ false }));
+	}
+	startSymbol = currentSymbol;
+}
+// parse variables
 void Lexer::ParseAlpha()
 {
+	// parse string
+	
+
 	auto isAlpha = [](char c) {return c >= 'A' && c <= 'Z' || c>='a' && c <= 'z'; };
 	if (isAlpha(Peek()))
 	{
@@ -44,15 +67,6 @@ void Lexer::ParseAlpha()
 			Eat();
 		}
 	}
-	if (memcmp(startSymbol, "true",4) == 0)
-	{
-		tokens.push_back(CreateToken(TokenType::TRUE, ValueContainer{true}));
-	}
-	else if (memcmp(startSymbol, "false",5) == 0)
-	{
-		tokens.push_back(CreateToken(TokenType::FALSE, ValueContainer{ false }));
-	}
-	startSymbol = currentSymbol;
 }
 
 void Lexer::ParseNumber()
@@ -226,7 +240,8 @@ void Lexer::Parse(const char* source)
 
 		startSymbol = currentSymbol;
 
-		ParseAlpha();
+		//ParseAlpha();
+		ParseBool();
 		ParseNumber();
 		ParseOperator();
 		if (panic)

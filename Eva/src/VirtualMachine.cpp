@@ -10,6 +10,24 @@ vmStack.push(ValueContainer{v2 operation v});\
 ++ipIndex;\
 }\
 while(false)
+enum  InCode
+{
+	CONST_VALUE,
+	TRUE,
+	FALSE,
+	NIL,
+	ADD,
+	DIVIDE,
+	MULTIPLY,
+	SUBSTRACT,
+	NEGATE,
+	GREATER,
+	LESS,
+	EQUAL_EQUAL,
+	NOT,
+	RETURN,
+
+};
 
 void VirtualMachine::Generate(Expression * tree)
 {

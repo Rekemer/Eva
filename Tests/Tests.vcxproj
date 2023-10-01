@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{efaa68f5-47cb-4b6f-a536-5abd6ac69118}</ProjectGuid>
-    <RootNamespace>Eva</RootNamespace>
+    <ProjectGuid>{3f6ccc4b-f1e5-47de-b92b-4ca6d102ee6c}</ProjectGuid>
+    <RootNamespace>Tests</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -70,6 +70,18 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -104,6 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Eva/src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -118,6 +131,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)Eva/src</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -127,21 +141,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\Compile.cpp" />
-    <ClCompile Include="src\Expression.cpp" />
-    <ClCompile Include="src\Main.cpp" />
-    <ClCompile Include="src\Lexer.cpp" />
-    <ClCompile Include="src\Tokens.cpp" />
-    <ClCompile Include="src\VirtualMachine.cpp" />
+    <ClInclude Include="src\Doctest.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Compile.h" />
-    <ClInclude Include="src\Expression.h" />
-    <ClInclude Include="src\Lexer.h" />
-    <ClInclude Include="src\Object.h" />
-    <ClInclude Include="src\Tokens.h" />
-    <ClInclude Include="src\Value.h" />
-    <ClInclude Include="src\VirtualMachine.h" />
+    <ClCompile Include="..\Eva\src\Compile.cpp" />
+    <ClCompile Include="..\Eva\src\Expression.cpp" />
+    <ClCompile Include="..\Eva\src\Lexer.cpp" />
+    <ClCompile Include="..\Eva\src\Tokens.cpp" />
+    <ClCompile Include="..\Eva\src\VirtualMachine.cpp" />
+    <ClCompile Include="src\Tests.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Eva\Eva.vcxproj">
+      <Project>{efaa68f5-47cb-4b6f-a536-5abd6ac69118}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

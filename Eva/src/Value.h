@@ -1,11 +1,13 @@
 #pragma once
 #include<memory>
 #include<ostream>
+#include"Object.h"
 // could be a template?
 enum class ValueType
 {
 	FLOAT,
 	BOOL,
+	OBJ,
 	NIL
 };
 
@@ -27,6 +29,7 @@ struct ValueContainer
 	{
 		bool boolean ;
 		float numberFloat;
+		Object* object;
 	}as;
 	
 };

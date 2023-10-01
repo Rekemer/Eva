@@ -11,6 +11,8 @@ private:
 	void ParseOperator();
 	void ParseNumber();
 	void ParseAlpha();
+	void ParseString();
+	void ParseBool();
 	void Eat();
 	void EatWhiteSpace();
 	char Peek(int offset = 0);

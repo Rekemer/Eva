@@ -4,24 +4,6 @@
 #include <cstdlib>
 #include "Value.h"
 
-enum  InCode
-{
-	CONST_VALUE ,
-	TRUE,
-	FALSE,
-	NIL,
-	ADD,
-	DIVIDE,
-	MULTIPLY,
-	SUBSTRACT,
-	NEGATE,
-	GREATER,
-	LESS,
-	EQUAL_EQUAL,
-	NOT,
-	RETURN,
-
-};
 
 class Expression;
 class VirtualMachine
