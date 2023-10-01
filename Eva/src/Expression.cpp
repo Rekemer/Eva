@@ -1,7 +1,17 @@
 #include"Expression.h"
 #include<iostream>
+Expression::Expression(Expression&& e)
+{
+	childrenCount = e.childrenCount;
+	left = e.left;
+	right= e.right;
+	type =  e.type;
+	e.left = e.right = nullptr;
+	e.childrenCount = 0;
+}
 Expression* UnaryOp( Token*& currentToken);
 Expression* Value( Token*& currentToken);
+Expression* ParseExpression(Token*& currentToken);
  Expression* Factor( Token*& currentToken)
 {
 	auto left = UnaryOp(currentToken);
@@ -72,7 +82,7 @@ static Expression* Value( Token*& currentToken)
 
 }
 
-void Print(Expression* tree, int level) {
+void Print(const Expression* tree, int level) {
 	if (tree) {
 		// Print indentation
 		for (int i = 0; i < level; ++i) {
@@ -163,3 +173,9 @@ Expression* ParseExpression( Token*& currentToken)
 	Expression* term = Equality(currentToken);
 	return term;
 }
+bool AST::Build(Token*&  firstToken)
+{
+	tree = std::make_unique<Expression>(std::move(*ParseExpression(firstToken)) );
+	return true;
+}
+

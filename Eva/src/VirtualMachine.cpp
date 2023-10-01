@@ -29,7 +29,7 @@ enum  InCode
 
 };
 
-void VirtualMachine::Generate(Expression * tree)
+void VirtualMachine::Generate(const Expression * tree)
 {
 		if (!tree) return;
 
@@ -231,8 +231,8 @@ void VirtualMachine::Execute()
 	}
 }
 
-void VirtualMachine::GenerateBytecode(Expression* tree)
+void VirtualMachine::GenerateBytecode(const AST& tree)
 {
-	Generate(tree);
+	Generate(tree.GetTree());
 	opCode.push_back((uint8_t)InCode::RETURN);
 }

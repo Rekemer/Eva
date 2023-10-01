@@ -1,4 +1,4 @@
-#define DEBUG 0
+#define DEBUG 1
 #include "Compile.h"
 #include  <iostream>
 #include "Lexer.h"
@@ -22,9 +22,10 @@ ValueContainer Compile(const char* line)
 	#endif // DEBUG
 
 	Token* ptr = &tokens[0];
-	Expression* tree = ParseExpression(ptr);
+	AST tree;
+	tree.Build(ptr);
 	#if DEBUG
-	Print(tree);
+	Print(tree.GetTree());
 	#endif // DEBUG
 
 	VirtualMachine vm;

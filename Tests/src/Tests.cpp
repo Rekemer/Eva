@@ -7,10 +7,11 @@ int factorial(int number) { return number <= 1 ? number : factorial(number - 1) 
 
 
 
-TEST_CASE("testing bool expressions") {
-    CHECK(Compile("1 == 1").as.boolean == true);
-    CHECK(Compile("1 == (1+2)").as.boolean == false);
-    CHECK(Compile("(1-2) == (1+2)").as.boolean == false);
-    CHECK(Compile("true == true").as.boolean == true);
+TEST_CASE("testing bool expressions")
+{
+   CHECK(Compile("1 == 1").as.boolean == true);
+   CHECK(Compile("1 == (1+2)").as.boolean == false);
+   CHECK(Compile("(1-2) == (1+2)").as.boolean == false);
+   CHECK(Compile("true == true").as.boolean == true);
    CHECK(Compile("false == true").as.boolean == false);
 }
