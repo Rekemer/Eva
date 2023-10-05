@@ -147,6 +147,8 @@
     <ClCompile Include="..\Eva\src\Compile.cpp" />
     <ClCompile Include="..\Eva\src\Expression.cpp" />
     <ClCompile Include="..\Eva\src\Lexer.cpp" />
+    <ClCompile Include="..\Eva\src\Object.cpp" />
+    <ClCompile Include="..\Eva\src\String.cpp" />
     <ClCompile Include="..\Eva\src\Tokens.cpp" />
     <ClCompile Include="..\Eva\src\VirtualMachine.cpp" />
     <ClCompile Include="src\Tests.cpp" />

@@ -43,7 +43,7 @@ void Lexer::ParseString()
 		if (Peek('"'))
 		{
 			auto size = static_cast<size_t>(currentSymbol - startSymbol - 1);
-			Object* obj = new String{ startSymbol,size };
+			Object* obj = new String{ startSymbol+1,size };
 			tokens.push_back(CreateToken(TokenType::STRING, ValueContainer{ obj }));
 			Eat();
 		}

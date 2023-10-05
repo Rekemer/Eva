@@ -1,5 +1,6 @@
 #include "VirtualMachine.h"
 #include "Expression.h"
+#include "String.hpp"
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.top().as.type;\
@@ -68,9 +69,16 @@ void VirtualMachine::Generate(const Expression * tree)
 		else if (tree->type == TokenType::NUMBER)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			constants.push_back(tree->value.as.numberFloat);
+			constants.push_back(ValueContainer{ tree->value.as.numberFloat });
 			opCode.push_back(constants.size() - 1);
 		}
+		else if (tree->type == TokenType::STRING)
+		{
+			opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			constants.push_back(ValueContainer{ tree->value.as.object });
+			opCode.push_back(constants.size() - 1);
+		}
+
 		else if (tree->type == TokenType::TRUE)
 		{
 			opCode.push_back((uint8_t)InCode::TRUE);
@@ -134,6 +142,12 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	else if (a.type == b.type && a.type == ValueType::FLOAT)
 	{
 		return fabs(a.as.numberFloat - b.as.numberFloat) < 0.004;
+	}
+	else if (a.type == b.type && a.type == ValueType::OBJ)
+	{
+		auto str = dynamic_cast<String*>(a.as.object);
+		auto str2 = dynamic_cast<String*>(b.as.object);
+		return *str == *str2;
 	}
 	return false;
 }

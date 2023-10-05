@@ -7,8 +7,9 @@ public:
 	String(const char* str, size_t size);
 	String(const String& string);
 	String(String&& string);
+	String& operator = (const String& string);
 	~String();
-	
+	bool operator == (const String& str);
 private:
 	friend std::ostream& operator<<(std::ostream& os, String& string);
 	int m_Size;

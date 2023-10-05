@@ -68,6 +68,11 @@ static Expression* Value( Token*& currentToken)
 	{
 		node->value = std::move(currentToken->value);
 	}
+	else if (currentToken->type == TokenType::STRING)
+	{
+		node->value = std::move(currentToken->value);
+
+	}
 	else if (currentToken->type == TokenType::LEFT_PAREN)
 	{
 		currentToken += 1;

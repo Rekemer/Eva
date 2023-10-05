@@ -19,6 +19,6 @@ private:
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
 	std::vector< uint8_t> opCode;
-	std::vector<float> constants;
+	std::vector<ValueContainer> constants;
 	std::stack<ValueContainer> vmStack;
 };
