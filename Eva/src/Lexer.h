@@ -1,11 +1,11 @@
 #pragma once
 #include"Tokens.h"
 #include <vector>
-// lexer 
+// lexer - produces tokens
 class Lexer
 {
 public:
-	void Parse(const char* source);
+	bool Parse(const char* source);
 	const std::vector<Token>& GetTokens() { return tokens; };
 private:
 	void ParseOperator();

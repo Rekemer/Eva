@@ -1,6 +1,6 @@
 #include"Lexer.h"
 #include <iostream>
-
+#include"String.hpp"
 // eat comments too?
 void Lexer::EatWhiteSpace()
 {
@@ -38,7 +38,15 @@ void Lexer::ParseString()
 {
 	if (Peek() == '"')
 	{
-
+		Eat();
+		ParseAlpha();
+		if (Peek('"'))
+		{
+			auto size = static_cast<size_t>(currentSymbol - startSymbol - 1);
+			Object* obj = new String{ startSymbol,size };
+			tokens.push_back(CreateToken(TokenType::STRING, ValueContainer{ obj }));
+			Eat();
+		}
 	}
 }
 void Lexer::ParseBool()
@@ -46,10 +54,12 @@ void Lexer::ParseBool()
 	if (memcmp(startSymbol, "true", 4) == 0)
 	{
 		tokens.push_back(CreateToken(TokenType::TRUE, ValueContainer{ true }));
+		currentSymbol += 4;
 	}
 	else if (memcmp(startSymbol, "false", 5) == 0)
 	{
 		tokens.push_back(CreateToken(TokenType::FALSE, ValueContainer{ false }));
+		currentSymbol += 5;
 	}
 	startSymbol = currentSymbol;
 }
@@ -217,7 +227,7 @@ void Lexer::ParseOperator()
 	default:
 	{
 		panic = true;
-		std::cout << "unexpected character " << currentCharacter <<"\n";
+		std::cout << "LEXER ERROR: unexpected character " << currentCharacter <<"\n";
 		break;
 	}
 	}
@@ -229,7 +239,7 @@ void Lexer::ParseOperator()
 	}
 }
 
-void Lexer::Parse(const char* source)
+bool Lexer::Parse(const char* source)
 {
 	startSymbol = source;
 	panic = false;
@@ -240,12 +250,15 @@ void Lexer::Parse(const char* source)
 
 		startSymbol = currentSymbol;
 
-		//ParseAlpha();
+		ParseString();
 		ParseBool();
 		ParseNumber();
 		ParseOperator();
 		if (panic)
 		{
+			// deal with errors
+
+			return false;
 			break;
 		}
 

@@ -6,8 +6,8 @@ struct Expression
 {
 	ValueContainer value;
 	int childrenCount = 0;
-	Expression* left;
-	Expression* right;
+	Expression* left = nullptr;
+	Expression* right = nullptr;
 	TokenType type;
 	Expression() = default;
 	Expression(Expression&&);

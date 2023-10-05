@@ -27,7 +27,6 @@ int main(int argc, const char* argv[])
 			std::cout << "result: " << res << std::endl;
 		}
 	}
-	
 	else
 	{
 		// parse file

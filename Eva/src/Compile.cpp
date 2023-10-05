@@ -1,4 +1,4 @@
-#define DEBUG 1
+#define DEBUG 0
 #include "Compile.h"
 #include  <iostream>
 #include "Lexer.h"
@@ -7,7 +7,7 @@
 ValueContainer Compile(const char* line)
 {
 	Lexer parser;
-	parser.Parse(line);
+	if (!parser.Parse(line)) return ValueContainer{};
 
 
 

@@ -7,7 +7,6 @@ vmStack.pop();\
 auto v2 = vmStack.top().as.type;\
 vmStack.pop();\
 vmStack.push(ValueContainer{v2 operation v});\
-++ipIndex;\
 }\
 while(false)
 enum  InCode
@@ -126,7 +125,7 @@ VirtualMachine::~VirtualMachine()
 }
 
 
-bool AreEqual(const ValueContainer& a, const ValueContainer& b)
+bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 {
 	if (a.type == b.type && a.type == ValueType::BOOL)
 	{
@@ -134,7 +133,7 @@ bool AreEqual(const ValueContainer& a, const ValueContainer& b)
 	}
 	else if (a.type == b.type && a.type == ValueType::FLOAT)
 	{
-		return fabs(a.as.numberFloat - b.as.numberFloat) < 0.00004;
+		return fabs(a.as.numberFloat - b.as.numberFloat) < 0.004;
 	}
 	return false;
 }
@@ -144,25 +143,22 @@ void VirtualMachine::Execute()
 
 	while (true)
 	{
-		auto inst = opCode[ipIndex];
+		auto inst = opCode[ipIndex++];
 		switch (inst)
 		{
 		case InCode::CONST_VALUE:
 		{
-			vmStack.push(ValueContainer{ constants[opCode[++ipIndex]] });
-			++ipIndex;
+			vmStack.push(ValueContainer{ constants[opCode[ipIndex++]] });
 			break;
 		}
 		case InCode::TRUE:
 		{
 			vmStack.push(ValueContainer{ true });
-			++ipIndex;
 			break;
 		}
 		case InCode::FALSE:
 		{
 			vmStack.push(ValueContainer{ false });
-			++ipIndex;
 			break;
 		}
 		case InCode::ADD:
@@ -190,7 +186,6 @@ void VirtualMachine::Execute()
 			auto value = vmStack.top();
 			vmStack.pop();
 			vmStack.push(ValueContainer{-value.as.numberFloat});
-			++ipIndex;
 			break;
 		}
 		case InCode::NOT:
@@ -198,7 +193,6 @@ void VirtualMachine::Execute()
 			auto value = vmStack.top();
 			vmStack.pop();
 			vmStack.push(ValueContainer{ !value.as.boolean });
-			++ipIndex;
 			break;
 		}
 		case InCode::LESS:
@@ -218,7 +212,6 @@ void VirtualMachine::Execute()
 			auto  v1 = vmStack.top();
 			vmStack.pop();
 			vmStack.push(ValueContainer{ AreEqual(v1,v2) });
-			++ipIndex;
 			break;
 		}
 		case InCode::RETURN:

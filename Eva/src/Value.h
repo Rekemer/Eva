@@ -11,26 +11,72 @@ enum class ValueType
 	NIL
 };
 
-struct ValueContainer
+
+
+
+
+class ValueContainer
 {
+public:
 	ValueType type{ ValueType::NIL };
 	ValueContainer() = default;
-	explicit ValueContainer(bool v)
+	template<typename T>
+	explicit ValueContainer(const T& v)
 	{
-		type = ValueType::BOOL;
-		as.boolean = v;
+		type = ValueTypeToEnum<T>::value;
+		ValueTypeToEnum<T>::SetField(as, v);
 	}
-	explicit ValueContainer(float v)
+	template <typename T>
+	T As()
 	{
-		type = ValueType::FLOAT;
-		as.numberFloat = v;
+		return *reinterpret_cast<const T*>(&as);
 	}
-	union
+private:
+	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
+	friend class VirtualMachine;
+	union ValueAs
 	{
-		bool boolean ;
+		bool boolean{ false };
 		float numberFloat;
 		Object* object;
 	}as;
+
+	template <typename T>
+	struct ValueTypeToEnum
+	{
+		static void SetField(ValueAs& as, const T& value);
+	};
+
+	template <>
+	struct ValueTypeToEnum<bool> {
+		static const ValueType value = ValueType::BOOL;
+		
+		static void SetField(ValueAs& as, bool value)
+		{
+			as.boolean = value;
+		}
+	};
+
+	template <>
+	struct ValueTypeToEnum<float> {
+		static const ValueType value = ValueType::FLOAT;
+		static void SetField(ValueAs& as, float value)
+		{
+			as.numberFloat = value;
+		}
+	};
+
+	template <>
+	struct ValueTypeToEnum<Object*> {
+		static const ValueType value = ValueType::OBJ;
+		static void SetField(ValueAs& as, Object* value)
+		{
+			as.object = value;
+		}
+	};
+
+
+	
 	
 };
 inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)

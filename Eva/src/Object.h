@@ -10,14 +10,8 @@ class Object
 {
 public:
 	ObjectType type;
+	virtual ~Object() = 0;
 };
 
-class String : public Object
-{
-public:
-	String(const char* str, int size);
-	~String();
-private:
-	int m_size;
-	char* m_str;
-};
+
+

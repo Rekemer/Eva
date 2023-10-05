@@ -16,6 +16,7 @@ public:
 	~VirtualMachine();
 private:
 	void Generate(const Expression* tree);
+	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
 	std::vector< uint8_t> opCode;
 	std::vector<float> constants;
