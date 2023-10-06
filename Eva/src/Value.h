@@ -2,6 +2,7 @@
 #include<memory>
 #include<ostream>
 #include"Object.h"
+#include"String.hpp"
 // could be a template?
 enum class ValueType
 {
@@ -26,6 +27,47 @@ public:
 		type = ValueTypeToEnum<T>::value;
 		ValueTypeToEnum<T>::SetField(as, v);
 	}
+	ValueContainer(const ValueContainer& v)
+	{
+		type = v.type;
+		as = v.as;
+		if (v.type == ValueType::OBJ)
+		{
+			as.object = new String(*dynamic_cast<String*>(v.as.object));
+			//*as.object = *;
+		}
+	};
+
+	ValueContainer& operator = (const ValueContainer& v)
+	{
+		if (this == &v) return *this;
+		type = v.type;
+		as = v.as;
+		if (v.type == ValueType::OBJ)
+		{
+			as.object = new String(*dynamic_cast<String*>(v.as.object));
+			//*as.object = *;
+		}
+	}
+
+	explicit ValueContainer(ValueContainer&& v)
+	{
+		type = v.type;
+		as = std::move(v.as);
+		v.as.object = nullptr;
+	}
+	ValueContainer& operator = (ValueContainer&& v)
+	{
+		if (&v == this) return *this;
+		type = v.type;
+		as = std::move(v.as);
+		v.as.object = nullptr;
+
+	}
+
+
+	
+
 	template <typename T>
 	T As()
 	{

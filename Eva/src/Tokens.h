@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include "Value.h"
+#include <iostream>
 enum class TokenType : uint8_t {
 	// Single-character tokens.
 	LEFT_PAREN, RIGHT_PAREN,
@@ -28,15 +29,18 @@ enum class TokenType : uint8_t {
 
 struct Token
 {
-	Token(TokenType type) : type{type} {};
-	Token(TokenType type, ValueContainer value) : type{ type }, value{value} {};
+	Token(TokenType type) : type{ type } 
+	{
+		//std::cout << "token creattion\n";
+	};
+	Token(TokenType type, ValueContainer&& value) : type{ type }, value{std::move(value)} {};
 	TokenType type;
-	ValueContainer value;
+	ValueContainer value{};
 };
 
-inline Token CreateToken(TokenType type, ValueContainer value)
+inline Token CreateToken(TokenType type, ValueContainer&& value)
 {
-	Token token{ type,value};
+	Token token{ type,std::move(value)};
 	return token;
 }
 

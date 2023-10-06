@@ -11,7 +11,7 @@ ValueContainer Compile(const char* line)
 
 
 
-	auto tokens = parser.GetTokens();
+	auto& tokens = parser.GetTokens();
 	#if DEBUG
 	for (auto token : tokens)
 	{

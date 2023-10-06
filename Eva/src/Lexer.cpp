@@ -40,11 +40,11 @@ void Lexer::ParseString()
 	{
 		Eat();
 		ParseAlpha();
-		if (Peek('"'))
+		if (Peek() =='\"')
 		{
 			auto size = static_cast<size_t>(currentSymbol - startSymbol - 1);
 			Object* obj = new String{ startSymbol+1,size };
-			tokens.push_back(CreateToken(TokenType::STRING, ValueContainer{ obj }));
+			tokens.push_back(CreateToken(TokenType::STRING, (ValueContainer{ obj })));
 			Eat();
 		}
 	}
@@ -69,7 +69,8 @@ void Lexer::ParseAlpha()
 	// parse string
 	
 
-	auto isAlpha = [](char c) {return c >= 'A' && c <= 'Z' || c>='a' && c <= 'z'; };
+	auto isAlpha = [](char c) {return c >= 'A' && c <= 'Z' || c>='a' && c <= 'z' ||c == '/'; };
+	
 	if (isAlpha(Peek()))
 	{
 		while (isAlpha(Peek()))
@@ -100,8 +101,7 @@ void Lexer::ParseNumber()
 			}
 		}
 		float floatValue = std::strtof(startSymbol, nullptr);
-		ValueContainer v{floatValue};
-		tokens.push_back(CreateToken(TokenType::NUMBER, v));
+		tokens.push_back(CreateToken(TokenType::NUMBER, ValueContainer{floatValue}));
 		startSymbol = currentSymbol;
 	}
 }
@@ -110,6 +110,7 @@ void Lexer::ParseOperator()
 {
 	// check if operator
 	EatWhiteSpace();
+	
 	if (Peek() == '\0') return;
 	auto currentCharacter = Peek();
 	switch (currentCharacter)
@@ -256,12 +257,15 @@ bool Lexer::Parse(const char* source)
 		ParseOperator();
 		if (panic)
 		{
+			std::cout << "---------------------------------------\n";
+			std::cout << "PANIC!\n";
+			std::cout << "---------------------------------------\n";
 			// deal with errors
 
 			return false;
 			break;
 		}
-
 	}
 	tokens.emplace_back(TokenType::END);
+	return true;
 }

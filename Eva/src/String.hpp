@@ -4,6 +4,9 @@
 class String  : public Object
 {
 public:
+	String() :m_Size{ 0 }, m_Str{nullptr} {
+
+	};
 	String(const char* str, size_t size);
 	String(const String& string);
 	String(String&& string);

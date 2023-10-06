@@ -5,8 +5,12 @@
 class Lexer
 {
 public:
+	Lexer()
+	{
+		tokens.reserve(100);
+	}
 	bool Parse(const char* source);
-	const std::vector<Token>& GetTokens() { return tokens; };
+	 std::vector<Token>& GetTokens() { return tokens; };
 private:
 	void ParseOperator();
 	void ParseNumber();

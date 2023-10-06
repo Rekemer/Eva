@@ -75,7 +75,7 @@ void VirtualMachine::Generate(const Expression * tree)
 		else if (tree->type == TokenType::STRING)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			constants.push_back(ValueContainer{ tree->value.as.object });
+			constants.emplace_back(tree->value.as.object );
 			opCode.push_back(constants.size() - 1);
 		}
 
@@ -141,7 +141,7 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	}
 	else if (a.type == b.type && a.type == ValueType::FLOAT)
 	{
-		return fabs(a.as.numberFloat - b.as.numberFloat) < 0.004;
+		return fabs(a.as.numberFloat - b.as.numberFloat) < 0.04;
 	}
 	else if (a.type == b.type && a.type == ValueType::OBJ)
 	{
@@ -162,7 +162,7 @@ void VirtualMachine::Execute()
 		{
 		case InCode::CONST_VALUE:
 		{
-			vmStack.push(ValueContainer{ constants[opCode[ipIndex++]] });
+			vmStack.push(std::move(constants[opCode[ipIndex++]]));
 			break;
 		}
 		case InCode::TRUE:
@@ -221,9 +221,9 @@ void VirtualMachine::Execute()
 		}
 		case InCode::EQUAL_EQUAL:
 		{
-			auto  v2 = vmStack.top();
+			auto&  v2 = vmStack.top();
 			vmStack.pop();
-			auto  v1 = vmStack.top();
+			auto&  v1 = vmStack.top();
 			vmStack.pop();
 			vmStack.push(ValueContainer{ AreEqual(v1,v2) });
 			break;
