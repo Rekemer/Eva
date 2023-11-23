@@ -38,6 +38,14 @@ public:
 		}
 	};
 
+	ValueContainer& operator = (bool v)
+	{
+		type = ValueType::BOOL;
+		as.boolean = v;
+		return *this;
+	}
+
+
 	ValueContainer& operator = (const ValueContainer& v)
 	{
 		if (this == &v) return *this;
@@ -45,8 +53,8 @@ public:
 		as = v.as;
 		if (v.type == ValueType::OBJ)
 		{
+			
 			as.object = new String(*dynamic_cast<String*>(v.as.object));
-			//*as.object = *;
 		}
 	}
 

@@ -69,7 +69,7 @@ void Lexer::ParseAlpha()
 	// parse string
 	
 
-	auto isAlpha = [](char c) {return c >= 'A' && c <= 'Z' || c>='a' && c <= 'z' ||c == '/'; };
+	auto isAlpha = [](char c) {return c >= 48 && c <= 'Z' || c>='a' && c <= 'z' ||c == '/'; };
 	
 	if (isAlpha(Peek()))
 	{

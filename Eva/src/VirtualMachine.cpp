@@ -75,8 +75,9 @@ void VirtualMachine::Generate(const Expression * tree)
 		else if (tree->type == TokenType::STRING)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			// might copy because vector can reallocate
 			constants.emplace_back(tree->value.as.object );
-			opCode.push_back(constants.size() - 1);
+			opCode.push_back(constants.size() - 1); 
 		}
 
 		else if (tree->type == TokenType::TRUE)
