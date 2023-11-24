@@ -1,6 +1,7 @@
 #include"Lexer.h"
 #include <iostream>
 #include"String.hpp"
+#include"VirtualMachine.h"
 // eat comments too?
 void Lexer::EatWhiteSpace()
 {
@@ -34,7 +35,7 @@ void Lexer::Eat()
 	currentSymbol++;
 }
 
-void Lexer::ParseString()
+void Lexer::ParseString(VirtualMachine& vm)
 {
 	if (Peek() == '"')
 	{
@@ -43,7 +44,7 @@ void Lexer::ParseString()
 		if (Peek() =='\"')
 		{
 			auto size = static_cast<size_t>(currentSymbol - startSymbol - 1);
-			Object* obj = new String{ startSymbol+1,size };
+			auto* obj = vm.AllocateString(startSymbol+1,size);
 			tokens.push_back(CreateToken(TokenType::STRING, (ValueContainer{ obj })));
 			Eat();
 		}
@@ -225,6 +226,24 @@ void Lexer::ParseOperator()
 		}
 		break;
 	}
+	case '&':
+	{
+		if (Peek(1) != '\0' && Peek(1) == '&')
+		{
+			tokens.emplace_back(TokenType::AND);
+			Eat();
+		}
+		break;
+	}
+	case '|':
+	{
+		if (Peek(1) != '\0' && Peek(1) == '|')
+		{
+			tokens.emplace_back(TokenType::OR);
+			Eat();
+		}
+		break;
+	}
 	default:
 	{
 		panic = true;
@@ -240,7 +259,7 @@ void Lexer::ParseOperator()
 	}
 }
 
-bool Lexer::Parse(const char* source)
+bool Lexer::Parse(const char* source, VirtualMachine& vm)
 {
 	startSymbol = source;
 	panic = false;
@@ -251,7 +270,7 @@ bool Lexer::Parse(const char* source)
 
 		startSymbol = currentSymbol;
 
-		ParseString();
+		ParseString(vm);
 		ParseBool();
 		ParseNumber();
 		ParseOperator();

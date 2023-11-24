@@ -149,8 +149,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
-
- Expression* Equality( Token*& currentToken)
+ Expression* Equality(Token*& currentToken)
  {
 	 auto left = Comparison(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -172,10 +171,55 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
+ Expression* LogicalAnd(Token*& currentToken)
+ {
+	 auto left = Equality(currentToken);
+	 auto nextToken = (currentToken + 1);
+	 bool isAnd = nextToken->type == TokenType::AND;
+	 if (isAnd)
+	 {
+
+		 auto operation = nextToken->type;
+		 currentToken += 2;
+		 auto right = LogicalAnd(currentToken);
+		 auto parent = new Expression();
+		 parent->left = left;
+		 parent->right = right;
+		 parent->type = operation;
+		 return parent;
+
+	 }
+	 return left;
+ }
+
+ Expression* LogicanOr(Token*& currentToken)
+ {
+	 auto left = LogicalAnd(currentToken);
+	 auto nextToken = (currentToken + 1);
+	 bool isOr = nextToken->type == TokenType::OR;
+	 if (isOr)
+	 {
+
+		 auto operation = nextToken->type;
+		 currentToken += 2;
+		 auto right = LogicanOr(currentToken);
+		 auto parent = new Expression();
+		 parent->left = left;
+		 parent->right = right;
+		 parent->type = operation;
+		 return parent;
+
+	 }
+	 return left;
+ }
+
+ 
+ 
+
 Expression* ParseExpression( Token*& currentToken)
 {
 
-	Expression* term = Equality(currentToken);
+	Expression* term = LogicanOr(currentToken);
 	return term;
 }
 bool AST::Build(Token*&  firstToken)

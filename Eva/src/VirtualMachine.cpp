@@ -24,6 +24,8 @@ enum  InCode
 	GREATER,
 	LESS,
 	EQUAL_EQUAL,
+	AND,
+	OR,
 	NOT,
 	RETURN,
 
@@ -107,6 +109,18 @@ void VirtualMachine::Generate(const Expression * tree)
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 		}
+		else if (tree->type == TokenType::AND)
+		{
+			Generate(tree->left);
+			Generate(tree->right);
+			opCode.push_back((uint8_t)InCode::AND);
+		}
+		else if (tree->type == TokenType::OR)
+		{
+			Generate(tree->left);
+			Generate(tree->right);
+			opCode.push_back((uint8_t)InCode::OR);
+		}
 		else if (tree->type == TokenType::LESS_EQUAL)
 		{
 			Generate(tree->left);
@@ -126,7 +140,19 @@ void VirtualMachine::Generate(const Expression * tree)
 			opCode.push_back((uint8_t)InCode::NOT);
 
 		}
+		
 
+}
+
+Object* VirtualMachine::AllocateString(const char* ptr, size_t size)
+{
+	if (internalStrings.IsExist(ptr))
+	{
+		auto str = internalStrings.Get(ptr);
+		return static_cast<Object*>(str->key);
+	}
+	auto* entry = internalStrings.Add(std::string_view{ptr,size}, ValueContainer{});
+	return static_cast<Object*>(entry->key);
 }
 
 VirtualMachine::~VirtualMachine()
@@ -227,6 +253,16 @@ void VirtualMachine::Execute()
 			auto&  v1 = vmStack.top();
 			vmStack.pop();
 			vmStack.push(ValueContainer{ AreEqual(v1,v2) });
+			break;
+		}
+		case InCode::AND:
+		{
+			BINARY_OP(boolean, && );
+			break;
+		}
+		case InCode::OR:
+		{
+			BINARY_OP(boolean, ||);
 			break;
 		}
 		case InCode::RETURN:

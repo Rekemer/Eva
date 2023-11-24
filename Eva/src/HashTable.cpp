@@ -12,13 +12,8 @@ bool IsNotSet(Entry* entry)
 {
 	return entry->key == nullptr && entry->value.type== ValueType::NIL;
 }
-void HashTable::Add(const char* key, ValueContainer value)
-{
-	String str{ key };
-	Add({ &str,value });
 
-}
-void HashTable::Add(const Entry& entry)
+Entry* HashTable::Add(std::string_view key,ValueContainer value)
 {
 	auto loadFactor = m_EntriesAmount / m_Size;
 	// resize array
@@ -39,7 +34,7 @@ void HashTable::Add(const Entry& entry)
 		{
 			if (oldData[i].key)
 			{
-				auto retrievedEntry = FindEntry(m_Data,oldData[i].key,m_Size);
+				auto retrievedEntry = FindEntry(m_Data,oldData[i].key->GetRaw(), m_Size);
 				retrievedEntry->key = oldData[i].key;
 				retrievedEntry->value = oldData[i].value;
 				m_EntriesAmount++;
@@ -47,20 +42,21 @@ void HashTable::Add(const Entry& entry)
 		}
 		delete[] oldData;
 	}
-	auto retrievedEntry = FindEntry(m_Data,entry.key,m_Size);
+	auto retrievedEntry = FindEntry(m_Data,key,m_Size);
 	
 	if (IsNotSet(retrievedEntry))
 	{
 		m_EntriesAmount++;
 	}
 
-	retrievedEntry->key = new String{ *entry.key };
-	retrievedEntry->value= entry.value;
+	retrievedEntry->key = new String(key.data(),key.size());
+	retrievedEntry->value= value;
+	return retrievedEntry;
 }
 
-void HashTable::Delete(const Entry& entry)
+void HashTable::Delete(std::string_view key)
 {
-	auto retrievedEntry = FindEntry(m_Data,entry.key,m_Size);
+	auto retrievedEntry = FindEntry(m_Data,key,m_Size);
 	MakeTombstone(retrievedEntry);
 }
 
@@ -73,23 +69,22 @@ void HashTable::MakeTombstone(Entry* entry)
 }
 
 
-bool HashTable::IsExist(const char* key)
+bool HashTable::IsExist(std::string_view key)
 {
-	String str = key;
-	auto entry = Get(&str);
+	auto entry = Get(key);
 	return IsSet(entry);
 }
 
-Entry* HashTable::Get(String* key)
+Entry* HashTable::Get(std::string_view key)
 {
-	return FindEntry(m_Data,key,m_Size);
+	return FindEntry(m_Data,key.data(), m_Size);
 }
 
 
 // works for insertion and looking up
-Entry* HashTable::FindEntry(Entry* data,String* key, int amountOfData)
+Entry* HashTable::FindEntry(Entry* data, std::string_view key, int amountOfData)
 {
-	auto hash = HashString(key->GetRaw(), key->GetSize());
+	auto hash = HashString(key.data(), key.size());
 	auto index = hash % amountOfData;
 	
 	Entry* tombstone = nullptr;
@@ -97,10 +92,15 @@ Entry* HashTable::FindEntry(Entry* data,String* key, int amountOfData)
 	while (true)
 	{
 		auto entry = (data + index);
-
-		if (IsSet(entry) && (*entry->key == *key))
+		
+		if (IsSet(entry))
 		{
-			return entry;
+			bool isSameKey = String::AreEqual(entry->key->GetRaw(),
+				entry->key->GetSize(), key.data(), key.size());
+			if (isSameKey)
+			{
+				return entry;
+			}
 		}
 
 

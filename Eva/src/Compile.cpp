@@ -7,7 +7,8 @@
 ValueContainer Compile(const char* line)
 {
 	Lexer parser;
-	if (!parser.Parse(line)) return ValueContainer{};
+	VirtualMachine vm;
+	if (!parser.Parse(line,vm)) return ValueContainer{};
 
 
 
@@ -28,7 +29,7 @@ ValueContainer Compile(const char* line)
 	Print(tree.GetTree());
 	#endif // DEBUG
 
-	VirtualMachine vm;
+	
 	vm.GenerateBytecode(tree);
 
 	vm.Execute();

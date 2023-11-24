@@ -2,6 +2,7 @@
 #include "String.hpp"
 #include "Value.h"
 #include <vector>
+#include <utility>
 // FHV-1a
 static uint32_t HashString(const char* key, int length) {
 	uint32_t hash = 2166136261u;
@@ -31,12 +32,12 @@ public:
 		delete[]m_Data;
 	}
 	void Add(const Entry& entry);
-	bool IsExist(const char* key);
-	void Add(const char* key, ValueContainer value);
-	void Delete(const Entry& entry);
-	Entry* Get(String* key);
+	bool IsExist(std::string_view key);
+	Entry* Add(std::string_view key, ValueContainer value);
+	void Delete(std::string_view key);
+	Entry* Get(std::string_view key);
 private:
-	Entry* FindEntry(Entry* data,String* key, int amountOfData);
+	Entry* FindEntry(Entry* data,std::string_view key, int amountOfData);
 
 	void MakeTombstone(Entry* entry);
 

@@ -1,6 +1,7 @@
 #pragma once
 #include"Tokens.h"
 #include <vector>
+class VirtualMachine;
 // lexer - produces tokens
 class Lexer
 {
@@ -9,13 +10,13 @@ public:
 	{
 		tokens.reserve(100);
 	}
-	bool Parse(const char* source);
+	bool Parse(const char* source, VirtualMachine& vm);
 	 std::vector<Token>& GetTokens() { return tokens; };
 private:
 	void ParseOperator();
 	void ParseNumber();
 	void ParseAlpha();
-	void ParseString();
+	void ParseString(VirtualMachine& vm);
 	void ParseBool();
 	void Eat();
 	void EatWhiteSpace();

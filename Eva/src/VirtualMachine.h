@@ -3,6 +3,7 @@
 #include <stack>
 #include <cstdlib>
 #include "Value.h"
+#include "HashTable.h"
 
 
 class AST;
@@ -13,6 +14,7 @@ public:
 	void Execute();
 	void GenerateBytecode(const AST& tree);
 	const std::stack<ValueContainer>& GetStack() { return vmStack; };
+	Object* AllocateString(const char* ptr, size_t size);
 	~VirtualMachine();
 private:
 	void Generate(const Expression* tree);
@@ -21,4 +23,5 @@ private:
 	std::vector< uint8_t> opCode;
 	std::vector<ValueContainer> constants;
 	std::stack<ValueContainer> vmStack;
+	HashTable internalStrings;
 };
