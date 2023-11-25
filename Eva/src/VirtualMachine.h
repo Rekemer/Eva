@@ -12,7 +12,7 @@ class VirtualMachine
 {
 public:
 	void Execute();
-	void GenerateBytecode(const AST& tree);
+	void GenerateBytecode(const std::vector<AST>& trees);
 	const std::stack<ValueContainer>& GetStack() { return vmStack; };
 	Object* AllocateString(const char* ptr, size_t size);
 	~VirtualMachine();

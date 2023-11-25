@@ -5,9 +5,9 @@
 String::String(const char* str, size_t size) : m_Size(size+1)
 {
 	//std::cout << "string alloc\n";
-	m_Str = new char[m_Size];
-	memcpy(m_Str, str, m_Size * sizeof(char));
-	m_Str[m_Size - 1] = '\0';
+	m_Data = new char[m_Size];
+	memcpy(m_Data, str, m_Size * sizeof(char));
+	m_Data[m_Size - 1] = '\0';
 }
 //String::String(const char* str)
 //{
@@ -19,9 +19,9 @@ String::String(const char* str, size_t size) : m_Size(size+1)
 //	}
 //	auto size = iter - str;
 //	m_Size = size + 1;
-//	m_Str = new char[m_Size];
-//	memcpy(m_Str, str, m_Size * sizeof(char));
-//	m_Str[m_Size - 1] = '\0';
+//	m_Data = new char[m_Size];
+//	memcpy(m_Data, str, m_Size * sizeof(char));
+//	m_Data[m_Size - 1] = '\0';
 //}
 
 String::String(const String& string) 
@@ -29,27 +29,27 @@ String::String(const String& string)
 	
 	//std::cout << "string copy\n";
 	m_Size = string.m_Size;
-	m_Str = new char[string.m_Size];
-	memcpy(m_Str, string.m_Str, m_Size * sizeof(char));
-	m_Str[m_Size - 1] = '\0';
+	m_Data = new char[string.m_Size];
+	memcpy(m_Data, string.m_Data, m_Size * sizeof(char));
+	m_Data[m_Size - 1] = '\0';
 }
 String::String(String&& string)
 {
-	m_Str = string.m_Str;
+	m_Data = string.m_Data;
 	m_Size = string.m_Size;
 
-	delete[] string.m_Str;
+	delete[] string.m_Data;
 	string.m_Size = 0;
 }
 
 String::~String()
 {
-	delete[] m_Str;
+	delete[] m_Data;
 }
 
 bool String::operator==(const String& str)
 {
-	return AreEqual(m_Str, GetSize(), str.GetRaw(), str.GetSize());
+	return AreEqual(m_Data, GetSize(), str.GetRaw(), str.GetSize());
 }
 
 bool String::AreEqual(const char* str, size_t size, const char* str2, size_t size2)
@@ -64,9 +64,9 @@ String& String::operator=(const String& string)
 	{
 		//std::cout << "string copy\n";
 		m_Size = string.m_Size;
-		m_Str = new char[string.m_Size];
-		memcpy(m_Str, string.m_Str, m_Size * sizeof(char));
-		m_Str[m_Size - 1] = '\0';
+		m_Data = new char[string.m_Size];
+		memcpy(m_Data, string.m_Data, m_Size * sizeof(char));
+		m_Data[m_Size - 1] = '\0';
 	}
 	
 	return *this;

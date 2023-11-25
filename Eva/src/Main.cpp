@@ -1,13 +1,15 @@
 ﻿#include "iostream"
 #include "vector"
 #include "Tokens.h"
-#include "Expression.h"
+#include "AST.h"
 #include "VirtualMachine.h"
 #include "Lexer.h"
 #include "Compile.h"
 #include <stack>
+#include <fstream>
+#include <sstream>
 
-
+#define SCRIPT_PATH "test/"
 int main(int argc, const char* argv[])
 {
 	
@@ -30,8 +32,17 @@ int main(int argc, const char* argv[])
 	else
 	{
 		// parse file
+		auto scirptPath = std::string{ SCRIPT_PATH } + std::string{ argv[1] };
+		std::ifstream scriptFile(scirptPath.data());
+
+		if (scriptFile.is_open())
+		{
+			std::stringstream sstream;
+			sstream << scriptFile.rdbuf();
+			std::string contents = sstream.str();
+			Compile(contents.data());
+		}
+		scriptFile.close();
 	}
 
-
-	std::cout << "Hello, Eva!\n";
 }

@@ -1,6 +1,5 @@
 #pragma once
 // heap allocated objects
-
 enum class ObjectType
 {
 	STRING

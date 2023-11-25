@@ -119,8 +119,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Eva\src\AST.cpp" />
     <ClCompile Include="..\Eva\src\Compile.cpp" />
-    <ClCompile Include="..\Eva\src\Expression.cpp" />
     <ClCompile Include="..\Eva\src\HashTable.cpp" />
     <ClCompile Include="..\Eva\src\Lexer.cpp" />
     <ClCompile Include="..\Eva\src\Main.cpp">

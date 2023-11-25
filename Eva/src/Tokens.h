@@ -23,24 +23,25 @@ enum class TokenType : uint8_t {
 	PRINT, RETURN, SUPER, THIS,
 	TRUE, VAR, WHILE,
 	ERROR,
+	FLOAT,INT,BOOL,
 	END
 };
 
 
 struct Token
 {
-	Token(TokenType type) : type{ type } 
-	{
-		//std::cout << "token creattion\n";
-	};
-	Token(TokenType type, ValueContainer&& value) : type{ type }, value{std::move(value)} {};
+	Token(TokenType type, ValueContainer&& value, int line) : type{ type }, 
+		value{std::move(value)},
+		line{line}
+	{};
 	TokenType type;
 	ValueContainer value{};
+	int line = -1;
 };
 
-inline Token CreateToken(TokenType type, ValueContainer&& value)
+inline Token CreateToken(TokenType type, ValueContainer&& value, int line)
 {
-	Token token{ type,std::move(value)};
+	Token token{ type,std::move(value), line};
 	return token;
 }
 

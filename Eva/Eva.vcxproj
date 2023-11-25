@@ -116,8 +116,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\AST.h" />
     <ClInclude Include="src\Compile.h" />
-    <ClInclude Include="src\Expression.h" />
     <ClInclude Include="src\HashTable.h" />
     <ClInclude Include="src\Lexer.h" />
     <ClInclude Include="src\Object.h" />
@@ -126,8 +126,8 @@
     <ClInclude Include="src\VirtualMachine.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\AST.cpp" />
     <ClCompile Include="src\Compile.cpp" />
-    <ClCompile Include="src\Expression.cpp" />
     <ClCompile Include="src\HashTable.cpp" />
     <ClCompile Include="src\Lexer.cpp" />
     <ClCompile Include="src\Main.cpp" />

@@ -1,4 +1,4 @@
-#include"Expression.h"
+#include"AST.h"
 #include<iostream>
 Expression::Expression(Expression&& e)
 {
@@ -77,7 +77,6 @@ static Expression* Value( Token*& currentToken)
 	{
 		currentToken += 1;
 		node = ParseExpression(currentToken);
-		currentToken += 1;
 		if (currentToken->type != TokenType::RIGHT_PAREN)
 		{
 			std::cout << "error: expected  )\n";
@@ -213,14 +212,52 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- 
+ Expression* Statement(Token*& currentToken)
+ {
+	 if (currentToken->type == TokenType::PRINT)
+	 {
+		 currentToken += 1;
+		 auto* printNode = new Expression();
+		 printNode->type = TokenType::PRINT;
+		 printNode->left = LogicanOr(currentToken);
+		 currentToken++;
+		 if (currentToken->type != TokenType::SEMICOLON)
+		 {
+			 std::cout << "ERROR[ " << (currentToken-1)->line << " ]: Expected ; at the end of expression\n";
+		 }
+		 else
+		 {
+			 currentToken++;
+		 }
+		 return printNode;
+	 }
+	 else if (currentToken->type == TokenType::FLOAT)
+	 {
+
+	 }
+	 else if (currentToken->type == TokenType::BOOL)
+	 {
+
+	 }
+	 else if (currentToken->type == TokenType::STRING)
+	 {
+
+	 }
+	 else if (currentToken->type == TokenType::INT)
+	 {
+
+	 }
+	 auto* expr = LogicanOr(currentToken);
+	 currentToken++;
+	 return expr;
+ }
  
 
 Expression* ParseExpression( Token*& currentToken)
 {
 
-	Expression* term = LogicanOr(currentToken);
-	return term;
+	Expression* tree = Statement(currentToken);
+	return tree;
 }
 bool AST::Build(Token*&  firstToken)
 {

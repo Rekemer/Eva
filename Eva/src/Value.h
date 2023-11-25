@@ -33,8 +33,7 @@ public:
 		as = v.as;
 		if (v.type == ValueType::OBJ)
 		{
-			as.object = new String(*dynamic_cast<String*>(v.as.object));
-			//*as.object = *;
+			as.object = new String(*static_cast<String*>(v.as.object));
 		}
 	};
 
@@ -143,6 +142,12 @@ inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 		{
 			float num = v.as.numberFloat;
 			os << num;
+			break;
+		}
+		case  ValueType::OBJ:
+		{
+			auto str = static_cast<String*>(v.as.object);
+			os << *str;
 			break;
 		}
 		default:

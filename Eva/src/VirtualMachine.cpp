@@ -1,5 +1,5 @@
 #include "VirtualMachine.h"
-#include "Expression.h"
+#include "AST.h"
 #include "String.hpp"
 #define BINARY_OP(type,operation)\
 {\
@@ -27,6 +27,7 @@ enum  InCode
 	AND,
 	OR,
 	NOT,
+	PRINT,
 	RETURN,
 
 };
@@ -140,6 +141,11 @@ void VirtualMachine::Generate(const Expression * tree)
 			opCode.push_back((uint8_t)InCode::NOT);
 
 		}
+		else if (tree->type == TokenType::PRINT)
+		{
+			Generate(tree->left);
+			opCode.push_back((uint8_t)InCode::PRINT);
+		}
 		
 
 }
@@ -172,8 +178,8 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	}
 	else if (a.type == b.type && a.type == ValueType::OBJ)
 	{
-		auto str = dynamic_cast<String*>(a.as.object);
-		auto str2 = dynamic_cast<String*>(b.as.object);
+		auto str = static_cast<String*>(a.as.object);
+		auto str2 = static_cast<String*>(b.as.object);
 		return *str == *str2;
 	}
 	return false;
@@ -269,14 +275,22 @@ void VirtualMachine::Execute()
 		{
 			return;
 		}
+		case InCode::PRINT:
+		{	auto& v = vmStack.top();
+			std::cout << v << "\n";
+			break;
+		}
 		default:
 			break;
 		}
 	}
 }
 
-void VirtualMachine::GenerateBytecode(const AST& tree)
+void VirtualMachine::GenerateBytecode(const std::vector<AST>& trees)
 {
-	Generate(tree.GetTree());
+	for (auto& tree : trees)
+	{
+		Generate(tree.GetTree());
+	}
 	opCode.push_back((uint8_t)InCode::RETURN);
 }
