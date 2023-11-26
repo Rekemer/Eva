@@ -190,9 +190,9 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 
 Object* VirtualMachine::AllocateString(const char* ptr, size_t size)
 {
-	if (internalStrings.IsExist(ptr))
+	if (internalStrings.IsExist(std::string_view{ ptr,size }))
 	{
-		auto str = internalStrings.Get(ptr);
+		auto str = internalStrings.Get(std::string_view{ ptr,size });
 		return static_cast<Object*>(str->key);
 	}
 	auto* entry = internalStrings.Add(std::string_view{ptr,size}, ValueContainer{});

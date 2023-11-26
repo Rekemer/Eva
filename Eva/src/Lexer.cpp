@@ -435,7 +435,6 @@ void Lexer::ParseDeclaration(VirtualMachine& vm)
 			Eat();
 		}
 		size_t size = currentSymbol - startSymbol;
-		auto* variableName = vm.AllocateString(currentSymbol,size);
 		// iterate over keywords
 		for (int i = (int)TokenType::AND; i < (int)TokenType::BOOL_TYPE; i++)
 		{
@@ -446,6 +445,7 @@ void Lexer::ParseDeclaration(VirtualMachine& vm)
 				return;
 			}
 		}
+		auto* variableName = vm.AllocateString(startSymbol,size);
 		tokens.push_back(CreateToken(TokenType::IDENTIFIER, ValueContainer{ variableName }, currentLine));
 	}
 	

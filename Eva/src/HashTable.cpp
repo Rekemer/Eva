@@ -77,7 +77,7 @@ bool HashTable::IsExist(std::string_view key)
 
 Entry* HashTable::Get(std::string_view key)
 {
-	return FindEntry(m_Data,key.data(), m_Size);
+	return FindEntry(m_Data,key, m_Size);
 }
 
 
@@ -91,7 +91,7 @@ Entry* HashTable::FindEntry(Entry* data, std::string_view key, int amountOfData)
 
 	while (true)
 	{
-		auto entry = (data + index);
+		auto* entry = (data + index);
 		
 		if (IsSet(entry))
 		{
