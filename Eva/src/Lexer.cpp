@@ -2,9 +2,15 @@
 #include <iostream>
 #include"String.hpp"
 #include"VirtualMachine.h"
+#include <cassert>
 
 
+bool IsPartOfString (char c) {return c >= 32 && c <= 126 && c != '"'; };
 
+bool IsPartOfVariable(char c)
+{
+	return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z'; 
+};
 
 void Lexer::ErrorCharacter(const char* msg ,const char character, size_t line)
 {
@@ -17,107 +23,100 @@ void Lexer::Error(const char* msg, size_t line)
 	std::cout << "Lexer Error [" << line << "] " << msg  << std::endl;
 }
 
-bool IsMatch(const char* str,TokenType type)
-{
-	switch (type)
-	{
+
+bool IsMatch(const char* str, size_t strSize, TokenType type) {
+
+	switch (type) {
 	case TokenType::LEFT_PAREN:
-		break;
 	case TokenType::RIGHT_PAREN:
-		break;
 	case TokenType::LEFT_BRACE:
-		break;
 	case TokenType::RIGHT_BRACE:
-		break;
 	case TokenType::COMMA:
-		break;
 	case TokenType::DOT:
-		break;
 	case TokenType::MINUS:
-		break;
 	case TokenType::PLUS:
-		break;
 	case TokenType::SEMICOLON:
-		break;
 	case TokenType::SLASH:
-		break;
 	case TokenType::STAR:
-		break;
 	case TokenType::BANG:
-		break;
 	case TokenType::BANG_EQUAL:
-		break;
 	case TokenType::EQUAL:
-		break;
 	case TokenType::EQUAL_EQUAL:
-		break;
 	case TokenType::GREATER:
-		break;
 	case TokenType::GREATER_EQUAL:
-		break;
 	case TokenType::LESS:
-		break;
 	case TokenType::LESS_EQUAL:
-		break;
-	case TokenType::IDENTIFIER:
-		break;
-	case TokenType::STRING:
-		return memcmp(str, "String", 6) == 0;
-		break;
-	case TokenType::NUMBER:
-		break;
 	case TokenType::AND:
-		break;
 	case TokenType::CLASS:
-		break;
 	case TokenType::ELSE:
-		break;
-	case TokenType::FALSE:
-		return memcmp(str, "false", 5) == 0;
-		break;
 	case TokenType::FOR:
-		break;
 	case TokenType::FUN:
-		break;
 	case TokenType::IF:
-		break;
 	case TokenType::NIL:
-		break;
 	case TokenType::OR:
-		break;
-	case TokenType::PRINT:
-		return memcmp(str, "Print", 5) == 0;
-		break;
 	case TokenType::RETURN:
-		break;
 	case TokenType::SUPER:
-		break;
 	case TokenType::THIS:
-		break;
-	case TokenType::TRUE:
-		return memcmp(str, "true", 4) == 0;
-		break;
 	case TokenType::VAR:
-		break;
 	case TokenType::WHILE:
-		break;
 	case TokenType::ERROR:
-		break;
-	case TokenType::INT:
-		return memcmp(str, "int", 3) == 0;
-		break;
-	case TokenType::FLOAT:
-		return memcmp(str, "float", 5) == 0;
-		break;
 	case TokenType::END:
-		break;
+		return false; 
+
+
+	case TokenType::STRING_TYPE:
+		return strSize == 6 && String::AreEqual(str, strSize, "String", 6);
+
+	case TokenType::FALSE:
+		return strSize == 5 && String::AreEqual(str, strSize, "false", 5);
+
+	case TokenType::TRUE:
+		return strSize == 4 && String::AreEqual(str, strSize, "true", 4);
+
+	case TokenType::PRINT:
+		return strSize == 5 && String::AreEqual(str, strSize, "Print", 5);
+
+	case TokenType::INT_TYPE:
+		return strSize == 3 && String::AreEqual(str, strSize, "int", 3);
+
+	case TokenType::FLOAT_TYPE:
+		return strSize == 5 && String::AreEqual(str, strSize, "float", 5);
+
 	default:
 		return false;
-		break;
 	}
 }
 
-// eat comments too?
+
+
+void Lexer::EatType(TokenType type)
+{
+	if (type == TokenType::PRINT)
+	{
+		tokens.emplace_back(CreateToken(TokenType::PRINT, ValueContainer{}, currentLine));
+		currentSymbol += 5;
+	}
+	else if (type == TokenType::INT_TYPE)
+	{
+		tokens.emplace_back(CreateToken(TokenType::INT_TYPE, ValueContainer{}, currentLine));
+		currentSymbol += 3;
+	}
+	else if (type == TokenType::FLOAT_TYPE)
+	{
+		tokens.emplace_back(CreateToken(TokenType::FLOAT_TYPE, ValueContainer{}, currentLine));
+		currentSymbol += 5;
+	}
+	else if (type == TokenType::STRING_TYPE)
+	{
+		tokens.emplace_back(CreateToken(TokenType::STRING_TYPE, ValueContainer{}, currentLine));
+		currentSymbol += 6;
+	}
+	else
+	{
+		assert(false);
+	}
+	
+}
 void Lexer::EatWhiteSpace()
 {
 	bool isRunning = true;
@@ -141,7 +140,8 @@ void Lexer::EatWhiteSpace()
 			break;
 		}
 	}
-	startSymbol = currentSymbol;
+
+	
 }
 
 
@@ -166,8 +166,7 @@ void Lexer::ParseString(VirtualMachine& vm)
 		{
 			auto size = static_cast<size_t>(currentSymbol - startSymbol);
 			auto* obj = vm.AllocateString(startSymbol,size);
-			tokens.push_back(CreateToken(TokenType::STRING, ValueContainer{ obj }, currentLine));
-			tokens.back().line = currentLine;
+			tokens.push_back(CreateToken(TokenType::STRING_LITERAL, ValueContainer{ obj }, currentLine));
 			Eat();
 		}
 		else
@@ -179,28 +178,24 @@ void Lexer::ParseString(VirtualMachine& vm)
 void Lexer::ParseBool()
 {
 	EatWhiteSpace();
-	if (IsMatch(currentSymbol,TokenType::TRUE))
+	if (IsMatch(currentSymbol,4,TokenType::TRUE))
 	{
 		tokens.push_back(CreateToken(TokenType::TRUE, ValueContainer{ true }, currentLine));
 		currentSymbol += 4;
 	}
-	else if (IsMatch(currentSymbol, TokenType::FALSE))
+	else if (IsMatch(currentSymbol,5, TokenType::FALSE))
 	{
 		tokens.push_back(CreateToken(TokenType::FALSE, ValueContainer{ false }, currentLine));
 		currentSymbol += 5;
 	}
-	startSymbol = currentSymbol;
 }
 // parse sequence of characters
 void Lexer::ParseAlpha()
 {
 	EatWhiteSpace();
-
-	//auto isAlpha = [](char c) {return c >= 48 && c <= 'Z' || c>='a' && c <= 'z' || c == '/'; };
-	auto isPartOfString = [](char c) {return c >= 32 && c <= 126 && c != '"'; };
-	if (isPartOfString(Peek()))
+	if (IsPartOfString(Peek()))
 	{
-		while (isPartOfString(Peek()))
+		while (IsPartOfString(Peek()))
 		{
 			Eat();
 		}
@@ -214,12 +209,14 @@ void Lexer::ParseNumber()
 	auto isDigit = [](char symbol) {return symbol >= '0' && symbol <= '9'; };
 	if (isDigit(Peek()))
 	{
+		bool isFloat = false;
 		// parse a number
 		while (isDigit(Peek()))
 		{
 			Eat();
 			if (*currentSymbol == '.' && isDigit(Peek(1)))
 			{
+				isFloat = true;
 				Eat();
 				while (isDigit(Peek()))
 				{
@@ -227,8 +224,16 @@ void Lexer::ParseNumber()
 				}
 			}
 		}
-		float floatValue = std::strtof(startSymbol, nullptr);
-		tokens.push_back(CreateToken(TokenType::NUMBER, ValueContainer{floatValue}, currentLine));
+		if (isFloat)
+		{
+			float floatValue = std::strtof(startSymbol, nullptr);
+			tokens.push_back(CreateToken(TokenType::FLOAT_LITERAL, ValueContainer{floatValue}, currentLine));
+		}
+		else
+		{
+			auto intValue = atoi(startSymbol);
+			tokens.push_back(CreateToken(TokenType::INT_LITERAL, ValueContainer{ intValue }, currentLine));
+		}
 		startSymbol = currentSymbol;
 	}
 }
@@ -252,57 +257,75 @@ void Lexer::ParseOperator()
 
 	{
 		AddToken(TokenType::LEFT_PAREN, currentLine);
+		Eat();
 		break;
 
 	}
 	case ')':
 	{
 		AddToken(TokenType::RIGHT_PAREN, currentLine);
+		Eat();
 		break;
 	};
 	case '{':
 	{
 		AddToken(TokenType::LEFT_BRACE, currentLine);
+		Eat();
 		break;
 	}
 	case '}':
 	{
 		AddToken(TokenType::RIGHT_BRACE, currentLine);
+		Eat();
+		break;
+	}
+	case ':':
+	{
+		AddToken(TokenType::COLON, currentLine);
+		Eat();
 		break;
 	}
 	case ';':
 	{
 		AddToken(TokenType::SEMICOLON, currentLine);
+		Eat();
+		startSymbol = currentSymbol;
 		break;
 	}
 	case ',':
 	{
 		AddToken(TokenType::COMMA, currentLine);
+		Eat();
 		break;
 	}
 	case '.':
 	{
 		AddToken(TokenType::DOT, currentLine);
+		Eat();
 		break;
 	}
 	case '-':
 	{
 		AddToken(TokenType::MINUS, currentLine);
+		Eat();
 		break;
 	}
 	case '+':
 	{
 		AddToken(TokenType::PLUS, currentLine);
+		Eat();
 		break;
 	}
 	case '/':
 	{
 		AddToken(TokenType::SLASH, currentLine);
+		Eat();
 		break;
 	}
 	case '*':
 	{
 		AddToken(TokenType::STAR, currentLine);
+		Eat();
 		break;
 	}
 	case '!':
@@ -311,10 +334,12 @@ void Lexer::ParseOperator()
 		{	
 			AddToken(TokenType::BANG_EQUAL, currentLine);
 			Eat();
+			Eat();
 		}
 		else
 		{	
 			AddToken(TokenType::BANG, currentLine);
+			Eat();
 		}
 		break;
 	}
@@ -324,11 +349,12 @@ void Lexer::ParseOperator()
 		{
 			AddToken(TokenType::GREATER_EQUAL, currentLine);
 			Eat();
+			Eat();
 		}
 		else
 		{
 			AddToken(TokenType::GREATER, currentLine);
-
+			Eat();
 		}
 			break;
 	}
@@ -338,10 +364,12 @@ void Lexer::ParseOperator()
 		{
 			AddToken(TokenType::LESS_EQUAL, currentLine);
 			Eat();
+			Eat();
 		}
 		else
 		{
 			AddToken(TokenType::LESS, currentLine);
+			Eat();
 		}
 		break;
 	}
@@ -351,10 +379,12 @@ void Lexer::ParseOperator()
 		{
 			AddToken(TokenType::EQUAL_EQUAL, currentLine);
 			Eat();
+			Eat();
 		}
 		else
 		{
 			AddToken(TokenType::EQUAL, currentLine);
+			Eat();
 		}
 		break;
 	}
@@ -363,6 +393,7 @@ void Lexer::ParseOperator()
 		if (Peek(1) != '\0' && Peek(1) == '&')
 		{
 			AddToken(TokenType::AND, currentLine);
+			Eat();
 			Eat();
 		}
 		break;
@@ -373,44 +404,61 @@ void Lexer::ParseOperator()
 		{
 			AddToken(TokenType::OR, currentLine);
 			Eat();
+			Eat();
 		}
 		break;
 	}
 	default:
 	{
-		ErrorCharacter("unexpected character ",currentCharacter, currentLine);
 		break;
 	}
 	}
 
-	if (Peek() != '\0')
-	{
-		Eat();
-
-	}
+	
 }
-void Lexer::ParseDeclaration()
+
+
+bool Lexer::IsEndExpression()
 {
-	if (IsMatch(startSymbol, TokenType::PRINT))
+	EatWhiteSpace();
+	return Peek() == ';';
+}
+// a variable, a function
+void Lexer::ParseDeclaration(VirtualMachine& vm)
+{
+	EatWhiteSpace();
+	
+	if (IsPartOfVariable(Peek()))
+	{
+		while (IsPartOfVariable(Peek()))
+		{
+			Eat();
+		}
+		size_t size = currentSymbol - startSymbol;
+		auto* variableName = vm.AllocateString(currentSymbol,size);
+		// iterate over keywords
+		for (int i = (int)TokenType::AND; i < (int)TokenType::BOOL_TYPE; i++)
+		{
+			auto isKeyword = IsMatch(startSymbol, size,static_cast<TokenType>(i));
+			if (isKeyword)
+			{
+				tokens.push_back(CreateToken(static_cast<TokenType>(i), {}, currentLine));
+				return;
+			}
+		}
+		tokens.push_back(CreateToken(TokenType::IDENTIFIER, ValueContainer{ variableName }, currentLine));
+	}
+	
+	
+
+}
+void Lexer::ParseStatement()
+{
+	if (IsMatch(currentSymbol,5, TokenType::PRINT))
 	{	
-		tokens.emplace_back(TokenType::PRINT, ValueContainer{}, currentLine);
-		currentSymbol += 5;
+		EatType(TokenType::PRINT);
 	}
-	else if (IsMatch(startSymbol, TokenType::INT))
-	{
-		tokens.emplace_back(TokenType::INT, ValueContainer{}, currentLine);
-		currentSymbol += 3;
-	}
-	else if (IsMatch(startSymbol, TokenType::FLOAT))
-	{
-		tokens.emplace_back(TokenType::FLOAT, ValueContainer{}, currentLine);
-		currentSymbol += 5;
-	}
-	else if (IsMatch(startSymbol, TokenType::STRING))
-	{
-		tokens.emplace_back(TokenType::STRING, ValueContainer{}, currentLine);
-		currentSymbol += 6;
-	}
+	
 	
 }
 bool Lexer::Parse(const char* source, VirtualMachine& vm)
@@ -421,9 +469,11 @@ bool Lexer::Parse(const char* source, VirtualMachine& vm)
 	while (*currentSymbol != '\0')
 	{
 		EatWhiteSpace();
-
-
-		ParseDeclaration();
+		
+		startSymbol = currentSymbol;
+		ParseDeclaration(vm);
+		
+ 		ParseStatement();
 		ParseString(vm);
 		ParseBool();
 		ParseNumber();

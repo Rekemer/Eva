@@ -19,9 +19,14 @@ private:
 	void ParseAlpha();
 	void ParseString(VirtualMachine& vm);
 	void ParseBool();
-	void ParseDeclaration();
+	void ParseDeclaration(VirtualMachine& vm);
+	bool IsEndExpression();
+	void ParseStatement();
 	void Eat();
 	void EatWhiteSpace();
+	// eats statement and declaration tokens
+	void EatType(TokenType type);
+
 	void ErrorCharacter(const char* msg, const char character, size_t line);
 	void Error(const char* msg,  size_t line);
 	char Peek(int offset = 0);

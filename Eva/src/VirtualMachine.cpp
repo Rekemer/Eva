@@ -16,10 +16,14 @@ enum  InCode
 	TRUE,
 	FALSE,
 	NIL,
-	ADD,
-	DIVIDE,
-	MULTIPLY,
-	SUBSTRACT,
+	ADD_FLOAT,
+	ADD_INT,
+	DIVIDE_INT,
+	DIVIDE_FLOAT,
+	MULTIPLY_INT,
+	MULTIPLY_FLOAT,
+	SUBSTRACT_FLOAT,
+	SUBSTRACT_INT,
 	NEGATE,
 	GREATER,
 	LESS,
@@ -32,70 +36,97 @@ enum  InCode
 
 };
 
-void VirtualMachine::Generate(const Expression * tree)
+#define DETERMINE_NUMBER(left,right,OP)\
+{\
+	if (left == ValueType::INT && right == ValueType::INT)\
+	{\
+	opCode.push_back((uint8_t)InCode::OP##_INT); \
+	return ValueType::INT; \
+	}\
+	else\
+	{\
+	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
+	return ValueType::FLOAT; \
+	}\
+}\
+
+ValueType VirtualMachine::Generate(const Expression * tree)
 {
-		if (!tree) return;
+		if (!tree) return ValueType::NIL;
 
 		if (tree->type == TokenType::PLUS)
 		{
-			Generate(tree->left);
-			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::ADD);
+			auto left = Generate(tree->left);
+			auto right = Generate(tree->right);
+			DETERMINE_NUMBER(left, right, ADD);
 		}
 		else if (tree->type == TokenType::STAR)
 		{
-			Generate(tree->left);
-			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::MULTIPLY);
+			auto left = Generate(tree->left);
+			auto right = Generate(tree->right);
+			DETERMINE_NUMBER(left, right, MULTIPLY);
 		}
 		else if (tree->type == TokenType::MINUS)
 		{
-			Generate(tree->left);
+			auto left = Generate(tree->left);
 
 			if (tree->right)
 			{
-				Generate(tree->right);
-				opCode.push_back((uint8_t)InCode::SUBSTRACT);
+				auto right = Generate(tree->right);
+				DETERMINE_NUMBER(left, right, SUBSTRACT);
 			}
 			else
 			{
 				opCode.push_back((uint8_t)InCode::NEGATE);
+				return left;
 			}
 
 		}
 		else if (tree->type == TokenType::SLASH)
 		{
-			Generate(tree->left);
-			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::DIVIDE);
+			auto left = Generate(tree->left);
+			auto right = Generate(tree->right);
+			DETERMINE_NUMBER(left, right, DIVIDE);
 		}
-		else if (tree->type == TokenType::NUMBER)
+		else if (tree->type == TokenType::INT_LITERAL)
+		{
+			opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			constants.push_back(ValueContainer{ tree->value.as.numberInt });
+			opCode.push_back(constants.size() - 1);
+			return ValueType::INT;
+		}
+		else if (tree->type == TokenType::FLOAT_LITERAL)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
 			constants.push_back(ValueContainer{ tree->value.as.numberFloat });
 			opCode.push_back(constants.size() - 1);
+			return ValueType::FLOAT;
 		}
-		else if (tree->type == TokenType::STRING)
+		else if (tree->type == TokenType::STRING_LITERAL)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
 			// might copy because vector can reallocate
 			constants.emplace_back(tree->value.as.object );
 			opCode.push_back(constants.size() - 1); 
+			return ValueType::OBJ;
 		}
 
 		else if (tree->type == TokenType::TRUE)
 		{
 			opCode.push_back((uint8_t)InCode::TRUE);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::FALSE)
 		{
 			opCode.push_back((uint8_t)InCode::FALSE);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::GREATER)
 		{
 			Generate(tree->left);
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::GREATER);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::GREATER_EQUAL)
 		{
@@ -103,24 +134,28 @@ void VirtualMachine::Generate(const Expression * tree)
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::LESS);
 			opCode.push_back((uint8_t)InCode::NOT);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::EQUAL_EQUAL)
 		{
 			Generate(tree->left);
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::AND)
 		{
 			Generate(tree->left);
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::AND);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::OR)
 		{
 			Generate(tree->left);
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::OR);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::LESS_EQUAL)
 		{
@@ -128,23 +163,26 @@ void VirtualMachine::Generate(const Expression * tree)
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::GREATER);
 			opCode.push_back((uint8_t)InCode::NOT);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::LESS)
 		{
 			Generate(tree->left);
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::LESS);
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::BANG)
 		{
 			Generate(tree->left);
 			opCode.push_back((uint8_t)InCode::NOT);
-
+			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::PRINT)
 		{
 			Generate(tree->left);
 			opCode.push_back((uint8_t)InCode::PRINT);
+			return ValueType::NIL;
 		}
 		
 
@@ -175,6 +213,10 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	else if (a.type == b.type && a.type == ValueType::FLOAT)
 	{
 		return fabs(a.as.numberFloat - b.as.numberFloat) < 0.04;
+	}
+	else if (a.type == b.type && a.type == ValueType::INT)
+	{
+		return a.as.numberInt == b.as.numberInt;
 	}
 	else if (a.type == b.type && a.type == ValueType::OBJ)
 	{
@@ -208,24 +250,44 @@ void VirtualMachine::Execute()
 			vmStack.push(ValueContainer{ false });
 			break;
 		}
-		case InCode::ADD:
+		case InCode::ADD_FLOAT:
 		{
 			BINARY_OP(numberFloat, +);
 			break;
 		}
-		case InCode::SUBSTRACT:
+		case InCode::SUBSTRACT_FLOAT:
 		{
 			BINARY_OP(numberFloat, -);
 			break;
 		}
-		case InCode::MULTIPLY:
+		case InCode::MULTIPLY_FLOAT:
 		{
 			BINARY_OP(numberFloat,*);
 			break;
 		}
-		case InCode::DIVIDE:
+		case InCode::DIVIDE_FLOAT:
 		{
 			BINARY_OP(numberFloat ,/ );
+			break;
+		}
+		case InCode::ADD_INT:
+		{
+			BINARY_OP(numberInt, +);
+			break;
+		}
+		case InCode::SUBSTRACT_INT:
+		{
+			BINARY_OP(numberInt, -);
+			break;
+		}
+		case InCode::MULTIPLY_INT:
+		{
+			BINARY_OP(numberInt, *);
+			break;
+		}
+		case InCode::DIVIDE_INT:
+		{
+			BINARY_OP(numberInt, / );
 			break;
 		}
 		case InCode::NEGATE:

@@ -56,7 +56,11 @@ static Expression* Value( Token*& currentToken)
 {
 	Expression* node = new Expression();
 	node->type = currentToken->type;
-	if (currentToken->type == TokenType::NUMBER)
+	if (currentToken->type == TokenType::INT_LITERAL)
+	{
+		node->value = std::move(currentToken->value);
+	}
+	else if (currentToken->type == TokenType::FLOAT_LITERAL)
 	{
 		node->value = std::move(currentToken->value);
 	}
@@ -68,7 +72,7 @@ static Expression* Value( Token*& currentToken)
 	{
 		node->value = std::move(currentToken->value);
 	}
-	else if (currentToken->type == TokenType::STRING)
+	else if (currentToken->type == TokenType::STRING_LITERAL)
 	{
 		node->value = std::move(currentToken->value);
 
@@ -231,7 +235,7 @@ void Print(const Expression* tree, int level) {
 		 }
 		 return printNode;
 	 }
-	 else if (currentToken->type == TokenType::FLOAT)
+	 /*else if (currentToken->type == TokenType::FLOAT_LITERAL)
 	 {
 
 	 }
@@ -239,14 +243,14 @@ void Print(const Expression* tree, int level) {
 	 {
 
 	 }
-	 else if (currentToken->type == TokenType::STRING)
+	 else if (currentToken->type == TokenType::STRING_LITERAL)
 	 {
 
 	 }
-	 else if (currentToken->type == TokenType::INT)
+	 else if (currentToken->type == TokenType::INT_LITERAL)
 	 {
 
-	 }
+	 }*/
 	 auto* expr = LogicanOr(currentToken);
 	 currentToken++;
 	 return expr;

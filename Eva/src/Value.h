@@ -7,6 +7,7 @@
 enum class ValueType
 {
 	FLOAT,
+	INT,
 	BOOL,
 	OBJ,
 	NIL
@@ -83,10 +84,12 @@ public:
 private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
+
 	union ValueAs
 	{
 		bool boolean{ false };
 		float numberFloat;
+		int numberInt;
 		Object* object;
 	}as;
 
@@ -107,6 +110,15 @@ private:
 	};
 
 	template <>
+	struct ValueTypeToEnum<int> {
+		static const ValueType value = ValueType::INT;
+		static void SetField(ValueAs& as, int value)
+		{
+			as.numberInt = value;
+		}
+	};
+
+	template <>
 	struct ValueTypeToEnum<float> {
 		static const ValueType value = ValueType::FLOAT;
 		static void SetField(ValueAs& as, float value)
@@ -123,6 +135,7 @@ private:
 			as.object = value;
 		}
 	};
+	
 
 
 	
@@ -141,6 +154,12 @@ inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 		case  ValueType::FLOAT:
 		{
 			float num = v.as.numberFloat;
+			os << num;
+			break;
+		}
+		case  ValueType::INT:
+		{
+			int num = v.as.numberInt;
 			os << num;
 			break;
 		}

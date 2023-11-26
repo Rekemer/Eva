@@ -17,7 +17,7 @@ public:
 	Object* AllocateString(const char* ptr, size_t size);
 	~VirtualMachine();
 private:
-	void Generate(const Expression* tree);
+	ValueType Generate(const Expression* tree);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
 	std::vector< uint8_t> opCode;

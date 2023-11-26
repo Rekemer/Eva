@@ -1,5 +1,2 @@
-Print "Hello, Ilia!";
-Print "Hello, Eva!";
-Print "I hate Pineapples?";
-Print 2+2;
-Print true == true + 1/2 == 1/2;
+number : int = 69;
+Print number;
