@@ -31,6 +31,7 @@ private:
 	void Error(const char* msg,  size_t line);
 	char Peek(int offset = 0);
 	void AddToken(TokenType type, int line);
+	bool IsPartOfVariable(char c);
 private:
 	std::vector<Token> tokens;
 	bool panic;

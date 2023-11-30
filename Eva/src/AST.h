@@ -30,6 +30,17 @@ class AST
 public:
 	bool Build(Token*& firstToken);
 	const Expression* GetTree()const  { return tree.get(); }
+	class VirtualMachine* vm;
 private:
+	Expression* UnaryOp(Token*& currentToken);
+	Expression* Value(Token*& currentToken);
+	Expression* ParseExpression(Token*& currentToken);
+	Expression* Factor(Token*& currentToken);
+	Expression* Term(Token*& currentToken);
+	Expression* Comparison(Token*& currentToken);
+	Expression* Equality(Token*& currentToken);
+	Expression* LogicalAnd(Token*& currentToken);
+	Expression* LogicalOr(Token*& currentToken);
+	Expression* Statement(Token*& currentToken);
 	std::unique_ptr<Expression> tree;
 };

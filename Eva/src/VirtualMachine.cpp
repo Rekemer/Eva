@@ -1,6 +1,7 @@
 #include "VirtualMachine.h"
 #include "AST.h"
 #include "String.hpp"
+#include <cassert>
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.top().as.type;\
@@ -32,6 +33,8 @@ enum  InCode
 	OR,
 	NOT,
 	PRINT,
+	SET_VAR,
+	GET_VAR,
 	RETURN,
 
 };
@@ -110,7 +113,22 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			opCode.push_back(constants.size() - 1); 
 			return ValueType::OBJ;
 		}
+		else if (tree->type == TokenType::IDENTIFIER)
+		{
+			if (tree->left == nullptr)
+			{
+				opCode.push_back((uint8_t)InCode::GET_VAR);
+				constants.emplace_back(tree->value.as.object);
+				opCode.push_back(constants.size() - 1);
+				return tree->value.type;
+			}
 
+			auto type = Generate(tree->left);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			constants.emplace_back(tree->value.as.object);
+			opCode.push_back(constants.size() - 1);
+			return type;
+		}
 		else if (tree->type == TokenType::TRUE)
 		{
 			opCode.push_back((uint8_t)InCode::TRUE);
@@ -294,7 +312,18 @@ void VirtualMachine::Execute()
 		{
 			auto value = vmStack.top();
 			vmStack.pop();
-			vmStack.push(ValueContainer{-value.as.numberFloat});
+			if (value.type == ValueType::FLOAT)
+			{
+				vmStack.push(ValueContainer{-value.as.numberFloat});
+			}
+			else if (value.type == ValueType::INT)
+			{
+				vmStack.push(ValueContainer{-value.as.numberInt});
+			}
+			else
+			{
+				assert("Unknown type to negate" && false);
+			}
 			break;
 		}
 		case InCode::NOT:
@@ -340,6 +369,24 @@ void VirtualMachine::Execute()
 		case InCode::PRINT:
 		{	auto& v = vmStack.top();
 			std::cout << v << "\n";
+			break;
+		}
+		case InCode::GET_VAR:
+		{	
+			auto& v = constants[opCode[ipIndex++]];
+			auto string = ((String*)(v.As<Object*>()))->GetStringView();
+			auto entry = globalVariables.Get(string);
+			vmStack.push(entry->value);
+			break;
+		}
+		case InCode::SET_VAR:
+		{	
+			auto& value = vmStack.top();
+			auto& v = constants[opCode[ipIndex++]];
+			auto string = ((String*)(v.As<Object*>()))->GetStringView();
+			auto entry = globalVariables.Get(string);
+			entry->value = std::move(value);
+			vmStack.pop();
 			break;
 		}
 		default:

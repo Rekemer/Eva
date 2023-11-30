@@ -1,2 +1,3 @@
-number : int = 69;
-Print number;
+number := "Hello";
+numbe1 := "Hello1";
+Print numbe1;

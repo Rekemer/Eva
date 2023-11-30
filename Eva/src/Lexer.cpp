@@ -6,9 +6,17 @@
 
 
 bool IsPartOfString (char c) {return c >= 32 && c <= 126 && c != '"'; };
-
-bool IsPartOfVariable(char c)
+bool IsDigit(char symbol)
 {
+	return symbol >= '0' && symbol <= '9';
+};
+bool Lexer::IsPartOfVariable(char c)
+{
+	if (IsDigit(c))
+	{
+		bool hasVariableStarted = IsPartOfVariable(*startSymbol);
+		return hasVariableStarted;
+	}
 	return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z'; 
 };
 
@@ -161,6 +169,7 @@ void Lexer::ParseString(VirtualMachine& vm)
 	if (Peek() == '"')
 	{
 		Eat();
+		startSymbol = currentSymbol;
 		ParseAlpha();
 		if (Peek() =='\"')
 		{
@@ -178,16 +187,7 @@ void Lexer::ParseString(VirtualMachine& vm)
 void Lexer::ParseBool()
 {
 	EatWhiteSpace();
-	if (IsMatch(currentSymbol,4,TokenType::TRUE))
-	{
-		tokens.push_back(CreateToken(TokenType::TRUE, ValueContainer{ true }, currentLine));
-		currentSymbol += 4;
-	}
-	else if (IsMatch(currentSymbol,5, TokenType::FALSE))
-	{
-		tokens.push_back(CreateToken(TokenType::FALSE, ValueContainer{ false }, currentLine));
-		currentSymbol += 5;
-	}
+	
 }
 // parse sequence of characters
 void Lexer::ParseAlpha()
@@ -206,19 +206,19 @@ void Lexer::ParseNumber()
 {
 	EatWhiteSpace();
 	// check if number
-	auto isDigit = [](char symbol) {return symbol >= '0' && symbol <= '9'; };
-	if (isDigit(Peek()))
+	if (IsDigit(Peek()))
 	{
 		bool isFloat = false;
+		auto nextToken = currentSymbol;
 		// parse a number
-		while (isDigit(Peek()))
+		while (IsDigit(Peek()))
 		{
 			Eat();
-			if (*currentSymbol == '.' && isDigit(Peek(1)))
+			if (*currentSymbol == '.' && IsDigit(Peek(1)))
 			{
 				isFloat = true;
 				Eat();
-				while (isDigit(Peek()))
+				while (IsDigit(Peek()))
 				{
 					Eat();
 				}
@@ -226,15 +226,15 @@ void Lexer::ParseNumber()
 		}
 		if (isFloat)
 		{
-			float floatValue = std::strtof(startSymbol, nullptr);
+			float floatValue = std::strtof(nextToken, nullptr);
 			tokens.push_back(CreateToken(TokenType::FLOAT_LITERAL, ValueContainer{floatValue}, currentLine));
 		}
 		else
 		{
-			auto intValue = atoi(startSymbol);
+			auto intValue = atoi(nextToken);
 			tokens.push_back(CreateToken(TokenType::INT_LITERAL, ValueContainer{ intValue }, currentLine));
 		}
-		startSymbol = currentSymbol;
+		//startSymbol = currentSymbol;
 	}
 }
 
@@ -427,7 +427,6 @@ bool Lexer::IsEndExpression()
 void Lexer::ParseDeclaration(VirtualMachine& vm)
 {
 	EatWhiteSpace();
-	
 	if (IsPartOfVariable(Peek()))
 	{
 		while (IsPartOfVariable(Peek()))
@@ -436,19 +435,32 @@ void Lexer::ParseDeclaration(VirtualMachine& vm)
 		}
 		size_t size = currentSymbol - startSymbol;
 		// iterate over keywords
-		for (int i = (int)TokenType::AND; i < (int)TokenType::BOOL_TYPE; i++)
+		for (int i = (int)TokenType::AND; i <= (int)TokenType::BOOL_TYPE; i++)
 		{
 			auto isKeyword = IsMatch(startSymbol, size,static_cast<TokenType>(i));
 			if (isKeyword)
 			{
-				tokens.push_back(CreateToken(static_cast<TokenType>(i), {}, currentLine));
+				if (static_cast<TokenType>(i) ==  TokenType::TRUE)
+				{
+					tokens.push_back(CreateToken(TokenType::TRUE, ValueContainer{ true }, currentLine));
+				}
+				else if (static_cast<TokenType>(i) ==  TokenType::FALSE)
+				{
+					tokens.push_back(CreateToken(TokenType::FALSE, ValueContainer{ false }, currentLine));
+				}
+				else
+				{
+					tokens.push_back(CreateToken(static_cast<TokenType>(i), {}, currentLine));
+
+				}
+				startSymbol = currentSymbol;
 				return;
 			}
 		}
 		auto* variableName = vm.AllocateString(startSymbol,size);
 		tokens.push_back(CreateToken(TokenType::IDENTIFIER, ValueContainer{ variableName }, currentLine));
 	}
-	
+	startSymbol = currentSymbol;
 	
 
 }
@@ -457,6 +469,7 @@ void Lexer::ParseStatement()
 	if (IsMatch(currentSymbol,5, TokenType::PRINT))
 	{	
 		EatType(TokenType::PRINT);
+		startSymbol = currentSymbol;
 	}
 	
 	
@@ -473,7 +486,7 @@ bool Lexer::Parse(const char* source, VirtualMachine& vm)
 		startSymbol = currentSymbol;
 		ParseDeclaration(vm);
 		
- 		ParseStatement();
+ 		//ParseStatement();
 		ParseString(vm);
 		ParseBool();
 		ParseNumber();

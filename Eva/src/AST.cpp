@@ -1,18 +1,18 @@
 #include"AST.h"
 #include<iostream>
+#include<cassert>
+#include "VirtualMachine.h"
 Expression::Expression(Expression&& e)
 {
 	childrenCount = e.childrenCount;
 	left = e.left;
 	right= e.right;
 	type =  e.type;
+	value = std::move(e.value);
 	e.left = e.right = nullptr;
 	e.childrenCount = 0;
 }
-Expression* UnaryOp( Token*& currentToken);
-Expression* Value( Token*& currentToken);
-Expression* ParseExpression(Token*& currentToken);
- Expression* Factor( Token*& currentToken)
+ Expression* AST::Factor( Token*& currentToken)
 {
 	auto left = UnaryOp(currentToken);
 	auto nextToken = (currentToken + 1);
@@ -35,7 +35,31 @@ Expression* ParseExpression(Token*& currentToken);
 }
 
 
- Expression* UnaryOp( Token*&  currentToken)
+ ValueType LiteralToType(TokenType literalType)
+ {
+	 switch (literalType)
+	 {
+	 case TokenType::INT_LITERAL:
+		 return ValueType::INT;
+		 break;
+	 case TokenType::FLOAT_LITERAL:
+		 return ValueType::FLOAT;
+		 break;
+	 case TokenType::STRING_LITERAL:
+		 return ValueType::OBJ;
+		 break;
+	 case TokenType::FALSE:
+	 case TokenType::TRUE:
+		 return ValueType::BOOL;
+		 break;
+	 default:
+		 return ValueType::NIL;
+		 break;
+	 }
+	 return ValueType::BOOL;
+ }
+
+ Expression* AST::UnaryOp( Token*&  currentToken)
 {
 	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
 	if (isUnary)
@@ -43,16 +67,16 @@ Expression* ParseExpression(Token*& currentToken);
 		auto prevOp = currentToken->type;
 		currentToken++;
 		Expression* parent = new Expression();
-		Expression* right = UnaryOp(currentToken);
 		parent->type = prevOp;
-		parent->left = right;
+		parent->left = UnaryOp(currentToken);
+		parent->value.type = LiteralToType(parent->left->type);
 		return parent;
 	}
 
 	return Value(currentToken);
 }
 
-static Expression* Value( Token*& currentToken)
+ Expression* AST::Value( Token*& currentToken)
 {
 	Expression* node = new Expression();
 	node->type = currentToken->type;
@@ -76,6 +100,98 @@ static Expression* Value( Token*& currentToken)
 	{
 		node->value = std::move(currentToken->value);
 
+	}
+	else if (currentToken->type == TokenType::IDENTIFIER)
+	{
+
+		// check if variable is declared  or not
+		auto& table = vm->GetGlobals();
+		// why it doesn work?
+		//auto obj = node->value.As<Object>();
+		auto obj = currentToken->value.As<Object*>();
+		auto str = static_cast<String*>(obj);
+		
+		// declaration of varaible
+		// usage of declared variable
+		// usage of unknown identifier	
+		if (!table.IsExist(str->GetStringView()))
+		{
+			// if there are tokens that correspond to declaration
+			// number :int = 2; number :=2;
+			auto isDeclaration = (currentToken + 1)->type == TokenType::COLON;
+			if (isDeclaration)
+			{
+				auto isType = IsVariableType((currentToken + 2)->type);
+				if (isType)
+				{
+					auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
+					if (isEqualSign)
+					{
+						auto literalToken = (currentToken + 4);
+						auto child = new Expression();
+						table.Add(str->GetStringView(), std::move(literalToken->value));
+						child->value = table.Get(str->GetStringView())->value;
+						node->left = child;
+						currentToken += 5;
+					}
+
+				}
+				// deduce type
+				else
+				{
+					auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
+					if (isEqualSign)
+					{
+						currentToken += 3;
+						node->left = ParseExpression(currentToken);
+
+						auto variableName = (Object*)table.Add(str->GetStringView(), ValueContainer{})->key;
+						node->value = ValueContainer(variableName);
+					}
+					else
+					{
+						assert("No equal sign " && false);
+					}
+					
+				}
+				
+				if ((currentToken )->type == TokenType::SEMICOLON)
+				{
+
+					//currentToken += 1;
+				}
+				else
+				{
+					assert("Handle semicolon" && false);
+				}
+
+
+			}
+
+		}
+		else
+		{
+
+			/*TokenType tokenType;
+			if (value.type == ValueType::BOOL)
+			{
+				tokenType = TokenTy
+			}
+			else if (value.type == ValueType::INT)
+			{
+
+			}
+			else if (value.type == ValueType::FLOAT)
+			{
+
+			}
+			else if (value.type == ValueType::OBJ)
+			{
+
+			}*/
+			node->value = ValueContainer((Object*)str );
+
+		}
 	}
 	else if (currentToken->type == TokenType::LEFT_PAREN)
 	{
@@ -107,7 +223,7 @@ void Print(const Expression* tree, int level) {
 		Print(tree->right, level + 1);
 	}
 }
- Expression* Term( Token*& currentToken)
+ Expression* AST::Term( Token*& currentToken)
 {
 	auto left = Factor(currentToken);
 	auto nextToken = (currentToken + 1);
@@ -129,7 +245,7 @@ void Print(const Expression* tree, int level) {
 	return left;
 }
 
- Expression* Comparison( Token*& currentToken)
+ Expression* AST::Comparison( Token*& currentToken)
  {
 	 auto left = Term(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -152,7 +268,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Expression* Equality(Token*& currentToken)
+ Expression* AST::Equality(Token*& currentToken)
  {
 	 auto left = Comparison(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -174,7 +290,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Expression* LogicalAnd(Token*& currentToken)
+ Expression* AST::LogicalAnd(Token*& currentToken)
  {
 	 auto left = Equality(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -195,7 +311,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Expression* LogicanOr(Token*& currentToken)
+ Expression* AST::LogicalOr(Token*& currentToken)
  {
 	 auto left = LogicalAnd(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -205,7 +321,7 @@ void Print(const Expression* tree, int level) {
 
 		 auto operation = nextToken->type;
 		 currentToken += 2;
-		 auto right = LogicanOr(currentToken);
+		 auto right = LogicalOr(currentToken);
 		 auto parent = new Expression();
 		 parent->left = left;
 		 parent->right = right;
@@ -216,14 +332,16 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Expression* Statement(Token*& currentToken)
+ Expression* AST::Statement(Token*& currentToken)
  {
+
+
 	 if (currentToken->type == TokenType::PRINT)
 	 {
 		 currentToken += 1;
 		 auto* printNode = new Expression();
 		 printNode->type = TokenType::PRINT;
-		 printNode->left = LogicanOr(currentToken);
+		 printNode->left = LogicalOr(currentToken);
 		 currentToken++;
 		 if (currentToken->type != TokenType::SEMICOLON)
 		 {
@@ -251,19 +369,19 @@ void Print(const Expression* tree, int level) {
 	 {
 
 	 }*/
-	 auto* expr = LogicanOr(currentToken);
+	 auto* expr = LogicalOr(currentToken);
 	 currentToken++;
 	 return expr;
  }
  
 
-Expression* ParseExpression( Token*& currentToken)
+Expression* AST::ParseExpression( Token*& currentToken)
 {
 
 	Expression* tree = Statement(currentToken);
 	return tree;
 }
-bool AST::Build(Token*&  firstToken)
+bool AST::Build(Token*& firstToken)
 {
 	tree = std::make_unique<Expression>(std::move(*ParseExpression(firstToken)) );
 	return true;

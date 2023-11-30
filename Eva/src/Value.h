@@ -45,6 +45,7 @@ public:
 		return *this;
 	}
 
+	
 
 	ValueContainer& operator = (const ValueContainer& v)
 	{
@@ -79,6 +80,7 @@ public:
 	template <typename T>
 	T As()
 	{
+		auto obj = reinterpret_cast<const Object*>(&as);
 		return *reinterpret_cast<const T*>(&as);
 	}
 private:

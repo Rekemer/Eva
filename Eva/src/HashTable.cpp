@@ -13,6 +13,7 @@ bool IsNotSet(Entry* entry)
 	return entry->key == nullptr && entry->value.type== ValueType::NIL;
 }
 
+
 Entry* HashTable::Add(std::string_view key,ValueContainer value)
 {
 	auto loadFactor = m_EntriesAmount / m_Size;

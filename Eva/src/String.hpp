@@ -20,6 +20,10 @@ public:
 	{
 		return m_Data;
 	}
+	std::string_view GetStringView()
+	{
+		return { m_Data,static_cast<size_t>(m_Size - 1)};
+	}
 	int GetSize() const
 	{
 		return m_Size - 1;

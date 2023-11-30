@@ -26,10 +26,12 @@ ValueContainer Compile(const char* line)
 	while (ptr->type!=TokenType::END)
 	{
 		AST tree;
+		tree.vm = &vm;
 		tree.Build(ptr);
 		trees.push_back(std::move( tree));
 
 	}
+	// type inference 
 	#if DEBUG
 	Print(tree.GetTree());
 	#endif // DEBUG

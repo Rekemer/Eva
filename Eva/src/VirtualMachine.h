@@ -15,6 +15,7 @@ public:
 	void GenerateBytecode(const std::vector<AST>& trees);
 	const std::stack<ValueContainer>& GetStack() { return vmStack; };
 	Object* AllocateString(const char* ptr, size_t size);
+	HashTable& GetGlobals() { return globalVariables; };
 	~VirtualMachine();
 private:
 	ValueType Generate(const Expression* tree);
@@ -24,4 +25,6 @@ private:
 	std::vector<ValueContainer> constants;
 	std::stack<ValueContainer> vmStack;
 	HashTable internalStrings;
+	HashTable globalVariables;
+	HashTable globalVariablesTypes;
 };

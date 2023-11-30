@@ -31,7 +31,18 @@ enum class TokenType : uint8_t {
 	STRING_TYPE,FLOAT_TYPE,INT_TYPE,BOOL_TYPE
 };
 
-
+inline bool IsVariableType(TokenType type)
+{
+	auto castedType = (int)type;
+	for (int i = (int)TokenType::STRING_TYPE; i <= (int)TokenType::BOOL_TYPE; i++)
+	{
+		if (i == castedType)
+		{
+			return true;
+		}
+	}
+	return false;
+}
 struct Token
 {
 	Token(TokenType type, ValueContainer&& value, int line) : type{ type }, 
