@@ -5,19 +5,23 @@
 #include <cassert>
 
 
-bool IsPartOfString (char c) {return c >= 32 && c <= 126 && c != '"'; };
-bool IsDigit(char symbol)
+bool IsPartOfString (const char  c) {return c >= 32 && c <= 126 && c != '"'; };
+bool IsDigit(const char  symbol)
 {
 	return symbol >= '0' && symbol <= '9';
 };
-bool Lexer::IsPartOfVariable(char c)
+bool IsCharacter(const char  c)
+{
+	return  c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+}
+bool Lexer::IsPartOfVariable(const char c)
 {
 	if (IsDigit(c))
 	{
-		bool hasVariableStarted = IsPartOfVariable(*startSymbol);
+		bool hasVariableStarted = IsCharacter(*startSymbol);
 		return hasVariableStarted;
 	}
-	return c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z'; 
+	return IsCharacter(c);
 };
 
 void Lexer::ErrorCharacter(const char* msg ,const char character, size_t line)

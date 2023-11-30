@@ -124,7 +124,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			}
 
 			auto type = Generate(tree->left);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
+			//opCode.push_back((uint8_t)InCode::SET_VAR);
 			constants.emplace_back(tree->value.as.object);
 			opCode.push_back(constants.size() - 1);
 			return type;
@@ -160,6 +160,12 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			return ValueType::BOOL;
+		}
+		else if (tree->type == TokenType::EQUAL)
+		{
+			Generate(tree->left);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			return ValueType::NIL;
 		}
 		else if (tree->type == TokenType::AND)
 		{
@@ -373,8 +379,8 @@ void VirtualMachine::Execute()
 		}
 		case InCode::GET_VAR:
 		{	
-			auto& v = constants[opCode[ipIndex++]];
-			auto string = ((String*)(v.As<Object*>()))->GetStringView();
+			auto& nameOfVariable = constants[opCode[ipIndex++]];
+			auto string = ((String*)(nameOfVariable.As<Object*>()))->GetStringView();
 			auto entry = globalVariables.Get(string);
 			vmStack.push(entry->value);
 			break;
@@ -382,8 +388,8 @@ void VirtualMachine::Execute()
 		case InCode::SET_VAR:
 		{	
 			auto& value = vmStack.top();
-			auto& v = constants[opCode[ipIndex++]];
-			auto string = ((String*)(v.As<Object*>()))->GetStringView();
+			auto& nameOfVariable = constants[opCode[ipIndex++]];
+			auto string = ((String*)(nameOfVariable.As<Object*>()))->GetStringView();
 			auto entry = globalVariables.Get(string);
 			entry->value = std::move(value);
 			vmStack.pop();

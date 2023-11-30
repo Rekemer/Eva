@@ -41,6 +41,7 @@ private:
 	Expression* Equality(Token*& currentToken);
 	Expression* LogicalAnd(Token*& currentToken);
 	Expression* LogicalOr(Token*& currentToken);
+	Expression* Equal(Token*& currentToken);
 	Expression* Statement(Token*& currentToken);
 	std::unique_ptr<Expression> tree;
 };

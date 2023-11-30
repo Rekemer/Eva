@@ -127,12 +127,11 @@ Expression::Expression(Expression&& e)
 					auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
 					if (isEqualSign)
 					{
-						auto literalToken = (currentToken + 4);
-						auto child = new Expression();
-						table.Add(str->GetStringView(), std::move(literalToken->value));
-						child->value = table.Get(str->GetStringView())->value;
-						node->left = child;
-						currentToken += 5;
+						currentToken += 3;
+						node->left = ParseExpression(currentToken);
+
+						auto variableName = (Object*)table.Add(str->GetStringView(), ValueContainer{})->key;
+						node->value = ValueContainer(variableName);
 					}
 
 				}
@@ -142,7 +141,7 @@ Expression::Expression(Expression&& e)
 					auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
 					if (isEqualSign)
 					{
-						currentToken += 3;
+						currentToken += 2;
 						node->left = ParseExpression(currentToken);
 
 						auto variableName = (Object*)table.Add(str->GetStringView(), ValueContainer{})->key;
@@ -167,7 +166,8 @@ Expression::Expression(Expression&& e)
 
 
 			}
-
+			// we reading a variable
+			//node->value = ValueContainer((Object*)str);
 		}
 		else
 		{
@@ -311,6 +311,25 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
+ 
+ Expression* AST::Equal(Token*& currentToken)
+ {
+	 bool isEqual = currentToken->type == TokenType::EQUAL;
+	 if (isEqual)
+	 {
+
+		 auto operation = currentToken->type;
+		 currentToken += 1;
+		 auto left = LogicalOr(currentToken);
+		 auto parent = new Expression();
+		 parent->left = left;
+		 parent->type = operation;
+		 return parent;
+
+	 }
+	 return LogicalOr(currentToken);
+ }
+
  Expression* AST::LogicalOr(Token*& currentToken)
  {
 	 auto left = LogicalAnd(currentToken);
@@ -353,23 +372,8 @@ void Print(const Expression* tree, int level) {
 		 }
 		 return printNode;
 	 }
-	 /*else if (currentToken->type == TokenType::FLOAT_LITERAL)
-	 {
-
-	 }
-	 else if (currentToken->type == TokenType::BOOL)
-	 {
-
-	 }
-	 else if (currentToken->type == TokenType::STRING_LITERAL)
-	 {
-
-	 }
-	 else if (currentToken->type == TokenType::INT_LITERAL)
-	 {
-
-	 }*/
-	 auto* expr = LogicalOr(currentToken);
+	 
+	 auto* expr = Equal(currentToken);
 	 currentToken++;
 	 return expr;
  }
