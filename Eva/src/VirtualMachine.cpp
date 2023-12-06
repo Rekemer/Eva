@@ -24,6 +24,9 @@ enum  InCode
 	MULTIPLY_INT,
 	MULTIPLY_FLOAT,
 	SUBSTRACT_FLOAT,
+	
+	CAST_FLOAT,
+
 	SUBSTRACT_INT,
 	NEGATE,
 	GREATER,
@@ -53,6 +56,7 @@ enum  InCode
 	}\
 }\
 
+
 ValueType VirtualMachine::Generate(const Expression * tree)
 {
 		if (!tree) return ValueType::NIL;
@@ -61,6 +65,18 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		{
 			auto left = Generate(tree->left);
 			auto right = Generate(tree->right);
+			if (left == ValueType::INT && right == ValueType::FLOAT )
+			{
+				auto leftPos = opCode.end() - 2;
+				opCode.insert(leftPos, ((uint8_t)InCode::CAST_FLOAT));
+			}
+			else if (left == ValueType::FLOAT && right == ValueType::INT)
+			{
+				auto rightPos = opCode.end() - 1;
+				opCode.insert(rightPos, ((uint8_t)InCode::CAST_FLOAT));
+
+			}
+
 			DETERMINE_NUMBER(left, right, ADD);
 		}
 		else if (tree->type == TokenType::STAR)
@@ -120,11 +136,12 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 				opCode.push_back((uint8_t)InCode::GET_VAR);
 				constants.emplace_back(tree->value.as.object);
 				opCode.push_back(constants.size() - 1);
-				return tree->value.type;
+				auto str = (String*)tree->value.as.object;
+				auto entry = globalVariablesTypes.Get(str->GetStringView());
+				return entry->value.type;
 			}
-
+			// SET_VAR in equal
 			auto type = Generate(tree->left);
-			//opCode.push_back((uint8_t)InCode::SET_VAR);
 			constants.emplace_back(tree->value.as.object);
 			opCode.push_back(constants.size() - 1);
 			return type;
@@ -297,6 +314,12 @@ void VirtualMachine::Execute()
 		case InCode::ADD_INT:
 		{
 			BINARY_OP(numberInt, +);
+			break;
+		}
+		case InCode::CAST_FLOAT:
+		{
+			auto& value = vmStack.top();
+			value.as.numberFloat = value.as.numberInt;
 			break;
 		}
 		case InCode::SUBSTRACT_INT:

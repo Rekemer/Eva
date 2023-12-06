@@ -28,6 +28,10 @@ public:
 		type = ValueTypeToEnum<T>::value;
 		ValueTypeToEnum<T>::SetField(as, v);
 	}
+	explicit ValueContainer(ValueType v)
+	{
+		type = v;
+	}
 	ValueContainer(const ValueContainer& v)
 	{
 		type = v.type;

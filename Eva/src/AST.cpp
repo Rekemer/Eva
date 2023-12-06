@@ -53,10 +53,9 @@ Expression::Expression(Expression&& e)
 		 return ValueType::BOOL;
 		 break;
 	 default:
-		 return ValueType::NIL;
+		 assert(false);
 		 break;
 	 }
-	 return ValueType::BOOL;
  }
 
  Expression* AST::UnaryOp( Token*&  currentToken)
@@ -130,8 +129,9 @@ Expression::Expression(Expression&& e)
 						currentToken += 3;
 						node->left = ParseExpression(currentToken);
 
-						auto variableName = (Object*)table.Add(str->GetStringView(), ValueContainer{})->key;
-						node->value = ValueContainer(variableName);
+						auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
+						
+						node->value = ValueContainer((Object*)variableName);
 					}
 
 				}
@@ -144,8 +144,8 @@ Expression::Expression(Expression&& e)
 						currentToken += 2;
 						node->left = ParseExpression(currentToken);
 
-						auto variableName = (Object*)table.Add(str->GetStringView(), ValueContainer{})->key;
-						node->value = ValueContainer(variableName);
+						auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
+						node->value = ValueContainer((Object*)variableName);
 					}
 					else
 					{
@@ -389,5 +389,48 @@ bool AST::Build(Token*& firstToken)
 {
 	tree = std::make_unique<Expression>(std::move(*ParseExpression(firstToken)) );
 	return true;
+}
+
+void AST::TypeCheck(VirtualMachine& vm)
+{
+	TypeCheck(tree.get(),vm);
+}
+TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
+{
+	TokenType childType = TokenType::END;
+	TokenType childType1 = TokenType::END;
+
+	if (expr->left != nullptr)
+	{
+		childType = TypeCheck(expr->left,vm);
+	}
+	if (expr->right != nullptr)
+	{
+		childType1 = TypeCheck(expr->right,vm);
+	}
+
+	if (expr->type == TokenType::IDENTIFIER)
+	{
+		if (childType != TokenType::END)
+		{
+			auto& globalsType = vm.GetGlobalsType();
+			auto str = (String*)expr->value.As<Object*>();
+			globalsType.Add(str->GetStringView(), ValueContainer{ LiteralToType (childType)});
+		}
+	}
+	else if(expr->type == TokenType::PLUS)
+	{
+		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
+		{
+			return TokenType::INT_TYPE;
+		}
+		return TokenType::FLOAT_TYPE;
+	}
+	if (expr->type == TokenType::EQUAL)
+	{
+		return childType;
+	}
+	return expr->type;
+
 }
 

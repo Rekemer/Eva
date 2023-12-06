@@ -16,6 +16,7 @@ public:
 	const std::stack<ValueContainer>& GetStack() { return vmStack; };
 	Object* AllocateString(const char* ptr, size_t size);
 	HashTable& GetGlobals() { return globalVariables; };
+	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
 private:
 	ValueType Generate(const Expression* tree);

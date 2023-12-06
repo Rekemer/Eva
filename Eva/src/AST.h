@@ -29,9 +29,11 @@ class AST
 {
 public:
 	bool Build(Token*& firstToken);
+	void TypeCheck(VirtualMachine& vm);
 	const Expression* GetTree()const  { return tree.get(); }
 	class VirtualMachine* vm;
 private:
+	TokenType TypeCheck(Expression* expr, VirtualMachine& vm);
 	Expression* UnaryOp(Token*& currentToken);
 	Expression* Value(Token*& currentToken);
 	Expression* ParseExpression(Token*& currentToken);

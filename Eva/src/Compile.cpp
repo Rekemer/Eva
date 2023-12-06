@@ -28,6 +28,7 @@ ValueContainer Compile(const char* line)
 		AST tree;
 		tree.vm = &vm;
 		tree.Build(ptr);
+		tree.TypeCheck(vm);
 		trees.push_back(std::move( tree));
 
 	}
