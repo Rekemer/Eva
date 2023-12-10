@@ -24,13 +24,13 @@ TEST_CASE("testing bool expressions")
 	CHECK(Compile("true&&true").As<bool>() == true);
 	CHECK(Compile("true || false").As<bool>() == true);
 	CHECK(Compile("2 == 2 &&  1 == 1").As<bool>() == true);
+	CHECK(Compile("2+2 == 2+1+1 ").As<bool>() == true);
 }
 TEST_CASE("testing strings ")
 {
 	CHECK(Compile("\"Helo\" == \"Hello\" ").As<bool>() == false);
 	CHECK(Compile("\"Hello\" == \"Hello\" ").As<bool>() == true);
 	CHECK(Compile("\"Hello\" == \"Hello\" ").As<bool>() == true);
-	CHECK(Compile("2+2 == 2+1+1 ").As<bool>() == true);
 	CHECK(Compile("\"2\" == \"2\" ").As<bool>() == true);
 	CHECK(Compile("\"Hello\" == \"Hello\" &&  \"Hello\" == \"Hello\"").As<bool>() == true);
 }

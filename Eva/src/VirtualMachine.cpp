@@ -64,17 +64,14 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		if (tree->type == TokenType::PLUS)
 		{
 			auto left = Generate(tree->left);
-			auto right = Generate(tree->right);
-			if (left == ValueType::INT && right == ValueType::FLOAT )
+			if (left == ValueType::INT && tree->value.type == ValueType::FLOAT)
 			{
-				auto leftPos = opCode.end() - 2;
-				opCode.insert(leftPos, ((uint8_t)InCode::CAST_FLOAT));
+				opCode.push_back(((uint8_t)InCode::CAST_FLOAT));
 			}
-			else if (left == ValueType::FLOAT && right == ValueType::INT)
+			auto right = Generate(tree->right);
+			if (right == ValueType::INT && tree->value.type == ValueType::FLOAT)
 			{
-				auto rightPos = opCode.end() - 1;
-				opCode.insert(rightPos, ((uint8_t)InCode::CAST_FLOAT));
-
+				opCode.push_back(((uint8_t)InCode::CAST_FLOAT));
 			}
 
 			DETERMINE_NUMBER(left, right, ADD);

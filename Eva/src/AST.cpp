@@ -57,7 +57,7 @@ Expression::Expression(Expression&& e)
 		 break;
 	 }
  }
-
+ 
  Expression* AST::UnaryOp( Token*&  currentToken)
 {
 	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
@@ -395,6 +395,8 @@ void AST::TypeCheck(VirtualMachine& vm)
 {
 	TypeCheck(tree.get(),vm);
 }
+#define DETERMINE_TYPE(child1,child2)\
+
 TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 {
 	TokenType childType = TokenType::END;
@@ -408,23 +410,28 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 	{
 		childType1 = TypeCheck(expr->right,vm);
 	}
-
 	if (expr->type == TokenType::IDENTIFIER)
 	{
+		auto& globalsType = vm.GetGlobalsType();
+		//declare a variable
 		if (childType != TokenType::END)
 		{
-			auto& globalsType = vm.GetGlobalsType();
 			auto str = (String*)expr->value.As<Object*>();
 			globalsType.Add(str->GetStringView(), ValueContainer{ LiteralToType (childType)});
 		}
+		
 	}
-	else if(expr->type == TokenType::PLUS)
+	bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
+	if(areChildren&& (expr->type == TokenType::PLUS || expr->type == TokenType::STAR ||
+		expr->type == TokenType::SLASH || expr->type == TokenType::MINUS))
 	{
 		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
 		{
-			return TokenType::INT_TYPE;
+			expr->value = ValueContainer{ ValueType::INT };
+			return TokenType::INT_LITERAL;
 		}
-		return TokenType::FLOAT_TYPE;
+		expr->value = ValueContainer{ ValueType::FLOAT };
+		return TokenType::FLOAT_LITERAL;
 	}
 	if (expr->type == TokenType::EQUAL)
 	{
