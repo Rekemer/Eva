@@ -1,6 +1,9 @@
 //b :float = 100.2;
 //c : float = 2.2;
 //d :String = "2.2";
-a : int = 1;     
-Print (a + 1.22 )>= 2.22;
+//a : int = 1;   
+check : bool = true;
+check1 := true;
+Print check && check1 == false || true;
+//Print (a + 1.22 )>= 2.22;
 //Print a*2.5;

@@ -94,6 +94,8 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 	case TokenType::FLOAT_TYPE:
 		return strSize == 5 && String::AreEqual(str, strSize, "float", 5);
 
+	case TokenType::BOOL_TYPE:
+		return strSize == 4 && String::AreEqual(str, strSize, "bool", 4);
 	default:
 		return false;
 	}

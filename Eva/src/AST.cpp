@@ -56,6 +56,7 @@ Expression::Expression(Expression&& e)
 		 break;
 	 case TokenType::FALSE:
 	 case TokenType::TRUE:
+	 case TokenType::BOOL_TYPE:
 		 return ValueType::BOOL;
 		 break;
 	 default:
@@ -448,7 +449,7 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 		{
 			auto str = (String*)expr->value.As<Object*>();
 			auto entry = globalsType.Get(str->GetStringView());
-			if (entry!= nullptr)
+			if (entry->key!= nullptr)
 			{	
 				auto childValueType = LiteralToType(childType);
 				if (!IsCastable(entry->value.type,childValueType) )
