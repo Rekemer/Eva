@@ -1,5 +1,6 @@
-a : int = 1;
-b :float = 100.2;
-c : float = 2.2;
-d :String = "2.2";
-Print a/2.0;
+//b :float = 100.2;
+//c : float = 2.2;
+//d :String = "2.2";
+a : int = 1;     
+Print (a + 1.22 )>= 2.22;
+//Print a*2.5;

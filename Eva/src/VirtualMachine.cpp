@@ -24,13 +24,15 @@ enum  InCode
 	MULTIPLY_INT,
 	MULTIPLY_FLOAT,
 	SUBSTRACT_FLOAT,
-	
+	LESS_FLOAT,
+	LESS_INT,
+	GREATER_INT,
+	GREATER_FLOAT,
+
 	CAST_FLOAT,
 
 	SUBSTRACT_INT,
 	NEGATE,
-	GREATER,
-	LESS,
 	EQUAL_EQUAL,
 	AND,
 	OR,
@@ -42,9 +44,9 @@ enum  InCode
 
 };
 
-#define DETERMINE_NUMBER(left,right,OP)\
+#define DETERMINE_NUMBER(type,OP)\
 {\
-	if (left == ValueType::INT && right == ValueType::INT)\
+	if (type == ValueType::INT)\
 	{\
 	opCode.push_back((uint8_t)InCode::OP##_INT); \
 	return ValueType::INT; \
@@ -53,6 +55,18 @@ enum  InCode
 	{\
 	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	return ValueType::FLOAT; \
+	}\
+}\
+
+#define DETERMINE_BOOL(left,right,OP)\
+{\
+	if (left == ValueType::INT && right == ValueType::INT)\
+	{\
+	opCode.push_back((uint8_t)InCode::OP##_INT); \
+	}\
+	else\
+	{\
+	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	}\
 }\
 
@@ -69,33 +83,30 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		if (tree->type == TokenType::PLUS)
 		{
 			auto left = Generate(tree->left);
-			//CAST_INT_FLOAT(left, tree);
-			if (left == ValueType::INT && tree->value.type == ValueType::FLOAT)
-			{
-				opCode.push_back(((uint8_t)InCode::CAST_FLOAT));
-			}
+			CAST_INT_FLOAT(left, tree);
 			auto right = Generate(tree->right);
-			if (right == ValueType::INT && tree->value.type == ValueType::FLOAT)
-			{
-				opCode.push_back(((uint8_t)InCode::CAST_FLOAT));
-			}
+			CAST_INT_FLOAT(right, tree);
 
-			DETERMINE_NUMBER(left, right, ADD);
+			DETERMINE_NUMBER(tree->value.type ,ADD);
 		}
 		else if (tree->type == TokenType::STAR)
 		{
 			auto left = Generate(tree->left);
+			CAST_INT_FLOAT(left, tree);
 			auto right = Generate(tree->right);
-			DETERMINE_NUMBER(left, right, MULTIPLY);
+			CAST_INT_FLOAT(right, tree);
+			DETERMINE_NUMBER(tree->value.type, ADD);
 		}
 		else if (tree->type == TokenType::MINUS)
 		{
 			auto left = Generate(tree->left);
 
 			if (tree->right)
-			{
+			{	
+				CAST_INT_FLOAT(left, tree);
 				auto right = Generate(tree->right);
-				DETERMINE_NUMBER(left, right, SUBSTRACT);
+				CAST_INT_FLOAT(right, tree);
+				DETERMINE_NUMBER(tree->value.type, SUBSTRACT);
 			}
 			else
 			{
@@ -107,8 +118,10 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		else if (tree->type == TokenType::SLASH)
 		{
 			auto left = Generate(tree->left);
+			CAST_INT_FLOAT(left, tree);
 			auto right = Generate(tree->right);
-			DETERMINE_NUMBER(left, right, DIVIDE);
+			CAST_INT_FLOAT(right, tree);
+			DETERMINE_NUMBER(tree->value.type ,ADD);
 		}
 		else if (tree->type == TokenType::INT_LITERAL)
 		{
@@ -161,16 +174,20 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		}
 		else if (tree->type == TokenType::GREATER)
 		{
-			Generate(tree->left);
-			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::GREATER);
+			auto left = Generate(tree->left);
+			CAST_INT_FLOAT(left, tree);
+			auto right = Generate(tree->right);
+			CAST_INT_FLOAT(right, tree);
+			DETERMINE_BOOL(left,right, GREATER);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::GREATER_EQUAL)
 		{
-			Generate(tree->left);
-			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::LESS);
+			auto left = Generate(tree->left);
+			CAST_INT_FLOAT(left, tree);
+			auto right = Generate(tree->right);
+			CAST_INT_FLOAT(right, tree);
+			DETERMINE_BOOL(left, right, LESS);
 			opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
 		}
@@ -187,6 +204,25 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			opCode.push_back((uint8_t)InCode::SET_VAR);
 			return ValueType::NIL;
 		}
+		else if (tree->type == TokenType::LESS_EQUAL)
+		{
+			auto left = Generate(tree->left);
+			CAST_INT_FLOAT(left, tree);
+			auto right = Generate(tree->right);
+			CAST_INT_FLOAT(right, tree);
+			DETERMINE_BOOL(left, right, GREATER);
+			opCode.push_back((uint8_t)InCode::NOT);
+			return ValueType::BOOL;
+		}
+		else if (tree->type == TokenType::LESS)
+		{
+			auto left = Generate(tree->left);
+			CAST_INT_FLOAT(left, tree);
+			auto right = Generate(tree->right);
+			CAST_INT_FLOAT(right, tree);
+			DETERMINE_BOOL(left, right, LESS);
+			return ValueType::BOOL;
+		}
 		else if (tree->type == TokenType::AND)
 		{
 			Generate(tree->left);
@@ -201,21 +237,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			opCode.push_back((uint8_t)InCode::OR);
 			return ValueType::BOOL;
 		}
-		else if (tree->type == TokenType::LESS_EQUAL)
-		{
-			Generate(tree->left);
-			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::GREATER);
-			opCode.push_back((uint8_t)InCode::NOT);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::LESS)
-		{
-			Generate(tree->left);
-			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::LESS);
-			return ValueType::BOOL;
-		}
+		
 		else if (tree->type == TokenType::BANG)
 		{
 			Generate(tree->left);
@@ -365,16 +387,27 @@ void VirtualMachine::Execute()
 			vmStack.push(ValueContainer{ !value.as.boolean });
 			break;
 		}
-		case InCode::LESS:
+		case InCode::LESS_FLOAT:
 		{
 			BINARY_OP(numberFloat, < );
 			break;
 		}
-		case InCode::GREATER:
+		case InCode::GREATER_FLOAT:
 		{
 			BINARY_OP(numberFloat, > );
 			break;
 		}
+		case InCode::LESS_INT:
+		{
+			BINARY_OP(numberInt, < );
+			break;
+		}
+		case InCode::GREATER_INT:
+		{
+			BINARY_OP(numberInt, > );
+			break;
+		}
+
 		case InCode::EQUAL_EQUAL:
 		{
 			auto&  v2 = vmStack.top();
