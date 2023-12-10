@@ -1,4 +1,5 @@
-a := 1;
-b := 100.2;
-c := 2.2;
-Print c+a+b - c;
+a : int = 1;
+b :float = 100.2;
+c : float = 2.2;
+d :String = "2.2";
+Print a/2.0;

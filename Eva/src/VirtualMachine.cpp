@@ -56,6 +56,11 @@ enum  InCode
 	}\
 }\
 
+#define CAST_INT_FLOAT(child,parent)\
+if (child== ValueType::INT && parent->value.type == ValueType::FLOAT)\
+{\
+	opCode.push_back(((uint8_t)InCode::CAST_FLOAT));\
+}\
 
 ValueType VirtualMachine::Generate(const Expression * tree)
 {
@@ -64,6 +69,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		if (tree->type == TokenType::PLUS)
 		{
 			auto left = Generate(tree->left);
+			//CAST_INT_FLOAT(left, tree);
 			if (left == ValueType::INT && tree->value.type == ValueType::FLOAT)
 			{
 				opCode.push_back(((uint8_t)InCode::CAST_FLOAT));
@@ -124,7 +130,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			// might copy because vector can reallocate
 			constants.emplace_back(tree->value.as.object );
 			opCode.push_back(constants.size() - 1); 
-			return ValueType::OBJ;
+			return ValueType::STRING;
 		}
 		else if (tree->type == TokenType::IDENTIFIER)
 		{
@@ -256,7 +262,7 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	{
 		return a.as.numberInt == b.as.numberInt;
 	}
-	else if (a.type == b.type && a.type == ValueType::OBJ)
+	else if (a.type == b.type && a.type == ValueType::STRING)
 	{
 		auto str = static_cast<String*>(a.as.object);
 		auto str2 = static_cast<String*>(b.as.object);

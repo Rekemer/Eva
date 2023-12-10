@@ -134,7 +134,16 @@ void Lexer::EatWhiteSpace()
 	bool isRunning = true;
 	while (isRunning)
 	{
-
+		bool isComment = (*currentSymbol) == '/' && (*(currentSymbol+1)) == '/';
+		if (isComment)
+		{
+			while ((*currentSymbol) != '\n')
+			{
+				currentSymbol++;
+			}
+			currentSymbol++;
+			currentLine++;
+		}
 		switch (*currentSymbol) {
 		case ' ':
 		case '\r':

@@ -5,6 +5,7 @@
 struct Expression
 {
 	ValueContainer value;
+	int line =0;
 	int childrenCount = 0;
 	Expression* left = nullptr;
 	Expression* right = nullptr;
@@ -32,6 +33,7 @@ public:
 	void TypeCheck(VirtualMachine& vm);
 	const Expression* GetTree()const  { return tree.get(); }
 	class VirtualMachine* vm;
+	bool IsPanic() { return m_Panic; }
 private:
 	TokenType TypeCheck(Expression* expr, VirtualMachine& vm);
 	Expression* UnaryOp(Token*& currentToken);
@@ -46,4 +48,5 @@ private:
 	Expression* Equal(Token*& currentToken);
 	Expression* Statement(Token*& currentToken);
 	std::unique_ptr<Expression> tree;
+	bool m_Panic = false;
 };

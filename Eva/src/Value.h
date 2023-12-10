@@ -9,10 +9,10 @@ enum class ValueType
 	FLOAT,
 	INT,
 	BOOL,
-	OBJ,
+	STRING,
 	NIL
 };
-
+const char* ValueToStr(ValueType valueType);
 
 
 
@@ -36,7 +36,7 @@ public:
 	{
 		type = v.type;
 		as = v.as;
-		if (v.type == ValueType::OBJ)
+		if (v.type == ValueType::STRING)
 		{
 			as.object = new String(*static_cast<String*>(v.as.object));
 		}
@@ -56,7 +56,7 @@ public:
 		if (this == &v) return *this;
 		type = v.type;
 		as = v.as;
-		if (v.type == ValueType::OBJ)
+		if (v.type == ValueType::STRING && v.as.object!= nullptr)
 		{
 			
 			as.object = new String(*dynamic_cast<String*>(v.as.object));
@@ -96,7 +96,7 @@ private:
 		bool boolean{ false };
 		float numberFloat;
 		int numberInt;
-		Object* object;
+		Object* object ;
 	}as;
 
 	template <typename T>
@@ -135,7 +135,7 @@ private:
 
 	template <>
 	struct ValueTypeToEnum<Object*> {
-		static const ValueType value = ValueType::OBJ;
+		static const ValueType value = ValueType::STRING;
 		static void SetField(ValueAs& as, Object* value)
 		{
 			as.object = value;
@@ -169,7 +169,7 @@ inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 			os << num;
 			break;
 		}
-		case  ValueType::OBJ:
+		case  ValueType::STRING:
 		{
 			auto str = static_cast<String*>(v.as.object);
 			os << *str;

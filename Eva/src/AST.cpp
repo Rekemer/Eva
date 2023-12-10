@@ -9,6 +9,7 @@ Expression::Expression(Expression&& e)
 	right= e.right;
 	type =  e.type;
 	value = std::move(e.value);
+	line = e.line;
 	e.left = e.right = nullptr;
 	e.childrenCount = 0;
 }
@@ -22,9 +23,11 @@ Expression::Expression(Expression&& e)
 	{
 
 		auto operation = nextToken->type;
+		auto parent = new Expression();
+		parent->line = currentToken->line;
+		
 		currentToken += 2;
 		auto right = Factor(currentToken);
-		auto parent = new Expression();
 		parent->left = left;
 		parent->right = right;
 		parent->type = operation;
@@ -40,13 +43,16 @@ Expression::Expression(Expression&& e)
 	 switch (literalType)
 	 {
 	 case TokenType::INT_LITERAL:
+	 case TokenType::INT_TYPE:
 		 return ValueType::INT;
 		 break;
 	 case TokenType::FLOAT_LITERAL:
+	 case TokenType::FLOAT_TYPE:
 		 return ValueType::FLOAT;
 		 break;
 	 case TokenType::STRING_LITERAL:
-		 return ValueType::OBJ;
+	 case TokenType::STRING_TYPE:
+		 return ValueType::STRING;
 		 break;
 	 case TokenType::FALSE:
 	 case TokenType::TRUE:
@@ -64,8 +70,9 @@ Expression::Expression(Expression&& e)
 	if (isUnary)
 	{
 		auto prevOp = currentToken->type;
+		auto parent = new Expression();
+		parent->line = currentToken->line;
 		currentToken++;
-		Expression* parent = new Expression();
 		parent->type = prevOp;
 		parent->left = UnaryOp(currentToken);
 		parent->value.type = LiteralToType(parent->left->type);
@@ -78,6 +85,7 @@ Expression::Expression(Expression&& e)
  Expression* AST::Value( Token*& currentToken)
 {
 	Expression* node = new Expression();
+	node->line = currentToken->line;
 	node->type = currentToken->type;
 	if (currentToken->type == TokenType::INT_LITERAL)
 	{
@@ -105,6 +113,7 @@ Expression::Expression(Expression&& e)
 
 		// check if variable is declared  or not
 		auto& table = vm->GetGlobals();
+		auto& globalsType = vm->GetGlobalsType();
 		// why it doesn work?
 		//auto obj = node->value.As<Object>();
 		auto obj = currentToken->value.As<Object*>();
@@ -120,7 +129,8 @@ Expression::Expression(Expression&& e)
 			auto isDeclaration = (currentToken + 1)->type == TokenType::COLON;
 			if (isDeclaration)
 			{
-				auto isType = IsVariableType((currentToken + 2)->type);
+				auto declaredType = (currentToken + 2)->type;
+				auto isType = IsVariableType(declaredType);
 				if (isType)
 				{
 					auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
@@ -128,9 +138,9 @@ Expression::Expression(Expression&& e)
 					{
 						currentToken += 3;
 						node->left = ParseExpression(currentToken);
-
-						auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
 						
+						globalsType.Add(str->GetStringView(), LiteralToType(declaredType));
+						auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
 						node->value = ValueContainer((Object*)variableName);
 					}
 
@@ -233,9 +243,11 @@ void Print(const Expression* tree, int level) {
 	{
 
 		auto operation = nextToken->type;
+		auto parent = new Expression();
+		parent->line = currentToken->line;
+
 		currentToken += 2;
 		auto right = Term(currentToken);
-		auto parent = new Expression();
 		parent->left = left;
 		parent->right = right;
 		parent->type = operation;
@@ -256,9 +268,10 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
+		 auto parent = new Expression();
+		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = Comparison(currentToken);
-		 auto parent = new Expression();
 		 parent->left = left;
 		 parent->right = right;
 		 parent->type = operation;
@@ -278,9 +291,10 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
+		 auto parent = new Expression();
+		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = Equality(currentToken);
-		 auto parent = new Expression();
 		 parent->left = left;
 		 parent->right = right;
 		 parent->type = operation;
@@ -299,9 +313,10 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
+		 auto parent = new Expression();
+		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = LogicalAnd(currentToken);
-		 auto parent = new Expression();
 		 parent->left = left;
 		 parent->right = right;
 		 parent->type = operation;
@@ -339,9 +354,10 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
+		 auto parent = new Expression();
+		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = LogicalOr(currentToken);
-		 auto parent = new Expression();
 		 parent->left = left;
 		 parent->right = right;
 		 parent->type = operation;
@@ -357,9 +373,10 @@ void Print(const Expression* tree, int level) {
 
 	 if (currentToken->type == TokenType::PRINT)
 	 {
-		 currentToken += 1;
 		 auto* printNode = new Expression();
+		 printNode->line = currentToken->line;
 		 printNode->type = TokenType::PRINT;
+		 currentToken += 1;
 		 printNode->left = LogicalOr(currentToken);
 		 currentToken++;
 		 if (currentToken->type != TokenType::SEMICOLON)
@@ -395,7 +412,19 @@ void AST::TypeCheck(VirtualMachine& vm)
 {
 	TypeCheck(tree.get(),vm);
 }
-#define DETERMINE_TYPE(child1,child2)\
+bool IsCastable(ValueType to, ValueType from)
+{
+	if (to == from) return true;
+	if (to == ValueType::INT && from == ValueType::FLOAT)
+	{
+		return true;
+	}
+	else if (to == ValueType::FLOAT && from == ValueType::INT)
+	{
+		return true;
+	}
+	return false;
+}
 
 TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 {
@@ -413,17 +442,34 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 	if (expr->type == TokenType::IDENTIFIER)
 	{
 		auto& globalsType = vm.GetGlobalsType();
+		auto& globals = vm.GetGlobals();
 		//declare a variable
 		if (childType != TokenType::END)
 		{
 			auto str = (String*)expr->value.As<Object*>();
-			globalsType.Add(str->GetStringView(), ValueContainer{ LiteralToType (childType)});
+			auto entry = globalsType.Get(str->GetStringView());
+			if (entry!= nullptr)
+			{	
+				auto childValueType = LiteralToType(childType);
+				if (!IsCastable(entry->value.type,childValueType) )
+				{
+					m_Panic = true;
+					std::cout << "line [ " << expr->line <<" ]: Cannot cast " << ValueToStr(childValueType)<< 
+						" to " << ValueToStr(entry->value.type) << std::endl;
+				}
+			}
+			else
+			{
+				globalsType.Add(str->GetStringView(), LiteralToType (childType));
+			}
 		}
 		
 	}
+	// determine what kind of type operations returns
 	bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
 	if(areChildren&& (expr->type == TokenType::PLUS || expr->type == TokenType::STAR ||
 		expr->type == TokenType::SLASH || expr->type == TokenType::MINUS))
+
 	{
 		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
 		{

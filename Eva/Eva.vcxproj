@@ -134,6 +134,7 @@
     <ClCompile Include="src\Object.cpp" />
     <ClCompile Include="src\String.cpp" />
     <ClCompile Include="src\Tokens.cpp" />
+    <ClCompile Include="src\Value.cpp" />
     <ClCompile Include="src\VirtualMachine.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
