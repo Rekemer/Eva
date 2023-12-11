@@ -131,6 +131,15 @@ void Lexer::EatType(TokenType type)
 	}
 	
 }
+void Lexer::EatComments()
+{
+	while ((*currentSymbol) != '\n')
+	{
+		currentSymbol++;
+	}
+	currentSymbol++;
+	currentLine++;
+}
 void Lexer::EatWhiteSpace()
 {
 	bool isRunning = true;
@@ -139,12 +148,7 @@ void Lexer::EatWhiteSpace()
 		bool isComment = (*currentSymbol) == '/' && (*(currentSymbol+1)) == '/';
 		if (isComment)
 		{
-			while ((*currentSymbol) != '\n')
-			{
-				currentSymbol++;
-			}
-			currentSymbol++;
-			currentLine++;
+			EatComments();
 		}
 		switch (*currentSymbol) {
 		case ' ':
@@ -159,7 +163,18 @@ void Lexer::EatWhiteSpace()
 			break;
 		}
 		default:
-			isRunning = false;
+		{
+
+			bool isComment = (*currentSymbol) == '/' && (*(currentSymbol + 1)) == '/';
+			if (isComment)
+			{
+				EatComments();
+			}
+			else
+			{
+				isRunning = false;
+			}
+		}
 			break;
 		}
 	}

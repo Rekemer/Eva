@@ -24,6 +24,7 @@ private:
 	void ParseStatement();
 	void Eat();
 	void EatWhiteSpace();
+	void EatComments();
 	// eats statement and declaration tokens
 	void EatType(TokenType type);
 

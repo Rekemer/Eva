@@ -256,9 +256,19 @@ void Print(const Expression* tree, int level) {
 		parent->line = currentToken->line;
 
 		currentToken += 2;
-		auto right = Term(currentToken);
-		parent->left = left;
-		parent->right = right;
+		//if (currentToken->type == TokenType::EQUAL)
+		//{
+		//	parent->left = new Expression();
+		//	parent->left->type = TokenType::EQUAL;
+		//	currentToken += 1;
+		//	parent->left->left =  Term(currentToken);
+		//}
+		//else
+		//{
+			auto right = Term(currentToken);
+			parent->left = left;
+			parent->right = right;
+		//}
 		parent->type = operation;
 		return parent;
 
@@ -339,6 +349,7 @@ void Print(const Expression* tree, int level) {
  Expression* AST::Equal(Token*& currentToken)
  {
 	 bool isEqual = currentToken->type == TokenType::EQUAL;
+	 
 	 if (isEqual)
 	 {
 
