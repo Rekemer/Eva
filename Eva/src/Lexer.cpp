@@ -442,6 +442,7 @@ bool Lexer::IsEndExpression()
 void Lexer::ParseDeclaration(VirtualMachine& vm)
 {
 	EatWhiteSpace();
+	startSymbol = currentSymbol;
 	if (IsPartOfVariable(Peek()))
 	{
 		while (IsPartOfVariable(Peek()))

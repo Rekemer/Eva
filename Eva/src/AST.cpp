@@ -64,7 +64,27 @@ Expression::Expression(Expression&& e)
 		 break;
 	 }
  }
- 
+ TokenType TypeToLiteral(ValueType valueType)
+ {
+	 switch (valueType)
+	 {
+	 case ValueType::INT:
+		 return TokenType::INT_LITERAL;
+		 break;
+	 case ValueType::FLOAT:
+		 return TokenType::FLOAT_LITERAL;
+		 break;
+	 case ValueType::STRING:
+		 return TokenType::STRING_LITERAL;
+		 break;
+	 case ValueType::BOOL:
+		 return TokenType::BOOL_TYPE;
+		 break;	
+	 default:
+		 assert(false);
+		 break;
+	 }
+ }
  Expression* AST::UnaryOp( Token*&  currentToken)
 {
 	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
@@ -123,7 +143,9 @@ Expression::Expression(Expression&& e)
 		// declaration of varaible
 		// usage of declared variable
 		// usage of unknown identifier	
-		if (!table.IsExist(str->GetStringView()))
+		auto entry = table.Get(str->GetStringView());
+		auto isAssignment = (currentToken + 1)->type == TokenType::EQUAL;
+		if (entry->key == nullptr)
 		{
 			// if there are tokens that correspond to declaration
 			// number :int = 2; number :=2;
@@ -177,31 +199,17 @@ Expression::Expression(Expression&& e)
 
 
 			}
-			// we reading a variable
-			//node->value = ValueContainer((Object*)str);
+			
 		}
 		else
 		{
-
-			/*TokenType tokenType;
-			if (value.type == ValueType::BOOL)
+			// check assignment
+			 if (isAssignment)
 			{
-				tokenType = TokenTy
+				currentToken += 1;
+				node->left = ParseExpression(currentToken);
 			}
-			else if (value.type == ValueType::INT)
-			{
-
-			}
-			else if (value.type == ValueType::FLOAT)
-			{
-
-			}
-			else if (value.type == ValueType::OBJ)
-			{
-
-			}*/
 			node->value = ValueContainer((Object*)str );
-
 		}
 	}
 	else if (currentToken->type == TokenType::LEFT_PAREN)
@@ -440,17 +448,17 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 	{
 		childType1 = TypeCheck(expr->right,vm);
 	}
+	auto& globalsType = vm.GetGlobalsType();
+	auto& globals = vm.GetGlobals();
 	if (expr->type == TokenType::IDENTIFIER)
 	{
-		auto& globalsType = vm.GetGlobalsType();
-		auto& globals = vm.GetGlobals();
 		//declare a variable
 		if (childType != TokenType::END)
 		{
 			auto str = (String*)expr->value.As<Object*>();
 			auto entry = globalsType.Get(str->GetStringView());
 			if (entry->key!= nullptr)
-			{	
+			{	// already know type
 				auto childValueType = LiteralToType(childType);
 				if (!IsCastable(entry->value.type,childValueType) )
 				{
@@ -483,6 +491,13 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 	if (expr->type == TokenType::EQUAL)
 	{
 		return childType;
+	}
+	if (expr->type == TokenType::IDENTIFIER)
+	{
+		auto str = (String*)expr->value.As<Object*>();
+		auto entry = globalsType.Get(str->GetStringView());
+		assert(entry->key != nullptr);
+		return TypeToLiteral(entry->value.type);
 	}
 	return expr->type;
 
