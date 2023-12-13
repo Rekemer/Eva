@@ -55,3 +55,55 @@ ValueContainer Compile(const char* line)
 	auto res = vm.GetStack().top();
 	return res;
 }
+
+VirtualMachine CompileRetVM(const char* line)
+{
+	Lexer parser;
+	VirtualMachine vm;
+	if (!parser.Parse(line, vm)) return vm;
+
+
+
+	auto& tokens = parser.GetTokens();
+#if DEBUG
+	for (auto token : tokens)
+	{
+		std::cout << tokenToString(token.type) << " ";
+	}
+
+	std::cout << "\n";
+#endif // DEBUG
+	std::vector<AST> trees;
+	Token* ptr = &tokens[0];
+	bool panic = false;
+	while (ptr->type != TokenType::END)
+	{
+		AST tree;
+		tree.vm = &vm;
+		tree.Build(ptr);
+		tree.TypeCheck(vm);
+		if (tree.IsPanic())
+		{
+			panic = true;
+		}
+		trees.push_back(std::move(tree));
+
+	}
+	// type inference 
+
+
+
+#if DEBUG
+	Print(tree.GetTree());
+#endif // DEBUG
+
+	if (panic)
+	{
+		return{};
+	}
+	vm.GenerateBytecode(trees);
+
+	vm.Execute();
+	return vm;
+}
+

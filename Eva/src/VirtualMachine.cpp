@@ -30,6 +30,7 @@ enum  InCode
 	GREATER_FLOAT,
 
 	CAST_FLOAT,
+	CAST_INT,
 
 	SUBSTRACT_INT,
 	NEGATE,
@@ -74,6 +75,10 @@ enum  InCode
 if (child== ValueType::INT && parentType== ValueType::FLOAT)\
 {\
 	opCode.push_back(((uint8_t)InCode::CAST_FLOAT));\
+}\
+if (child== ValueType::FLOAT && parentType== ValueType::INT)\
+{\
+	opCode.push_back(((uint8_t)InCode::CAST_INT));\
 }\
 
 ValueType VirtualMachine::Generate(const Expression * tree)
@@ -350,7 +355,15 @@ void VirtualMachine::Execute()
 		case InCode::CAST_FLOAT:
 		{
 			auto& value = vmStack.top();
+			value.type = ValueType::FLOAT;
 			value.as.numberFloat = value.as.numberInt;
+			break;
+		}
+		case InCode::CAST_INT:
+		{
+			auto& value = vmStack.top();
+			value.type = ValueType::INT;
+			value.as.numberInt= value.as.numberFloat;
 			break;
 		}
 		case InCode::SUBSTRACT_INT:

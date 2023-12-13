@@ -39,6 +39,23 @@ public:
 	{
 		m_Data = new Entry[m_Size];
 	}
+	HashTable(const HashTable& table)
+	{
+		m_Data = new Entry[table.m_Size];
+		m_Size = table.m_Size;
+		m_EntriesAmount = table.m_EntriesAmount;
+		memcpy(m_Data,table.m_Data, table.m_Size * sizeof(Entry));
+
+
+	}
+	HashTable& operator = (const HashTable& table)
+	{
+		if (&table == this) return *this;
+		m_Data = new Entry[table.m_Size];
+		m_Size = table.m_Size;
+		m_EntriesAmount = table.m_EntriesAmount;
+		memcpy(m_Data, table.m_Data, table.m_Size * sizeof(Entry));
+	}
 	~HashTable()
 	{
 		delete[]m_Data;

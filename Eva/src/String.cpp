@@ -51,6 +51,10 @@ bool String::operator==(const String& str)
 {
 	return AreEqual(m_Data, GetSize(), str.GetRaw(), str.GetSize());
 }
+bool String::operator==(const char* str)
+{
+	return strcmp(m_Data,str) == 0;
+}
 
 bool String::AreEqual(const char* str, size_t size, const char* str2, size_t size2)
 {

@@ -221,6 +221,7 @@ Expression::Expression(Expression&& e)
 			std::cout << "error: expected  )\n";
 		}
 	}
+	
 	return node;
 
 }
@@ -256,19 +257,9 @@ void Print(const Expression* tree, int level) {
 		parent->line = currentToken->line;
 
 		currentToken += 2;
-		//if (currentToken->type == TokenType::EQUAL)
-		//{
-		//	parent->left = new Expression();
-		//	parent->left->type = TokenType::EQUAL;
-		//	currentToken += 1;
-		//	parent->left->left =  Term(currentToken);
-		//}
-		//else
-		//{
-			auto right = Term(currentToken);
-			parent->left = left;
-			parent->right = right;
-		//}
+		auto right = Term(currentToken);
+		parent->left = left;
+		parent->right = right;
 		parent->type = operation;
 		return parent;
 

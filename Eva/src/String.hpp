@@ -30,6 +30,7 @@ public:
 	}
 	String& operator = (const String& string);
 	bool operator == (const String& str);
+	bool operator == (const char* str);
 private:
 	friend std::ostream& operator<<(std::ostream& os, String& string);
 	// inlcudes zero at end

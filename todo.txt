@@ -1,1 +1,2 @@
 add error if use undeclared variable
+add += and etc

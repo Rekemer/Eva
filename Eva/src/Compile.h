@@ -1,3 +1,5 @@
 #pragma once
 #include "Value.h"
-ValueContainer Compile(const char* line);
+#include "VirtualMachine.h"
+ValueContainer Compile (const char* line);
+VirtualMachine CompileRetVM(const char* line);

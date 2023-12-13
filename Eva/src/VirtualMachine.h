@@ -11,6 +11,13 @@ class Expression;
 class VirtualMachine
 {
 public:
+	VirtualMachine() = default;
+	VirtualMachine(const VirtualMachine& vm)
+	{
+		internalStrings = vm.internalStrings;
+		globalVariables = vm.globalVariables;
+		globalVariablesTypes = vm.globalVariablesTypes;
+	}
 	void Execute();
 	void GenerateBytecode(const std::vector<AST>& trees);
 	const std::stack<ValueContainer>& GetStack() { return vmStack; };
