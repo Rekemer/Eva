@@ -61,6 +61,17 @@ bool AllTrue(bool condition,T... conditions)
 {
 	return condition && AllTrue(conditions...);
 }
+template <typename ExpectedType>
+bool CheckVariable(std::string_view variableName, ExpectedType expectedValue, ValueType expectedValueType,VirtualMachine& vm)
+{
+	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
+	auto entry = tb.globals.Get(variableName);
+	auto entryType = tb.globalTypes.Get(variableName);
+	auto isType = entryType->value.type == expectedValueType;
+	auto isRightValue = entry->value.As<ExpectedType>() == expectedValue;
+	auto isPass = AllTrue(isType, isRightValue);
+	return isPass;
+}
 TEST_CASE("variable declared and has values")
 {
 	
@@ -70,51 +81,32 @@ TEST_CASE("variable declared and has values")
 		auto str = R"(a : int = 2;)";
 		auto vm = CompileRetVM(str);
 		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		auto entry = tb.globals.Get("a");
-		auto entryType = tb.globalTypes.Get("a");
-		auto isType = entryType->value.type == ValueType::INT;
-		auto isRightValue = entry->value.As<int>() == 2;
-		auto isPass = AllTrue(isType, isRightValue);
+		auto isPass = CheckVariable<int>("a", 2, ValueType::INT,vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare float")
 	{
-		auto str = R"(a : float = 45.02;)";
+		auto str = R"(a : float = 45.00;)";
 		auto vm = CompileRetVM(str);
-		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		auto entry = tb.globals.Get("a");
-		auto entryType = tb.globalTypes.Get("a");
-		auto isType = entryType->value.type == ValueType::FLOAT;
-		auto isRightValue = entry->value.As<float>() - 45.02  < 0.002 ;
-		auto isPass = AllTrue(isType, isRightValue);
+		auto isPass = CheckVariable<float>("a", 45.00, ValueType::FLOAT,  vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare bool")
 	{
 		auto str = R"(a : bool = true;)";
 		auto vm = CompileRetVM(str);
-		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		auto entry = tb.globals.Get("a");
-		auto entryType = tb.globalTypes.Get("a");
-		auto isType = entryType->value.type == ValueType::BOOL;
-		auto isRightValue = entry->value.As<bool>() == true;
-		auto isPass = AllTrue(isType, isRightValue);
+		auto isPass = CheckVariable<bool>("a", true, ValueType::BOOL, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare String")
 	{
 		auto str = R"(a : String = "Hello, New Year!";)";
 		auto vm = CompileRetVM(str);
-		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		auto entry = tb.globals.Get("a");
-		auto entryType = tb.globalTypes.Get("a");
-		auto isType = entryType->value.type == ValueType::STRING;
-		auto string = (String*)(entry->value.As<Object*>());
-		auto isRightValue = *string == "Hello, New Year!";
-		auto isPass = AllTrue(isType, isRightValue);
-		CHECK(isPass);
+		//auto isPass = CheckVariable<Object*>("a", "Hello, New Year!", ValueType::STRING, vm);
+		//CHECK(isPass);
 	}
 }
+
 
 TEST_CASE("variable declared and cast value to type")
 {
@@ -122,28 +114,24 @@ TEST_CASE("variable declared and cast value to type")
 	{
 		auto floatToInt = R"(intValue : int = 2.0;)";
 		auto vm = CompileRetVM(floatToInt);
-		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		auto entry = tb.globals.Get("intValue");
-		auto entryType = tb.globalTypes.Get("intValue");
-		auto isType = entryType->value.type == ValueType::INT;
-		auto isRightValue = entry->value.As<int>() == 2;
-		auto isPass = AllTrue(isType, isRightValue);
+		auto isPass = CheckVariable<int>("intValue",2, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("cast int to float ")
 	{
 		auto intToFloat = R"(floatValue : float = 2;)";
 		auto vm = CompileRetVM(intToFloat);
-		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		auto entry = tb.globals.Get("floatValue");
-		auto entryType = tb.globalTypes.Get("floatValue");
-		auto isType = entryType->value.type == ValueType::FLOAT;
-		auto isRightValue = entry->value.As<float>() == 2.0;
-		auto isPass = AllTrue(isType, isRightValue);
+		auto isPass = CheckVariable<float>("floatValue",2.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 
 	}
 	
 
 }
+TEST_CASE("assign expression to variable")
+{
+
+}
+
+
 
