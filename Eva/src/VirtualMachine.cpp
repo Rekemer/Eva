@@ -208,8 +208,8 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		}
 		else if (tree->type == TokenType::EQUAL_EQUAL)
 		{
-			Generate(tree->left);
-			Generate(tree->right);
+			auto left = Generate(tree->left);
+			auto right = Generate(tree->right);
 			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			return ValueType::BOOL;
 		}

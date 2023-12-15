@@ -25,7 +25,7 @@ TEST_CASE("testing bool expressions")
 	CHECK(Compile("false&&true").As<bool>() == false);
 	CHECK(Compile("true&&true").As<bool>() == true);
 	CHECK(Compile("true || false").As<bool>() == true);
-	CHECK(Compile("2 == 2 &&  1 == 1").As<bool>() == true);
+	CHECK(Compile("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
 	CHECK(Compile("2+2 == 2+1+1 ").As<bool>() == true);
 }
 TEST_CASE("testing strings ")

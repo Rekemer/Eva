@@ -1,5 +1,5 @@
 a : float = 20; 
-a = 12;
+a = -a+2;
 //a += 4.0+3.2;
 //b :float = 100.0;
 //c : float = 2.2;
@@ -7,8 +7,8 @@ a = 12;
 //check : bool = true;
 //check1 := true;
 //Print check && check1 == false || true;
-a -= 2;
-Print -2;
+//a -= 2;
+Print a;
 //Print true || false && (1+2 == 3-0);
 //Print c;
 //Print (a + 1.22 )>= 2.22;

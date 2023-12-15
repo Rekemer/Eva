@@ -99,7 +99,7 @@ Expression::Expression(Expression&& e)
 		currentToken++;
 		parent->type = prevOp;
 		parent->left = UnaryOp(currentToken);
-		parent->value.type = LiteralToType(parent->left->type);
+		//parent->value.type = LiteralToType(parent->left->type);
 		return parent;
 	}
 
@@ -547,6 +547,10 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 		auto entry = globalsType.Get(str->GetStringView());
 		assert(entry->key != nullptr);
 		return TypeToLiteral(entry->value.type);
+	}
+	if (expr->type == TokenType::MINUS && childType != TokenType::END)
+	{
+		return childType;
 	}
 	return expr->type;
 
