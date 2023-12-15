@@ -336,8 +336,17 @@ void Lexer::ParseOperator()
 	}
 	case '-':
 	{
-		AddToken(TokenType::MINUS, currentLine);
+		if (Peek(1) != '\0' && Peek(1) == '=')
+		{
+			AddToken(TokenType::MINUS_EQUAL, currentLine);
+			Eat();
+		}
+		else
+		{
+			AddToken(TokenType::MINUS, currentLine);
+		}
 		Eat();
+
 		break;
 	}
 	case '+':
@@ -356,13 +365,31 @@ void Lexer::ParseOperator()
 	}
 	case '/':
 	{
-		AddToken(TokenType::SLASH, currentLine);
+		if (Peek(1) != '\0' && Peek(1) == '=')
+		{
+			AddToken(TokenType::SLASH_EQUAL, currentLine);
+			Eat();
+		}
+		else
+		{
+
+			AddToken(TokenType::SLASH, currentLine);
+		}
 		Eat();
 		break;
 	}
 	case '*':
-	{
-		AddToken(TokenType::STAR, currentLine);
+	{	
+		if (Peek(1) != '\0' && Peek(1) == '=')
+		{
+			AddToken(TokenType::STAR_EQUAL, currentLine);
+			Eat();
+		}
+		else
+		{
+
+			AddToken(TokenType::STAR, currentLine);
+		}
 		Eat();
 		break;
 	}

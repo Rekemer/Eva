@@ -149,8 +149,41 @@ TEST_CASE("variable declared and cast value to type")
 	
 
 }
-TEST_CASE("assign expression to variable")
+TEST_CASE("equal operations on variables")
 {
+	SUBCASE("+=")
+	{
+		auto a = R"(a: float = 2;
+					a+=2;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 4.0, ValueType::FLOAT, vm);
+		CHECK(isPass);
+
+	}
+	SUBCASE("-=")
+	{
+		auto a = R"(a: float = 100;
+					a-=2;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 98.0, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("/=")
+	{
+		auto a = R"(a: float = 100;
+					a /=2;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 50.0, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("*=")
+	{
+		auto a = R"(a: float = 100;
+					a *=2;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 200.0, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
 
 }
 

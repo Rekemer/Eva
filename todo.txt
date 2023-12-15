@@ -1,2 +1,3 @@
 add error if use undeclared variable
 add += and etc
+deal with copies of the same varaible in AST tree in generation part

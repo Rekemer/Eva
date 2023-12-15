@@ -49,7 +49,6 @@ private:
 	Expression* Equal(Token*& currentToken);
 	Expression* EqualOp(Token*& currentToken);
 	Expression* Statement(Token*& currentToken);
-	Expression* Declaration(Token*& currentToken);
 	std::unique_ptr<Expression> tree;
 	bool m_Panic = false;
 };

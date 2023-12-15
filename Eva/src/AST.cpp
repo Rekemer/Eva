@@ -135,11 +135,10 @@ Expression::Expression(Expression&& e)
 	}
 	else if (currentToken->type == TokenType::IDENTIFIER)
 	{
-		auto obj = currentToken->value.As<Object*>();
-		auto str = static_cast<String*>(obj);
+		auto str = currentToken->value.As<String&>();
 
 		auto& table = vm->GetGlobals();
-		auto entry = table.Get(str->GetStringView());
+		auto entry = table.Get(str.GetStringView());
 		assert(entry != nullptr);
 		auto variableName = entry->key;
 		node->value = ValueContainer((Object*)variableName);
@@ -271,15 +270,21 @@ void Print(const Expression* tree, int level) {
 
  Expression* AST::EqualOp(Token*& currentToken)
  {
-	 auto isOp = currentToken->type == TokenType::PLUS_EQUAL;
+	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
+	 auto isOp = (currentToken+1)->type == TokenType::PLUS_EQUAL
+		 || (currentToken + 1)->type == TokenType::STAR_EQUAL
+		 || (currentToken + 1)->type == TokenType::SLASH_EQUAL
+		 || (currentToken + 1)->type == TokenType::MINUS_EQUAL;
 	 if (isOp)
 	 {
-		 auto operation = currentToken->type;
-		 currentToken += 1;
-		 auto left = LogicalOr(currentToken);
+		 auto operation = (currentToken+1)->type;
+		 
 		 auto parent = new Expression();
-		 parent->left = left;
 		 parent->type = operation;
+		 parent->left = LogicalOr(currentToken);
+		 currentToken += 2;
+		 parent->right = LogicalOr(currentToken);
+		 currentToken++;
 		 return parent;
 	 }
 	 return Equal(currentToken);
@@ -300,14 +305,12 @@ void Print(const Expression* tree, int level) {
 	 {
 		auto& table = vm->GetGlobals();
 		auto& globalsType = vm->GetGlobalsType();
-		auto obj = currentToken->value.As<Object*>();
-		auto str = static_cast<String*>(obj);
+		auto str= currentToken->value.As<String&>();
 
-		auto entry = table.Get(str->GetStringView());
+		auto entry = table.Get(str.GetStringView());
 		if (entry->key == nullptr)
 		{
 			Expression* node = new Expression();
-			auto identiferToken = currentToken;
 			node->line = currentToken->line;
 			node->type = currentToken->type;
 
@@ -321,8 +324,8 @@ void Print(const Expression* tree, int level) {
 				if (isEqualSign)
 				{
 					node->type = TokenType::EQUAL;
-					globalsType.Add(str->GetStringView(), LiteralToType(declaredType));
-					auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
+					globalsType.Add(str.GetStringView(), LiteralToType(declaredType));
+					auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
 					node->left = LogicalOr(currentToken);
 					//node->left->value = ValueContainer((Object*)variableName);
 					currentToken += 4;
@@ -339,7 +342,7 @@ void Print(const Expression* tree, int level) {
 				if (isEqualSign)
 				{
 
-					auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
+					auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
 					node->left = LogicalOr(currentToken);
 					//node->left->value = ValueContainer((Object*)variableName);
 
@@ -357,7 +360,7 @@ void Print(const Expression* tree, int level) {
 
 			if ((currentToken)->type == TokenType::SEMICOLON)
 			{
-
+				// commented so we can run expression tests
 				//currentToken += 1;
 			}
 			else
@@ -510,7 +513,10 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 	bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
 	bool isTermOp = expr->type==TokenType::PLUS || expr->type == TokenType::STAR ||
 		expr->type == TokenType::SLASH || expr->type == TokenType::MINUS;
-	bool isTermOpEqual = expr->type == TokenType::PLUS_EQUAL;
+	bool isTermOpEqual = expr->type == TokenType::PLUS_EQUAL ||
+		expr->type == TokenType::SLASH_EQUAL ||
+		expr->type == TokenType::MINUS_EQUAL ||
+		expr->type == TokenType::STAR_EQUAL ;
 	if(areChildren&& isTermOp)
 	{
 		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)

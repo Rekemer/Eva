@@ -45,7 +45,7 @@ enum  InCode
 
 };
 
-#define DETERMINE_NUMBER(type,OP)\
+#define DETERMINE_NUMBER_RET(type,OP)\
 {\
 	if (type == ValueType::INT)\
 	{\
@@ -56,6 +56,18 @@ enum  InCode
 	{\
 	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	return ValueType::FLOAT; \
+	}\
+}\
+
+#define DETERMINE_NUMBER(type,OP)\
+{\
+	if (type == ValueType::INT)\
+	{\
+	opCode.push_back((uint8_t)InCode::OP##_INT); \
+	}\
+	else\
+	{\
+	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	}\
 }\
 
@@ -92,7 +104,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			auto right = Generate(tree->right);
 			CAST_INT_FLOAT(right, tree->value.type);
 
-			DETERMINE_NUMBER(tree->value.type ,ADD);
+			DETERMINE_NUMBER_RET(tree->value.type ,ADD);
 		}
 		else if (tree->type == TokenType::STAR)
 		{
@@ -100,7 +112,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			CAST_INT_FLOAT(left, tree->value.type);
 			auto right = Generate(tree->right);
 			CAST_INT_FLOAT(right, tree->value.type);
-			DETERMINE_NUMBER(tree->value.type, MULTIPLY);
+			DETERMINE_NUMBER_RET(tree->value.type, MULTIPLY);
 		}
 		else if (tree->type == TokenType::MINUS)
 		{
@@ -111,7 +123,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 				CAST_INT_FLOAT(left, tree->value.type);
 				auto right = Generate(tree->right);
 				CAST_INT_FLOAT(right, tree->value.type);
-				DETERMINE_NUMBER(tree->value.type, SUBSTRACT);
+				DETERMINE_NUMBER_RET(tree->value.type, SUBSTRACT);
 			}
 			else
 			{
@@ -126,7 +138,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			CAST_INT_FLOAT(left, tree->value.type);
 			auto right = Generate(tree->right);
 			CAST_INT_FLOAT(right, tree->value.type);
-			DETERMINE_NUMBER(tree->value.type ,DIVIDE);
+			DETERMINE_NUMBER_RET(tree->value.type ,DIVIDE);
 		}
 		else if (tree->type == TokenType::INT_LITERAL)
 		{
@@ -220,9 +232,91 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		}
 		else if (tree->type == TokenType::PLUS_EQUAL)
 		{
-			auto type = Generate(tree->left);
+			auto left = Generate(tree->left);
+			auto expressionType = Generate(tree->right);
 
-			return type;
+			assert(tree->left != nullptr);
+			auto str = (String*)tree->left->value.as.object;
+			auto entry = globalVariablesTypes.Get(str->GetStringView());
+
+			assert(entry->key != nullptr);
+
+			CAST_INT_FLOAT(expressionType, entry->value.type);
+
+
+			DETERMINE_NUMBER(tree->left->value.type, ADD);
+
+
+			constants.emplace_back(tree->left->value.as.object);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back(constants.size() - 1);
+			return tree->left->value.type;
+		}
+		else if (tree->type == TokenType::STAR_EQUAL)
+		{
+			auto left = Generate(tree->left);
+			auto expressionType = Generate(tree->right);
+
+			assert(tree->left != nullptr);
+			auto str = (String*)tree->left->value.as.object;
+			auto entry = globalVariablesTypes.Get(str->GetStringView());
+
+			assert(entry->key != nullptr);
+
+			CAST_INT_FLOAT(expressionType, entry->value.type);
+
+
+			DETERMINE_NUMBER(tree->left->value.type, MULTIPLY);
+
+
+			constants.emplace_back(tree->left->value.as.object);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back(constants.size() - 1);
+			return tree->left->value.type;
+			}
+		else if (tree->type == TokenType::SLASH_EQUAL)
+		{
+			auto left = Generate(tree->left);
+			auto expressionType = Generate(tree->right);
+
+			assert(tree->left != nullptr);
+			auto str = (String*)tree->left->value.as.object;
+			auto entry = globalVariablesTypes.Get(str->GetStringView());
+
+			assert(entry->key != nullptr);
+
+			CAST_INT_FLOAT(expressionType, entry->value.type);
+
+
+			DETERMINE_NUMBER(tree->left->value.type, DIVIDE);
+
+
+			constants.emplace_back(tree->left->value.as.object);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back(constants.size() - 1);
+			return tree->left->value.type;
+		}
+		else if (tree->type == TokenType::MINUS_EQUAL)
+		{
+			auto left = Generate(tree->left);
+			auto expressionType = Generate(tree->right);
+
+			assert(tree->left != nullptr);
+			auto str = (String*)tree->left->value.as.object;
+			auto entry = globalVariablesTypes.Get(str->GetStringView());
+
+			assert(entry->key != nullptr);
+
+			CAST_INT_FLOAT(expressionType, entry->value.type);
+
+
+			DETERMINE_NUMBER(tree->left->value.type, SUBSTRACT);
+
+
+			constants.emplace_back(tree->left->value.as.object);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back(constants.size() - 1);
+			return tree->left->value.type;
 			}
 		else if (tree->type == TokenType::LESS_EQUAL)
 		{
