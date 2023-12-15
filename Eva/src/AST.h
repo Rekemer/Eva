@@ -7,6 +7,7 @@ struct Expression
 	ValueContainer value;
 	int line =0;
 	int childrenCount = 0;
+	
 	Expression* left = nullptr;
 	Expression* right = nullptr;
 	TokenType type;
@@ -46,7 +47,9 @@ private:
 	Expression* LogicalAnd(Token*& currentToken);
 	Expression* LogicalOr(Token*& currentToken);
 	Expression* Equal(Token*& currentToken);
+	Expression* EqualOp(Token*& currentToken);
 	Expression* Statement(Token*& currentToken);
+	Expression* Declaration(Token*& currentToken);
 	std::unique_ptr<Expression> tree;
 	bool m_Panic = false;
 };

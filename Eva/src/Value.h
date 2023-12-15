@@ -84,8 +84,13 @@ public:
 	template <typename T>
 	T As()
 	{
-		auto obj = reinterpret_cast<const Object*>(&as);
 		return *reinterpret_cast<const T*>(&as);
+	}
+	template <>
+	String& As<String&>()
+	{
+		auto obj = As<Object*>();
+		return *static_cast<String*>(obj);
 	}
 private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);

@@ -13,6 +13,8 @@ enum class TokenType : uint8_t {
 	// One or two character tokens.
 	BANG, BANG_EQUAL,
 	EQUAL, EQUAL_EQUAL,
+	PLUS_EQUAL,MINUS_EQUAL,
+	SLASH_EQUAL,STAR_EQUAL,
 	GREATER, GREATER_EQUAL,
 	LESS, LESS_EQUAL,
 	

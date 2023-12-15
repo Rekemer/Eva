@@ -8,7 +8,7 @@ public:
 
 	};
 	
-	//String(const char* str);
+	String(const char* str);
 	String(const char* str, size_t size);
 	template<typename ... Args>
 	String(const char* arg1, Args... args);
@@ -29,7 +29,7 @@ public:
 		return m_Size - 1;
 	}
 	String& operator = (const String& string);
-	bool operator == (const String& str);
+	bool operator == (const String& str) const ;
 	bool operator == (const char* str);
 private:
 	friend std::ostream& operator<<(std::ostream& os, String& string);

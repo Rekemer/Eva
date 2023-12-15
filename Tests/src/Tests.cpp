@@ -62,7 +62,7 @@ bool AllTrue(bool condition,T... conditions)
 	return condition && AllTrue(conditions...);
 }
 template <typename ExpectedType>
-bool CheckVariable(std::string_view variableName, ExpectedType expectedValue, ValueType expectedValueType,VirtualMachine& vm)
+bool CheckVariable(std::string_view variableName, const ExpectedType& expectedValue, ValueType expectedValueType,VirtualMachine& vm)
 {
 	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
 	auto entry = tb.globals.Get(variableName);
@@ -72,6 +72,19 @@ bool CheckVariable(std::string_view variableName, ExpectedType expectedValue, Va
 	auto isPass = AllTrue(isType, isRightValue);
 	return isPass;
 }
+
+template <>
+bool CheckVariable<String>(std::string_view variableName, const String& expectedValue, ValueType expectedValueType, VirtualMachine& vm)
+{
+	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
+	auto entry = tb.globals.Get(variableName);
+	auto entryType = tb.globalTypes.Get(variableName);
+	auto isType = entryType->value.type == expectedValueType;
+	auto isRightValue = entry->value.As<String&>() == expectedValue;
+	auto isPass = AllTrue(isType, isRightValue);
+	return isPass;
+}
+
 TEST_CASE("variable declared and has values")
 {
 	
@@ -102,8 +115,16 @@ TEST_CASE("variable declared and has values")
 	{
 		auto str = R"(a : String = "Hello, New Year!";)";
 		auto vm = CompileRetVM(str);
-		//auto isPass = CheckVariable<Object*>("a", "Hello, New Year!", ValueType::STRING, vm);
-		//CHECK(isPass);
+		//auto str = String("Hello, New Year!");
+		auto isPass = CheckVariable<String>("a", "Hello, New Year!", ValueType::STRING, vm);
+		//Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
+		//auto entry = tb.globals.Get("a");
+		//auto entryType = tb.globalTypes.Get("a");
+		//auto isType = entryType->value.type == ValueType::STRING;
+		//auto isRightValue = entry->value.As<ExpectedType>() == expectedValue;
+		//auto isPass = AllTrue(isType, isRightValue);
+		//return isPass;
+		CHECK(isPass);
 	}
 }
 

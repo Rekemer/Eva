@@ -342,7 +342,15 @@ void Lexer::ParseOperator()
 	}
 	case '+':
 	{
-		AddToken(TokenType::PLUS, currentLine);
+		if (Peek(1) != '\0' && Peek(1) == '=')
+		{
+			AddToken(TokenType::PLUS_EQUAL, currentLine);
+			Eat();
+		}
+		else
+		{
+			AddToken(TokenType::PLUS, currentLine);
+		}
 		Eat();
 		break;
 	}

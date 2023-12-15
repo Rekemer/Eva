@@ -59,6 +59,9 @@ Expression::Expression(Expression&& e)
 	 case TokenType::BOOL_TYPE:
 		 return ValueType::BOOL;
 		 break;
+		 // += case: identifer has left child as + and right chlid as = which is value to add to the variable 
+	//case TokenType::PLUS:
+	//	 return ValueType::NIL;
 	 default:
 		 assert(false);
 		 break;
@@ -106,6 +109,7 @@ Expression::Expression(Expression&& e)
  Expression* AST::Value( Token*& currentToken)
 {
 	Expression* node = new Expression();
+	auto identiferToken = currentToken;
 	node->line = currentToken->line;
 	node->type = currentToken->type;
 	if (currentToken->type == TokenType::INT_LITERAL)
@@ -131,86 +135,16 @@ Expression::Expression(Expression&& e)
 	}
 	else if (currentToken->type == TokenType::IDENTIFIER)
 	{
-
-		// check if variable is declared  or not
-		auto& table = vm->GetGlobals();
-		auto& globalsType = vm->GetGlobalsType();
-		// why it doesn work?
-		//auto obj = node->value.As<Object>();
 		auto obj = currentToken->value.As<Object*>();
 		auto str = static_cast<String*>(obj);
-		
-		// declaration of varaible
-		// usage of declared variable
-		// usage of unknown identifier	
+
+		auto& table = vm->GetGlobals();
 		auto entry = table.Get(str->GetStringView());
-		auto isAssignment = (currentToken + 1)->type == TokenType::EQUAL;
-		if (entry->key == nullptr)
-		{
-			// if there are tokens that correspond to declaration
-			// number :int = 2; number :=2;
-			auto isDeclaration = (currentToken + 1)->type == TokenType::COLON;
-			if (isDeclaration)
-			{
-				auto declaredType = (currentToken + 2)->type;
-				auto isType = IsVariableType(declaredType);
-				if (isType)
-				{
-					auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
-					if (isEqualSign)
-					{
-						currentToken += 3;
-						node->left = ParseExpression(currentToken);
-						
-						globalsType.Add(str->GetStringView(), LiteralToType(declaredType));
-						auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
-						node->value = ValueContainer((Object*)variableName);
-					}
+		assert(entry != nullptr);
+		auto variableName = entry->key;
+		node->value = ValueContainer((Object*)variableName);
 
-				}
-				// deduce type
-				else
-				{
-					auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
-					if (isEqualSign)
-					{
-						currentToken += 2;
-						node->left = ParseExpression(currentToken);
-
-						auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
-						node->value = ValueContainer((Object*)variableName);
-					}
-					else
-					{
-						assert("No equal sign " && false);
-					}
-					
-				}
-				
-				if ((currentToken )->type == TokenType::SEMICOLON)
-				{
-
-					//currentToken += 1;
-				}
-				else
-				{
-					assert("Handle semicolon" && false);
-				}
-
-
-			}
-			
-		}
-		else
-		{
-			// check assignment
-			 if (isAssignment)
-			{
-				currentToken += 1;
-				node->left = ParseExpression(currentToken);
-			}
-			node->value = ValueContainer((Object*)str );
-		}
+		
 	}
 	else if (currentToken->type == TokenType::LEFT_PAREN)
 	{
@@ -221,7 +155,6 @@ Expression::Expression(Expression&& e)
 			std::cout << "error: expected  )\n";
 		}
 	}
-	
 	return node;
 
 }
@@ -336,14 +269,11 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- 
- Expression* AST::Equal(Token*& currentToken)
+ Expression* AST::EqualOp(Token*& currentToken)
  {
-	 bool isEqual = currentToken->type == TokenType::EQUAL;
-	 
-	 if (isEqual)
+	 auto isOp = currentToken->type == TokenType::PLUS_EQUAL;
+	 if (isOp)
 	 {
-
 		 auto operation = currentToken->type;
 		 currentToken += 1;
 		 auto left = LogicalOr(currentToken);
@@ -351,7 +281,107 @@ void Print(const Expression* tree, int level) {
 		 parent->left = left;
 		 parent->type = operation;
 		 return parent;
+	 }
+	 return Equal(currentToken);
 
+ }
+ Expression* AST::Equal(Token*& currentToken)
+ {
+	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
+	 bool isDeclaration = (currentToken+1)->type == TokenType::COLON;
+	 auto varToken = currentToken;
+	 auto isAssignment = (currentToken + 1)->type == TokenType::EQUAL;
+	 Token* eqToken;
+	 Expression* retNode = nullptr;
+
+	 
+
+	 if (isDeclaration)
+	 {
+		auto& table = vm->GetGlobals();
+		auto& globalsType = vm->GetGlobalsType();
+		auto obj = currentToken->value.As<Object*>();
+		auto str = static_cast<String*>(obj);
+
+		auto entry = table.Get(str->GetStringView());
+		if (entry->key == nullptr)
+		{
+			Expression* node = new Expression();
+			auto identiferToken = currentToken;
+			node->line = currentToken->line;
+			node->type = currentToken->type;
+
+			// if there are tokens that correspond to declaration
+			// number :int = 2; number :=2;
+			auto declaredType = (currentToken + 2)->type;
+			auto isType = IsVariableType(declaredType);
+			if (isType)
+			{
+				auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
+				if (isEqualSign)
+				{
+					node->type = TokenType::EQUAL;
+					globalsType.Add(str->GetStringView(), LiteralToType(declaredType));
+					auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
+					node->left = LogicalOr(currentToken);
+					//node->left->value = ValueContainer((Object*)variableName);
+					currentToken += 4;
+
+					node->right = LogicalOr(currentToken);
+					currentToken ++;
+				}
+
+			}
+			// deduce type
+			else
+			{
+				auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
+				if (isEqualSign)
+				{
+
+					auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
+					node->left = LogicalOr(currentToken);
+					//node->left->value = ValueContainer((Object*)variableName);
+
+					currentToken += 3;
+					node->right = LogicalOr(currentToken);
+					currentToken ++;
+
+				}
+				else
+				{
+					assert("No equal sign " && false);
+				}
+
+			}
+
+			if ((currentToken)->type == TokenType::SEMICOLON)
+			{
+
+				//currentToken += 1;
+			}
+			else
+			{
+				assert("Handle semicolon" && false);
+			}
+
+			return node;
+
+
+		}
+		 
+	 }
+	 else if (isAssignment)
+	 {
+		 Expression* node = new Expression();
+		 auto identiferToken = currentToken;
+		 node->line = currentToken->line;
+		 node->type = currentToken->type;
+		 node->type = TokenType::EQUAL;
+		 node->left = LogicalOr(currentToken);
+		 currentToken += 2;
+		 node->right = LogicalOr(currentToken);
+		 return node;
 	 }
 	 return LogicalOr(currentToken);
  }
@@ -401,7 +431,7 @@ void Print(const Expression* tree, int level) {
 		 return printNode;
 	 }
 	 
-	 auto* expr = Equal(currentToken);
+	 auto* expr = EqualOp(currentToken);
 	 currentToken++;
 	 return expr;
  }
@@ -478,9 +508,10 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 	}
 	// determine what kind of type operations returns
 	bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
-	if(areChildren&& (expr->type == TokenType::PLUS || expr->type == TokenType::STAR ||
-		expr->type == TokenType::SLASH || expr->type == TokenType::MINUS))
-
+	bool isTermOp = expr->type==TokenType::PLUS || expr->type == TokenType::STAR ||
+		expr->type == TokenType::SLASH || expr->type == TokenType::MINUS;
+	bool isTermOpEqual = expr->type == TokenType::PLUS_EQUAL;
+	if(areChildren&& isTermOp)
 	{
 		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
 		{
@@ -490,9 +521,19 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 		expr->value = ValueContainer{ ValueType::FLOAT };
 		return TokenType::FLOAT_LITERAL;
 	}
+	else if (childType != TokenType::END && isTermOpEqual)
+	{
+		if (childType == TokenType::INT_LITERAL)
+		{
+			expr->value = ValueContainer{ ValueType::INT };
+			return TokenType::INT_LITERAL;
+		}
+		expr->value = ValueContainer{ ValueType::FLOAT };
+		return TokenType::FLOAT_LITERAL;
+	}
 	if (expr->type == TokenType::EQUAL)
 	{
-		return childType;
+		return childType1;
 	}
 	if (expr->type == TokenType::IDENTIFIER)
 	{

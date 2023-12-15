@@ -152,26 +152,18 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		}
 		else if (tree->type == TokenType::IDENTIFIER)
 		{
-			if (tree->left == nullptr)
-			{
+			//if (tree->left == nullptr)
+			//{
 				opCode.push_back((uint8_t)InCode::GET_VAR);
 				constants.emplace_back(tree->value.as.object);
 				opCode.push_back(constants.size() - 1);
 				auto str = (String*)tree->value.as.object;
 				auto entry = globalVariablesTypes.Get(str->GetStringView());
 				return entry->value.type;
-			}
-			// SET_VAR in equal
-			// do not put SET_VAR here
-			auto left = Generate(tree->left);
-			auto str = (String*)tree->value.as.object;
-			auto entry = globalVariablesTypes.Get(str->GetStringView());
-			assert(entry->key != nullptr);
-			CAST_INT_FLOAT(left, entry->value.type);
-			constants.emplace_back(tree->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
-			opCode.push_back(constants.size() - 1);
-			return tree->value.type;
+			//}
+
+
+			
 		}
 		else if (tree->type == TokenType::TRUE)
 		{
@@ -211,10 +203,27 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		}
 		else if (tree->type == TokenType::EQUAL)
 		{
-			auto type = Generate(tree->left);
+			auto expressionType = Generate(tree->right);
 			
-			return type;
+			assert(tree->left!= nullptr);
+			auto str = (String*)tree->left->value.as.object;
+			auto entry = globalVariablesTypes.Get(str->GetStringView());
+
+			assert(entry->key != nullptr);
+
+			CAST_INT_FLOAT(expressionType, entry->value.type);
+			constants.emplace_back(tree->left->value.as.object);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back(constants.size() - 1);
+			return tree->left->value.type;
+
 		}
+		else if (tree->type == TokenType::PLUS_EQUAL)
+		{
+			auto type = Generate(tree->left);
+
+			return type;
+			}
 		else if (tree->type == TokenType::LESS_EQUAL)
 		{
 			auto left = Generate(tree->left);
@@ -298,7 +307,7 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	else if (a.type == b.type && a.type == ValueType::STRING)
 	{
 		auto str = static_cast<String*>(a.as.object);
-		auto str2 = static_cast<String*>(b.as.object);
+		auto str2 = static_cast<String*>(b.as.object);	
 		return *str == *str2;
 	}
 	return false;

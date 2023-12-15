@@ -9,20 +9,20 @@ String::String(const char* str, size_t size) : m_Size(size+1)
 	memcpy(m_Data, str, m_Size * sizeof(char));
 	m_Data[m_Size - 1] = '\0';
 }
-//String::String(const char* str)
-//{
-//	std::cout << "string alloc\n";
-//	auto iter = str;
-//	while (*iter != '\0')
-//	{
-//		iter++;
-//	}
-//	auto size = iter - str;
-//	m_Size = size + 1;
-//	m_Data = new char[m_Size];
-//	memcpy(m_Data, str, m_Size * sizeof(char));
-//	m_Data[m_Size - 1] = '\0';
-//}
+String::String(const char* str)
+{
+	std::cout << "string alloc\n";
+	auto iter = str;
+	while (*iter != '\0')
+	{
+		iter++;
+	}
+	auto size = iter - str;
+	m_Size = size + 1;
+	m_Data = new char[m_Size];
+	memcpy(m_Data, str, m_Size * sizeof(char));
+	m_Data[m_Size - 1] = '\0';
+}
 
 String::String(const String& string) 
 {
@@ -47,7 +47,7 @@ String::~String()
 	delete[] m_Data;
 }
 
-bool String::operator==(const String& str)
+bool String::operator==(const String& str) const
 {
 	return AreEqual(m_Data, GetSize(), str.GetRaw(), str.GetSize());
 }
