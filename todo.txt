@@ -1,3 +1,5 @@
 add error if use undeclared variable
 add += and etc
+check that += and etc are used on variables
+refactor DETERMINE_X_RET
 deal with copies of the same varaible in AST tree in generation part

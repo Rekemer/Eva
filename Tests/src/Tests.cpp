@@ -184,7 +184,41 @@ TEST_CASE("equal operations on variables")
 		auto isPass = CheckVariable<float>("a", 200.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
-
+}
+TEST_CASE("unary double operations on variables")
+{
+	SUBCASE("++")
+	{
+		auto a = R"(a: float = 100;
+					a++;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 101, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("++ in expression")
+	{
+		auto a = R"(a: float = 100;
+					a = a++ * 2 + 1;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 202 + 1, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("--")
+	{
+		auto a = R"(a: float = 100;
+					a--;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 99, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("-- in expression")
+	{
+		auto a = R"(a: float = 101;
+					a = a-- * 2 + 1;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 200 + 1, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
 }
 
 

@@ -37,7 +37,8 @@ public:
 	bool IsPanic() { return m_Panic; }
 private:
 	TokenType TypeCheck(Expression* expr, VirtualMachine& vm);
-	Expression* UnaryOp(Token*& currentToken);
+	Expression* UnaryOpPrefix(Token*& currentToken);
+	Expression* UnaryOpPostfix(Token*& currentToken);
 	Expression* Value(Token*& currentToken);
 	Expression* ParseExpression(Token*& currentToken);
 	Expression* Factor(Token*& currentToken);

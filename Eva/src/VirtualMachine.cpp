@@ -10,6 +10,15 @@ auto v2 = vmStack.top().as.type;\
 vmStack.pop();\
 vmStack.push(ValueContainer{v2 operation v});\
 }\
+
+#define UNARY_OP(type,operation)\
+{\
+auto v = vmStack.top().as.type;\
+vmStack.pop();\
+auto v2 = vmStack.top().as.type;\
+vmStack.pop();\
+vmStack.push(ValueContainer{v2 operation v});\
+}\
 while(false)
 enum  InCode
 {
@@ -33,6 +42,10 @@ enum  InCode
 	CAST_INT,
 
 	SUBSTRACT_INT,
+	INCREMENT_INT,
+	DECREMENT_INT,
+	INCREMENT_FLOAT,
+	DECREMENT_FLOAT,
 	NEGATE,
 	EQUAL_EQUAL,
 	AND,
@@ -105,6 +118,36 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			CAST_INT_FLOAT(right, tree->value.type);
 
 			DETERMINE_NUMBER_RET(tree->value.type ,ADD);
+		}
+		else if (tree->type == TokenType::PLUS_PLUS)
+		{
+			auto left = Generate(tree->left);
+
+
+
+			DETERMINE_NUMBER(tree->value.type, INCREMENT);
+
+
+			constants.emplace_back(tree->left->value.as.object);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back(constants.size() - 1);
+			return tree->value.type;
+
+		}
+		else if (tree->type == TokenType::MINUS_MINUS)
+		{
+			auto left = Generate(tree->left);
+
+
+
+			DETERMINE_NUMBER(tree->value.type, DECREMENT);
+
+
+			constants.emplace_back(tree->left->value.as.object);
+			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back(constants.size() - 1);
+			return tree->value.type;
+
 		}
 		else if (tree->type == TokenType::STAR)
 		{
@@ -484,6 +527,30 @@ void VirtualMachine::Execute()
 			BINARY_OP(numberInt, / );
 			break;
 		}
+		case InCode::INCREMENT_INT:
+		{
+			auto& value = vmStack.top();
+			value.AsRef<int>()++;
+			break;
+		}
+		case InCode::DECREMENT_INT:
+		{
+			auto& value = vmStack.top();
+			value.AsRef<int>()--;
+			break;
+		}
+		case InCode::INCREMENT_FLOAT:
+		{
+			auto& value = vmStack.top();
+			value.AsRef<float>()++;
+			break;
+		}
+		case InCode::DECREMENT_FLOAT:
+		{
+			auto& value = vmStack.top();
+			value.AsRef<float>()--;
+			break;
+		}
 		case InCode::NEGATE:
 		{
 			auto value = vmStack.top();
@@ -572,8 +639,8 @@ void VirtualMachine::Execute()
 			auto& nameOfVariable = constants[opCode[ipIndex++]];
 			auto string = ((String*)(nameOfVariable.As<Object*>()))->GetStringView();
 			auto entry = globalVariables.Get(string);
-			entry->value = std::move(value);
-			vmStack.pop();
+			entry->value = value;
+			//vmStack.pop();
 			break;
 		}
 		default:

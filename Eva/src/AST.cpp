@@ -15,7 +15,7 @@ Expression::Expression(Expression&& e)
 }
  Expression* AST::Factor( Token*& currentToken)
 {
-	auto left = UnaryOp(currentToken);
+	auto left = UnaryOpPrefix(currentToken);
 	auto nextToken = (currentToken + 1);
 	bool isMultiplication = nextToken->type == TokenType::STAR ||
 		nextToken->type == TokenType::SLASH;
@@ -88,7 +88,7 @@ Expression::Expression(Expression&& e)
 		 break;
 	 }
  }
- Expression* AST::UnaryOp( Token*&  currentToken)
+ Expression* AST::UnaryOpPrefix( Token*&  currentToken)
 {
 	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
 	if (isUnary)
@@ -98,13 +98,41 @@ Expression::Expression(Expression&& e)
 		parent->line = currentToken->line;
 		currentToken++;
 		parent->type = prevOp;
-		parent->left = UnaryOp(currentToken);
+		parent->left = UnaryOpPrefix(currentToken);
 		//parent->value.type = LiteralToType(parent->left->type);
 		return parent;
 	}
-
-	return Value(currentToken);
+	auto value = Value(currentToken);
+	auto nextToken = currentToken + 1;
+	bool isPostfix = nextToken->type == TokenType::MINUS_MINUS || nextToken->type == TokenType::PLUS_PLUS;
+	if (isPostfix)
+	{	
+		currentToken++;
+		auto postfix = UnaryOpPostfix(currentToken);
+		if (postfix)
+		{
+			postfix->left = value;
+			return postfix;
+		}
+	}
+	
+	return value;
 }
+ Expression* AST::UnaryOpPostfix(Token*& currentToken)
+ {
+	 bool isDouble = currentToken->type == TokenType::MINUS_MINUS || currentToken->type == TokenType::PLUS_PLUS;
+	 if (isDouble)
+	 {
+		 auto prevOp = currentToken->type;
+		 auto parent = new Expression();
+		 parent->line = currentToken->line;
+		 currentToken++;
+		 parent->type = prevOp;
+		 // child is initialized by the caller
+		 return parent;
+	 }
+	 return nullptr;
+ }
 
  Expression* AST::Value( Token*& currentToken)
 {
@@ -131,19 +159,15 @@ Expression::Expression(Expression&& e)
 	else if (currentToken->type == TokenType::STRING_LITERAL)
 	{
 		node->value = std::move(currentToken->value);
-
 	}
 	else if (currentToken->type == TokenType::IDENTIFIER)
 	{
 		auto str = currentToken->value.As<String&>();
-
 		auto& table = vm->GetGlobals();
 		auto entry = table.Get(str.GetStringView());
 		assert(entry != nullptr);
 		auto variableName = entry->key;
 		node->value = ValueContainer((Object*)variableName);
-
-		
 	}
 	else if (currentToken->type == TokenType::LEFT_PAREN)
 	{
@@ -537,6 +561,10 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 		expr->value = ValueContainer{ ValueType::FLOAT };
 		return TokenType::FLOAT_LITERAL;
 	}
+
+
+
+
 	if (expr->type == TokenType::EQUAL)
 	{
 		return childType1;
@@ -548,7 +576,9 @@ TokenType AST::TypeCheck(Expression* expr, VirtualMachine& vm)
 		assert(entry->key != nullptr);
 		return TypeToLiteral(entry->value.type);
 	}
-	if (expr->type == TokenType::MINUS && childType != TokenType::END)
+	bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::MINUS_MINUS
+		|| expr->type == TokenType::PLUS_PLUS;
+	if (isUnary && childType != TokenType::END)
 	{
 		return childType;
 	}
