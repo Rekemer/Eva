@@ -1,15 +1,40 @@
 #include "Debug.h"
-
 #include <iostream>
 
-std::string DebugEnum(InCode* code, std::vector<ValueContainer>& constants) {
-    switch (*code) {
-    case InCode::CONST_VALUE: 
-    {
+const char* debugEnum(InCode code);
 
-        auto constant = constants[((uint8_t)*code + 1)];
-        return "CONST_VALUE ";
+
+void Debug(std::vector<Bytecode>& bytecode, std::vector<ValueContainer>& constants)
+{
+    int ipIndex = 0;
+    std::cout << "-------------Debug-----------\n";
+    while (ipIndex != bytecode.size() - 1)
+    {
+        auto instr = (InCode)bytecode[ipIndex++];
+        auto str = debugEnum(instr);
+        if (instr == InCode::CONST_VALUE)
+        {
+            auto constant = constants[bytecode[ipIndex++]];
+            std::cout << str << std::endl;
+            std::cout << constant << std::endl;
+        }
+        else if (instr == InCode::JUMP || instr == InCode::JUMP_IF_FALSE)
+        {
+            std::cout << str << std::endl;
+            auto jumpIndexOffset = bytecode[ipIndex++];
+            std::cout << static_cast<int>(jumpIndexOffset)<< std::endl;
+        }
+        else
+        {
+            std::cout << str << std::endl;
+        }
     }
+    std::cout << "-------------Debug-----------\n";
+}
+
+const char* debugEnum(InCode code) {
+    switch (code) {
+    case InCode::CONST_VALUE: return "CONST_VALUE";
     case InCode::TRUE: return "TRUE";
     case InCode::FALSE: return "FALSE";
     case InCode::NIL: return "NIL";
@@ -46,9 +71,3 @@ std::string DebugEnum(InCode* code, std::vector<ValueContainer>& constants) {
     default: return "UNKNOWN";
     }
 }
-void PrintDebug(InCode* opCode, std::vector<ValueContainer>& constants)
-{
-    auto str = DebugEnum(opCode,constants);
-    std::cout << str << std::endl;
-}
-

@@ -450,14 +450,9 @@ void VirtualMachine::Execute()
 
 
 	#if DEBUG
-
-	//while (opCode[ipIndex] != (uint8_t)InCode::RETURN)
-	//{
-	//	auto inst = opCode[ipIndex++];
-	//	PrintDebug((InCode)inst, constants);
-	//}
-	//ipIndex = 0;
+	Debug(opCode, constants);
 	#endif
+
 	while (true)
 	{
 		auto inst = opCode[ipIndex++];

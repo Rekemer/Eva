@@ -1,5 +1,6 @@
 #pragma once
 #include"Incode.h"
 #include "Value.h"
+#include "VirtualMachine.h"
 #include <vector>
-void PrintDebug(InCode* opCode, std::vector<ValueContainer>& constants);
+void Debug(std::vector<Bytecode>& bytecode, std::vector<ValueContainer>& constants);

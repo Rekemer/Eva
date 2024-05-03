@@ -5,7 +5,7 @@
 #include "Value.h"
 #include "HashTable.h"
 
-
+using Bytecode = uint8_t;
 
 class AST;
 class Expression;
@@ -30,7 +30,7 @@ private:
 	ValueType Generate(const Expression* tree);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
-	std::vector< uint8_t> opCode;
+	std::vector<Bytecode> opCode;
 	std::vector<ValueContainer> constants;
 	std::stack<ValueContainer> vmStack;
 	HashTable internalStrings;

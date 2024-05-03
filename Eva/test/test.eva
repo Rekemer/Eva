@@ -8,18 +8,13 @@
 //check1 := true;
 //Print check && check1 == false || true;
 //a -= (a++ + 2);
-if 2+2 - 1 == 4
+if 2.0+2.0 - 1.0 == 4
+//if true
 {
-	Print "then branch";
-	Print "then branch";
-	Print "then branch";
 	Print "then branch";
 }
 else 
 {
-	Print "else branch";
-	Print "else branch";
-	Print "else branch";
 	Print "else branch";
 }
 //Print a;
