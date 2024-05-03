@@ -1,5 +1,4 @@
-a : float = 20;
-a--;
+//a : float = 20;
 //a = a-- +2;
 //a += 4.0+3.2;
 //b :float = 100.0;
@@ -8,8 +7,22 @@ a--;
 //check : bool = true;
 //check1 := true;
 //Print check && check1 == false || true;
-//a -= 2;
-Print a;
+//a -= (a++ + 2);
+if 2+2 - 1 == 4
+{
+	Print "then branch";
+	Print "then branch";
+	Print "then branch";
+	Print "then branch";
+}
+else 
+{
+	Print "else branch";
+	Print "else branch";
+	Print "else branch";
+	Print "else branch";
+}
+//Print a;
 //Print true || false && (1+2 == 3-0);
 //Print c;
 //Print (a + 1.22 )>= 2.22;

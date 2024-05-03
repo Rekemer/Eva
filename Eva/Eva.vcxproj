@@ -23,7 +23,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
+    <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
@@ -77,6 +77,8 @@
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -85,6 +87,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -118,7 +121,9 @@
   <ItemGroup>
     <ClInclude Include="src\AST.h" />
     <ClInclude Include="src\Compile.h" />
+    <ClInclude Include="src\Debug.h" />
     <ClInclude Include="src\HashTable.h" />
+    <ClInclude Include="src\Incode.h" />
     <ClInclude Include="src\Lexer.h" />
     <ClInclude Include="src\Object.h" />
     <ClInclude Include="src\Tokens.h" />
@@ -128,6 +133,7 @@
   <ItemGroup>
     <ClCompile Include="src\AST.cpp" />
     <ClCompile Include="src\Compile.cpp" />
+    <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\HashTable.cpp" />
     <ClCompile Include="src\Lexer.cpp" />
     <ClCompile Include="src\Main.cpp" />

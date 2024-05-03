@@ -1,0 +1,43 @@
+#pragma once
+enum class InCode 
+{
+	CONST_VALUE,
+	TRUE,
+	FALSE,
+	NIL,
+	ADD_FLOAT,
+	ADD_INT,
+	DIVIDE_INT,
+	DIVIDE_FLOAT,
+	MULTIPLY_INT,
+	MULTIPLY_FLOAT,
+	SUBSTRACT_FLOAT,
+	LESS_FLOAT,
+	LESS_INT,
+	GREATER_INT,
+	GREATER_FLOAT,
+
+	CAST_FLOAT,
+	CAST_INT,
+
+	SUBSTRACT_INT,
+	INCREMENT_INT,
+	DECREMENT_INT,
+	INCREMENT_FLOAT,
+	DECREMENT_FLOAT,
+	NEGATE,
+	EQUAL_EQUAL,
+	AND,
+	OR,
+	NOT,
+	PRINT,
+	SET_VAR,
+	GET_VAR,
+	JUMP,
+	JUMP_IF_FALSE,
+	// used when evaluate if and else statements
+	// to clear up stack from condition
+	POP,
+	RETURN,
+
+};

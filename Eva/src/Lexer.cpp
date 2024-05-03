@@ -60,16 +60,13 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 	case TokenType::LESS_EQUAL:
 	case TokenType::AND:
 	case TokenType::CLASS:
-	case TokenType::ELSE:
 	case TokenType::FOR:
 	case TokenType::FUN:
-	case TokenType::IF:
 	case TokenType::NIL:
 	case TokenType::OR:
 	case TokenType::RETURN:
 	case TokenType::SUPER:
 	case TokenType::THIS:
-	case TokenType::VAR:
 	case TokenType::WHILE:
 	case TokenType::ERROR:
 	case TokenType::END:
@@ -87,7 +84,10 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 
 	case TokenType::PRINT:
 		return strSize == 5 && String::AreEqual(str, strSize, "Print", 5);
-
+	case TokenType::IF:
+		return strSize == 2 && String::AreEqual(str, strSize, "if", 2);
+	case TokenType::ELSE:
+		return strSize == 4 && String::AreEqual(str, strSize, "else", 4);
 	case TokenType::INT_TYPE:
 		return strSize == 3 && String::AreEqual(str, strSize, "int", 3);
 
@@ -496,7 +496,7 @@ bool Lexer::IsEndExpression()
 	EatWhiteSpace();
 	return Peek() == ';';
 }
-// a variable, a function
+// a variable, a function and keywords like print and if
 void Lexer::ParseDeclaration(VirtualMachine& vm)
 {
 	EatWhiteSpace();

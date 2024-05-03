@@ -1,5 +1,7 @@
 #include "VirtualMachine.h"
+#include "Incode.h"
 #include "AST.h"
+#include "Debug.h"
 #include "String.hpp"
 #include <cassert>
 #define BINARY_OP(type,operation)\
@@ -20,43 +22,7 @@ vmStack.pop();\
 vmStack.push(ValueContainer{v2 operation v});\
 }\
 while(false)
-enum  InCode
-{
-	CONST_VALUE,
-	TRUE,
-	FALSE,
-	NIL,
-	ADD_FLOAT,
-	ADD_INT,
-	DIVIDE_INT,
-	DIVIDE_FLOAT,
-	MULTIPLY_INT,
-	MULTIPLY_FLOAT,
-	SUBSTRACT_FLOAT,
-	LESS_FLOAT,
-	LESS_INT,
-	GREATER_INT,
-	GREATER_FLOAT,
 
-	CAST_FLOAT,
-	CAST_INT,
-
-	SUBSTRACT_INT,
-	INCREMENT_INT,
-	DECREMENT_INT,
-	INCREMENT_FLOAT,
-	DECREMENT_FLOAT,
-	NEGATE,
-	EQUAL_EQUAL,
-	AND,
-	OR,
-	NOT,
-	PRINT,
-	SET_VAR,
-	GET_VAR,
-	RETURN,
-
-};
 
 #define DETERMINE_NUMBER_RET(type,OP)\
 {\
@@ -109,7 +75,14 @@ if (child== ValueType::FLOAT && parentType== ValueType::INT)\
 ValueType VirtualMachine::Generate(const Expression * tree)
 {
 		if (!tree) return ValueType::NIL;
-
+		if (tree->type == TokenType::BLOCK)
+		{
+			auto block = (Scope*)tree;
+			for (auto expression : block->expressions)
+			{
+				Generate(expression);
+			}
+		}
 		if (tree->type == TokenType::PLUS)
 		{
 			auto left = Generate(tree->left);
@@ -407,7 +380,29 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			opCode.push_back((uint8_t)InCode::PRINT);
 			return ValueType::NIL;
 		}
-		
+		else if (tree->type == TokenType::IF)
+		{
+			Generate(tree->left);
+			opCode.push_back((uint8_t)InCode::JUMP_IF_FALSE);
+			// the address of else byteblock code - backpatching
+			// then branch
+			opCode.push_back((uint8_t)0);
+			auto indexJumpFalse = opCode.size() - 1;
+
+			opCode.push_back((uint8_t)InCode::POP);
+			Generate(tree->right->right);
+			opCode.push_back((uint8_t)InCode::JUMP);
+			opCode.push_back((uint8_t)0);
+			auto indexJump= opCode.size() -1;
+			opCode[indexJumpFalse] = indexJump - indexJumpFalse;
+			// else branch
+			opCode.push_back((uint8_t)InCode::POP);
+			Generate(tree->right->left);
+			// once we execute then branch we need to skip else bytecode
+			// without -1 because we need next bytecode
+			opCode[indexJump] = opCode.size()   - indexJump;
+
+		}
 
 }
 
@@ -453,9 +448,20 @@ void VirtualMachine::Execute()
 {
 	int ipIndex = 0;
 
+
+	#if DEBUG
+
+	//while (opCode[ipIndex] != (uint8_t)InCode::RETURN)
+	//{
+	//	auto inst = opCode[ipIndex++];
+	//	PrintDebug((InCode)inst, constants);
+	//}
+	//ipIndex = 0;
+	#endif
 	while (true)
 	{
 		auto inst = opCode[ipIndex++];
+
 		switch (inst)
 		{
 		case InCode::CONST_VALUE:
@@ -642,6 +648,24 @@ void VirtualMachine::Execute()
 			entry->value = value;
 			//vmStack.pop();
 			break;
+		}
+		case InCode::JUMP_IF_FALSE:
+		{
+			// if it is not false, then we should get to then block
+			auto offset = opCode[ipIndex++];
+			auto condition = vmStack.top().As<bool>();
+			if (!condition) ipIndex += offset;
+			break;
+		}
+		case InCode::JUMP:
+		{
+			auto offset = opCode[ipIndex];
+			ipIndex += offset;
+			break;
+		}
+		case InCode::POP:
+		{
+			vmStack.pop();
 		}
 		default:
 			break;

@@ -10,4 +10,7 @@ project "Eva"
         "%{prj.location}/src/**.h",
     }
 
+    filter "configurations:Debug"
+        defines { "DEBUG" }
+        symbols "On"
     

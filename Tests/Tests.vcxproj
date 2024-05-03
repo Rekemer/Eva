@@ -19,7 +19,6 @@
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Tests</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -82,7 +81,7 @@
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
@@ -122,6 +121,7 @@
   <ItemGroup>
     <ClCompile Include="..\Eva\src\AST.cpp" />
     <ClCompile Include="..\Eva\src\Compile.cpp" />
+    <ClCompile Include="..\Eva\src\Debug.cpp" />
     <ClCompile Include="..\Eva\src\HashTable.cpp" />
     <ClCompile Include="..\Eva\src\Lexer.cpp" />
     <ClCompile Include="..\Eva\src\Main.cpp">

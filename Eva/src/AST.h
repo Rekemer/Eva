@@ -2,6 +2,7 @@
 #include "Tokens.h"
 #include "Value.h"
 #include  <memory>
+#include  <vector>
 struct Expression
 {
 	ValueContainer value;
@@ -22,6 +23,11 @@ struct Expression
 
 	}
 };
+struct Scope : public Expression
+{
+	std::vector<Expression*> expressions;
+};
+
 //const Token * currentToken = can change a pointer but not the contents
 // Token*  const currentToken = can change the contents but not the pointer
 

@@ -434,7 +434,8 @@ void Print(const Expression* tree, int level) {
 	 }
 	 return left;
  }
-
+ // each statement is
+ // required to have zero stack effect
  Expression* AST::Statement(Token*& currentToken)
  {
 
@@ -456,6 +457,55 @@ void Print(const Expression* tree, int level) {
 			 currentToken++;
 		 }
 		 return printNode;
+	 }
+	 // left child is condition
+	 // right child is the then and else branches
+	 // right right is then
+	 // right left  is else
+	 else if (currentToken->type == TokenType::IF)
+	 {
+		 auto* ifnode = new Expression();
+		 ifnode->line = currentToken->line;
+		 ifnode->type = TokenType::IF;
+		 currentToken += 1;
+		 ifnode->left = LogicalOr(currentToken);
+		 currentToken += 1;
+		 ifnode->right= new Expression();
+		 
+		 //ifnode->type= solutionType 
+		 // get all then statements in range { } 
+		 assert(currentToken->type == TokenType::LEFT_BRACE);
+		 Scope* solution =  new Scope();
+		 solution->type = TokenType::BLOCK;
+		 currentToken++;
+		 while (currentToken->type != TokenType::RIGHT_BRACE && 
+			 currentToken->type != TokenType::END)
+		 {
+			 auto expression = Statement(currentToken);
+			 solution->expressions.push_back(expression);
+		 }
+		 ifnode->right->right= solution;
+		 currentToken++;
+		 // else block
+		 if (currentToken->type == TokenType::ELSE)
+		 {
+			 currentToken++;
+			 assert(currentToken->type == TokenType::LEFT_BRACE);
+			 Scope* elseScope = new Scope();
+			 elseScope->type = TokenType::BLOCK;
+			 while (currentToken->type != TokenType::RIGHT_BRACE &&
+				 currentToken->type != TokenType::END)
+			 {
+				 auto expression = Statement(currentToken);
+				 elseScope->expressions.push_back(expression);
+			 }
+			 if (currentToken->type == TokenType::RIGHT_BRACE)
+			 {
+				 currentToken++;
+			 }
+			 ifnode->right->left = elseScope;
+		 }
+		 return ifnode;
 	 }
 	 
 	 auto* expr = EqualOp(currentToken);
