@@ -56,6 +56,9 @@ private:
 	Expression* Equal(Token*& currentToken);
 	Expression* EqualOp(Token*& currentToken);
 	Expression* Statement(Token*& currentToken);
+	Expression* EatIf(Token*& currentToken);
+	Scope* EatBlock(Token*& currentToken);
+private:
 	std::unique_ptr<Expression> tree;
 	bool m_Panic = false;
 };

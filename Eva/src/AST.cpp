@@ -428,6 +428,41 @@ void Print(const Expression* tree, int level) {
 	 }
 	 return left;
  }
+
+ Scope* AST::EatBlock(Token*& currentToken)
+ {
+	 assert(currentToken->type == TokenType::LEFT_BRACE);
+	 Scope* block = new Scope();
+	 block->type = TokenType::BLOCK;
+	 currentToken++;
+	 while (currentToken->type != TokenType::RIGHT_BRACE &&
+		 currentToken->type != TokenType::END)
+	 {
+		 auto expression = Statement(currentToken);
+		 block->expressions.push_back(expression);
+	 }
+	 return block;
+ }
+
+ // eats then branch and if conition
+ Expression* AST::EatIf(Token*& currentToken)
+ {
+	 auto* ifnode = new Expression();
+	 ifnode->line = currentToken->line;
+	 ifnode->type = TokenType::IF;
+	 currentToken++;
+	 ifnode->left = LogicalOr(currentToken);
+	 currentToken += 1;
+	 ifnode->right = new Expression();
+	 auto then = EatBlock(currentToken);
+	 //ifnode->type= solutionType 
+	 // get all then statements in range { } 
+
+	 ifnode->right->right = then;
+	 currentToken++;
+	 return ifnode;
+ }
+
  // each statement is
  // required to have zero stack effect
  Expression* AST::Statement(Token*& currentToken)
@@ -458,45 +493,12 @@ void Print(const Expression* tree, int level) {
 	 // right left  is else
 	 else if (currentToken->type == TokenType::IF)
 	 {
-		 auto* ifnode = new Expression();
-		 ifnode->line = currentToken->line;
-		 ifnode->type = TokenType::IF;
-		 currentToken += 1;
-		 ifnode->left = LogicalOr(currentToken);
-		 currentToken += 1;
-		 ifnode->right= new Expression();
-		 
-		 //ifnode->type= solutionType 
-		 // get all then statements in range { } 
-		 assert(currentToken->type == TokenType::LEFT_BRACE);
-		 Scope* solution =  new Scope();
-		 solution->type = TokenType::BLOCK;
-		 currentToken++;
-		 while (currentToken->type != TokenType::RIGHT_BRACE && 
-			 currentToken->type != TokenType::END)
-		 {
-			 auto expression = Statement(currentToken);
-			 solution->expressions.push_back(expression);
-		 }
-		 ifnode->right->right= solution;
-		 currentToken++;
+		 auto* ifnode = EatIf(currentToken);
 		 // else block
 		 if (currentToken->type == TokenType::ELSE)
 		 {
 			 currentToken++;
-			 assert(currentToken->type == TokenType::LEFT_BRACE);
-			 Scope* elseScope = new Scope();
-			 elseScope->type = TokenType::BLOCK;
-			 while (currentToken->type != TokenType::RIGHT_BRACE &&
-				 currentToken->type != TokenType::END)
-			 {
-				 auto expression = Statement(currentToken);
-				 elseScope->expressions.push_back(expression);
-			 }
-			 if (currentToken->type == TokenType::RIGHT_BRACE)
-			 {
-				 currentToken++;
-			 }
+			 Scope* elseScope = EatBlock(currentToken);
 			 ifnode->right->left = elseScope;
 		 }
 		 return ifnode;

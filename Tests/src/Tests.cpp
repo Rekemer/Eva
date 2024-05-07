@@ -220,39 +220,38 @@ TEST_CASE("unary double operations on variables")
 		CHECK(isPass);
 	}
 }
-//TEST_CASE("if statement")
-//{
-//	SUBCASE("if")
-//	{
-//		auto a = R"(a: int = 100;
-//					if a == 100
-//					{
-//						a++;
-//					}
-//					)";
-//		auto vm = CompileRetVM(a);
-//		auto isPass = CheckVariable<int>("a", 101, ValueType::INT, vm);
-//		CHECK(isPass);
-//	}
-//}
-//
-//	SUBCASE("if else")
-//	{
-//		auto a = R"(a: int = 100;
-//					if a == 101
-//					{
-//						a++;
-//					}
-//					else 
-//					{
-//						a+=5;
-//					}
-//					)";
-//		auto vm = CompileRetVM(a);
-//		auto isPass = CheckVariable<INT>("a", 105, ValueType::INT, vm);
-//		CHECK(isPass);
-//	}
-//}
+TEST_CASE("if statement")
+{
+	SUBCASE("if")
+	{
+		auto a = R"(a: int = 100;
+					if a == 100
+					{
+						a++;
+					}
+					)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<int>("a", 101, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("if else")
+	{
+		auto a = R"(a: int = 100;
+					if a == 101
+					{
+						a++;
+					}
+					else 
+					{
+						a+=5;
+					}
+					)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<INT>("a", 105, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+}
 
 
 
