@@ -1,24 +1,39 @@
 //a : float = 20;
-//a = a-- +2;
-//a += 4.0+3.2;
-//b :float = 100.0;
-//c : float = 2.2;
-//d :float = "2.2";
-//check : bool = true;
-//check1 := true;
-//Print check && check1 == false || true;
-//a -= (a++ + 2);
-if 2.0+2.0 - 1.0 == 4
-//if true
-{
-	Print "then branch";
-}
-else 
-{
-	Print "else branch";
-}
-//Print a;
-//Print true || false && (1+2 == 3-0);
-//Print c;
-//Print (a + 1.22 )>= 2.22;
-//Print a*2.5;
+
+//check : float = 100;
+//if check == 100.0
+//{
+//	check++;
+//}
+//Print check ;
+
+
+a: float = 100;
+a = a++ * 2 + 1;
+Print a;
+
+//if 4 == 4
+//{
+//	Print true;
+//}
+//else 
+//{
+//	Print false;
+//}
+//if a == 15
+//{
+//	Print "a is equal to 15";
+//}
+//elif a == 19
+//{
+//	Print "a is equal to 19";
+//}
+//elif a == 20
+//{
+//	Print "a is equal to 20";
+//}
+//else 
+//{
+//	Print "else branch";
+//}
+

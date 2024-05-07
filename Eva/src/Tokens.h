@@ -28,7 +28,7 @@ enum class TokenType : uint8_t {
 	
 	// Keywords.
 	AND, CLASS, ELSE, FALSE,
-	FOR, FUN, IF, NIL, OR,
+	FOR, FUN, IF, ELIF, NIL, OR,
 	PRINT, RETURN, SUPER, THIS,
 	TRUE, VAR, WHILE,
 	STRING_TYPE,FLOAT_TYPE,INT_TYPE,BOOL_TYPE,

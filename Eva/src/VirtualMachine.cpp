@@ -24,7 +24,7 @@ vmStack.push(ValueContainer{v2 operation v});\
 while(false)
 
 
-#define DETERMINE_NUMBER_RET(type,OP)\
+#define DETERMINE_OP_TYPE_RET(type,OP)\
 {\
 	if (type == ValueType::INT)\
 	{\
@@ -37,17 +37,18 @@ while(false)
 	return ValueType::FLOAT; \
 	}\
 }\
-
-#define DETERMINE_NUMBER(type,OP)\
+// deterni
+#define DETERMINE_OP_TYPE(type,OP)\
 {\
 	if (type == ValueType::INT)\
 	{\
 	opCode.push_back((uint8_t)InCode::OP##_INT); \
 	}\
-	else\
+	else if (type == ValueType::FLOAT)\
 	{\
 	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	}\
+else{assert(false);}\
 }\
 
 #define DETERMINE_BOOL(left,right,OP)\
@@ -90,7 +91,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			auto right = Generate(tree->right);
 			CAST_INT_FLOAT(right, tree->value.type);
 
-			DETERMINE_NUMBER_RET(tree->value.type ,ADD);
+			DETERMINE_OP_TYPE_RET(tree->value.type ,ADD);
 		}
 		else if (tree->type == TokenType::PLUS_PLUS)
 		{
@@ -98,7 +99,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 
 
 
-			DETERMINE_NUMBER(tree->value.type, INCREMENT);
+			DETERMINE_OP_TYPE(left, INCREMENT);
 
 
 			constants.emplace_back(tree->left->value.as.object);
@@ -113,7 +114,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 
 
 
-			DETERMINE_NUMBER(tree->value.type, DECREMENT);
+			DETERMINE_OP_TYPE(left, DECREMENT);
 
 
 			constants.emplace_back(tree->left->value.as.object);
@@ -128,7 +129,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			CAST_INT_FLOAT(left, tree->value.type);
 			auto right = Generate(tree->right);
 			CAST_INT_FLOAT(right, tree->value.type);
-			DETERMINE_NUMBER_RET(tree->value.type, MULTIPLY);
+			DETERMINE_OP_TYPE_RET(tree->value.type, MULTIPLY);
 		}
 		else if (tree->type == TokenType::MINUS)
 		{
@@ -139,7 +140,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 				CAST_INT_FLOAT(left, tree->value.type);
 				auto right = Generate(tree->right);
 				CAST_INT_FLOAT(right, tree->value.type);
-				DETERMINE_NUMBER_RET(tree->value.type, SUBSTRACT);
+				DETERMINE_OP_TYPE_RET(tree->value.type, SUBSTRACT);
 			}
 			else
 			{
@@ -154,7 +155,7 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			CAST_INT_FLOAT(left, tree->value.type);
 			auto right = Generate(tree->right);
 			CAST_INT_FLOAT(right, tree->value.type);
-			DETERMINE_NUMBER_RET(tree->value.type ,DIVIDE);
+			DETERMINE_OP_TYPE_RET(tree->value.type ,DIVIDE);
 		}
 		else if (tree->type == TokenType::INT_LITERAL)
 		{
@@ -251,16 +252,11 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			auto left = Generate(tree->left);
 			auto expressionType = Generate(tree->right);
 
-			assert(tree->left != nullptr);
-			auto str = (String*)tree->left->value.as.object;
-			auto entry = globalVariablesTypes.Get(str->GetStringView());
 
-			assert(entry->key != nullptr);
-
-			CAST_INT_FLOAT(expressionType, entry->value.type);
+			CAST_INT_FLOAT(expressionType, left);
 
 
-			DETERMINE_NUMBER(tree->left->value.type, ADD);
+			DETERMINE_OP_TYPE(left, ADD);
 
 
 			constants.emplace_back(tree->left->value.as.object);
@@ -273,16 +269,11 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			auto left = Generate(tree->left);
 			auto expressionType = Generate(tree->right);
 
-			assert(tree->left != nullptr);
-			auto str = (String*)tree->left->value.as.object;
-			auto entry = globalVariablesTypes.Get(str->GetStringView());
 
-			assert(entry->key != nullptr);
-
-			CAST_INT_FLOAT(expressionType, entry->value.type);
+			CAST_INT_FLOAT(expressionType, left);
 
 
-			DETERMINE_NUMBER(tree->left->value.type, MULTIPLY);
+			DETERMINE_OP_TYPE(left, MULTIPLY);
 
 
 			constants.emplace_back(tree->left->value.as.object);
@@ -295,16 +286,11 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			auto left = Generate(tree->left);
 			auto expressionType = Generate(tree->right);
 
-			assert(tree->left != nullptr);
-			auto str = (String*)tree->left->value.as.object;
-			auto entry = globalVariablesTypes.Get(str->GetStringView());
 
-			assert(entry->key != nullptr);
-
-			CAST_INT_FLOAT(expressionType, entry->value.type);
+			CAST_INT_FLOAT(expressionType, left);
 
 
-			DETERMINE_NUMBER(tree->left->value.type, DIVIDE);
+			DETERMINE_OP_TYPE(left, DIVIDE);
 
 
 			constants.emplace_back(tree->left->value.as.object);
@@ -317,16 +303,11 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			auto left = Generate(tree->left);
 			auto expressionType = Generate(tree->right);
 
-			assert(tree->left != nullptr);
-			auto str = (String*)tree->left->value.as.object;
-			auto entry = globalVariablesTypes.Get(str->GetStringView());
 
-			assert(entry->key != nullptr);
-
-			CAST_INT_FLOAT(expressionType, entry->value.type);
+			CAST_INT_FLOAT(expressionType, left);
 
 
-			DETERMINE_NUMBER(tree->left->value.type, SUBSTRACT);
+			DETERMINE_OP_TYPE(left, SUBSTRACT);
 
 
 			constants.emplace_back(tree->left->value.as.object);
