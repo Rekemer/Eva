@@ -344,6 +344,7 @@ void Lexer::ParseOperator()
 		else if (Peek(1) != '\0' && Peek(1) == '-')
 		{
 			AddToken(TokenType::MINUS_MINUS, currentLine);
+			Eat();
 		}
 		else
 		{
@@ -363,6 +364,7 @@ void Lexer::ParseOperator()
 		else if (Peek(1) != '\0' && Peek(1) == '+')
 		{
 			AddToken(TokenType::PLUS_PLUS, currentLine);
+			Eat();
 		}
 		else
 		{

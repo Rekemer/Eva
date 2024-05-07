@@ -21,12 +21,11 @@ Expression::Expression(Expression&& e)
 		nextToken->type == TokenType::SLASH;
 	if (isMultiplication)
 	{
-
-		auto operation = nextToken->type;
+		currentToken++;
+		auto operation = currentToken->type;
 		auto parent = new Expression();
 		parent->line = currentToken->line;
-		
-		currentToken += 2;
+		currentToken++;
 		auto right = Factor(currentToken);
 		parent->left = left;
 		parent->right = right;
@@ -103,30 +102,25 @@ Expression::Expression(Expression&& e)
 		return parent;
 	}
 	auto value = Value(currentToken);
-	auto nextToken = currentToken + 1;
-	bool isPostfix = nextToken->type == TokenType::MINUS_MINUS || nextToken->type == TokenType::PLUS_PLUS;
-	if (isPostfix)
-	{	
-		currentToken++;
-		auto postfix = UnaryOpPostfix(currentToken);
-		if (postfix)
-		{
-			postfix->left = value;
-			return postfix;
-		}
+	auto postfix = UnaryOpPostfix(currentToken);
+	if (postfix)
+	{
+		postfix->left = value;
+		return postfix;
 	}
 	
 	return value;
 }
  Expression* AST::UnaryOpPostfix(Token*& currentToken)
  {
-	 bool isDouble = currentToken->type == TokenType::MINUS_MINUS || currentToken->type == TokenType::PLUS_PLUS;
+	auto nextToken = currentToken + 1;
+	 bool isDouble = nextToken->type == TokenType::MINUS_MINUS || nextToken->type == TokenType::PLUS_PLUS;
 	 if (isDouble)
 	 {
+		 currentToken++;
 		 auto prevOp = currentToken->type;
 		 auto parent = new Expression();
 		 parent->line = currentToken->line;
-		 currentToken++;
 		 parent->type = prevOp;
 		 // child is initialized by the caller
 		 return parent;
