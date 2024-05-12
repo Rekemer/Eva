@@ -513,7 +513,17 @@ void Print(const Expression* tree, int level) {
 		 }
 		 return ifnode;
 	 }
-	 
+	 else if (currentToken->type == TokenType::WHILE)
+	 {
+		 auto whileNode = new Expression;
+		 whileNode->type = TokenType::WHILE;
+		 whileNode->line = currentToken->line;
+		 currentToken++;
+		 whileNode->left = LogicalOr(currentToken);
+		 currentToken++;
+		 whileNode->right = EatBlock(currentToken);
+		 return whileNode;
+	 }
 	 auto* expr = EqualOp(currentToken);
 	 currentToken++;
 	 return expr;

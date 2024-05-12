@@ -90,6 +90,13 @@ int Jump(std::vector<Bytecode>& opCode)
 	auto indexJump = opCode.size() - 1;
 	return indexJump;
 }
+int JumpBack(std::vector<Bytecode>& opCode)
+{
+	opCode.push_back((uint8_t)InCode::JUMP_BACK);
+	opCode.push_back((uint8_t)0);
+	auto indexJump = opCode.size() - 1;
+	return indexJump;
+}
 int CalculateJumpIndex(std::vector<Bytecode>& opCode, int from)
 {
 	return opCode.size() - 1 - from;
@@ -417,6 +424,21 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 			opCode[indexJump] = opCode.size()   - indexJump;
 
 		}
+		else if (tree->type == TokenType::WHILE)
+		{
+			auto startIndex = opCode.size();
+			Generate(tree->left);
+			auto indexJumpFalse = JumpIfFalse(opCode);
+			opCode.push_back((uint8_t)InCode::POP);
+			Generate(tree->right);
+			auto jump = JumpBack(opCode);
+			auto len = CalculateJumpIndex(opCode, indexJumpFalse);
+			opCode[indexJumpFalse] = len;
+			// jumping backwards
+			auto negativeOffset= (CalculateJumpIndex(opCode, startIndex));
+			opCode[jump] = negativeOffset;
+
+		}
 
 }
 
@@ -475,7 +497,7 @@ void VirtualMachine::Execute()
 		{
 		case InCode::CONST_VALUE:
 		{
-			vmStack.push(std::move(constants[opCode[ipIndex++]]));
+			vmStack.push(constants[opCode[ipIndex++]]);
 			break;
 		}
 		case InCode::TRUE:
@@ -638,6 +660,7 @@ void VirtualMachine::Execute()
 		case InCode::PRINT:
 		{	auto& v = vmStack.top();
 			std::cout << v << "\n";
+			vmStack.pop();
 			break;
 		}
 		case InCode::GET_VAR:
@@ -655,7 +678,7 @@ void VirtualMachine::Execute()
 			auto string = ((String*)(nameOfVariable.As<Object*>()))->GetStringView();
 			auto entry = globalVariables.Get(string);
 			entry->value = value;
-			//vmStack.pop();
+			vmStack.pop();
 			break;
 		}
 		case InCode::JUMP_IF_FALSE:
@@ -670,6 +693,12 @@ void VirtualMachine::Execute()
 		{
 			auto offset = opCode[ipIndex];
 			ipIndex += offset;
+			break;
+		}
+		case InCode::JUMP_BACK:
+		{
+			auto offset = opCode[ipIndex];
+			ipIndex -= offset;
 			break;
 		}
 		case InCode::POP:

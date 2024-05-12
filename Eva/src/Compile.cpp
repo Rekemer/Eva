@@ -56,6 +56,9 @@ ValueContainer Compile(const char* line)
 	return res;
 }
 
+
+
+
 VirtualMachine CompileRetVM(const char* line)
 {
 	Lexer parser;
@@ -107,3 +110,9 @@ VirtualMachine CompileRetVM(const char* line)
 	return vm;
 }
 
+ValueContainer CompileTest(const char* line)
+{
+	auto vm = CompileRetVM(line);
+	auto res = vm.GetStack().top();
+	return res;
+}

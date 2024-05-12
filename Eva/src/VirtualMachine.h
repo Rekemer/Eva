@@ -18,6 +18,8 @@ public:
 		internalStrings = vm.internalStrings;
 		globalVariables = vm.globalVariables;
 		globalVariablesTypes = vm.globalVariablesTypes;
+		vmStack= vm.vmStack;
+
 	}
 	void Execute();
 	void GenerateBytecode(const std::vector<AST>& trees);
