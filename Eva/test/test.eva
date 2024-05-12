@@ -1,4 +1,4 @@
-//a : float = 20;
+a : int = 15;
 
 //check : float = 100;
 //if check == 100.0
@@ -8,11 +8,8 @@
 //Print check ;
 
 
-a: float = 100;
-a = a-- * 2 +1;
-Print a;
 
-//if 4 == 4
+//if 3 == 4
 //{
 //	Print true;
 //}
@@ -20,20 +17,20 @@ Print a;
 //{
 //	Print false;
 //}
-//if a == 15
-//{
-//	Print "a is equal to 15";
-//}
-//elif a == 19
-//{
-//	Print "a is equal to 19";
-//}
-//elif a == 20
-//{
-//	Print "a is equal to 20";
-//}
-//else 
-//{
-//	Print "else branch";
-//}
+if a == 15
+{
+	Print "a is equal to 15";
+}
+elif a == 19
+{
+	Print "a is equal to 19";
+}
+elif a == 20
+{
+	Print "a is equal to 20";
+}
+else 
+{
+	Print "else branch";
+}
 

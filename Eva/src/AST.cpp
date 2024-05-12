@@ -159,7 +159,7 @@ Expression::Expression(Expression&& e)
 		auto str = currentToken->value.As<String&>();
 		auto& table = vm->GetGlobals();
 		auto entry = table.Get(str.GetStringView());
-		assert(entry != nullptr);
+		assert(entry->key != nullptr && "The name is used but not declared");
 		auto variableName = entry->key;
 		node->value = ValueContainer((Object*)variableName);
 	}
@@ -493,13 +493,23 @@ void Print(const Expression* tree, int level) {
 	 // right left  is else
 	 else if (currentToken->type == TokenType::IF)
 	 {
-		 auto* ifnode = EatIf(currentToken);
+		 auto ifnode = EatIf(currentToken);
+		 auto tmpNode = ifnode;
+		 // check elif blocks
+		 while (currentToken->type == TokenType::ELIF)
+		 {
+			 auto elifnode = EatIf(currentToken);
+			 tmpNode->right->left = elifnode;
+			 tmpNode = tmpNode->right->left;
+
+		 }
+		 
 		 // else block
 		 if (currentToken->type == TokenType::ELSE)
 		 {
 			 currentToken++;
 			 Scope* elseScope = EatBlock(currentToken);
-			 ifnode->right->left = elseScope;
+			 tmpNode->right->left = elseScope;
 		 }
 		 return ifnode;
 	 }

@@ -34,8 +34,10 @@ enum class TokenType : uint8_t {
 	STRING_TYPE,FLOAT_TYPE,INT_TYPE,BOOL_TYPE,
 
 
-	// not really a token which lexer produces, but a way to tell that it is a block of expressions
-	BLOCK
+	// not really a token which lexer produces,
+	//  but a way to tell that it is a block of expressions
+	BLOCK,
+	
 };
 
 inline bool IsVariableType(TokenType type)

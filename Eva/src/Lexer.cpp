@@ -86,6 +86,8 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 		return strSize == 5 && String::AreEqual(str, strSize, "Print", 5);
 	case TokenType::IF:
 		return strSize == 2 && String::AreEqual(str, strSize, "if", 2);
+	case TokenType::ELIF:
+		return strSize == 4 && String::AreEqual(str, strSize, "elif", 4);
 	case TokenType::ELSE:
 		return strSize == 4 && String::AreEqual(str, strSize, "else", 4);
 	case TokenType::INT_TYPE:
