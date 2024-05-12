@@ -73,6 +73,27 @@ if (child== ValueType::FLOAT && parentType== ValueType::INT)\
 	opCode.push_back(((uint8_t)InCode::CAST_INT));\
 }\
 
+// returns the index for backpatching
+int JumpIfFalse(std::vector<Bytecode>& opCode)
+{
+	opCode.push_back((uint8_t)InCode::JUMP_IF_FALSE);
+	// the address of else byteblock code - backpatching
+	// then branch
+	opCode.push_back((uint8_t)0);
+	auto indexJumpFalse = opCode.size() - 1;
+	return indexJumpFalse;
+}
+int Jump(std::vector<Bytecode>& opCode)
+{
+	opCode.push_back((uint8_t)InCode::JUMP);
+	opCode.push_back((uint8_t)0);
+	auto indexJump = opCode.size() - 1;
+	return indexJump;
+}
+int CalculateJumpIndex(std::vector<Bytecode>& opCode, int from)
+{
+	return opCode.size() - 1 - from;
+}
 ValueType VirtualMachine::Generate(const Expression * tree)
 {
 		if (!tree) return ValueType::NIL;
@@ -337,14 +358,32 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		else if (tree->type == TokenType::AND)
 		{
 			Generate(tree->left);
+			// check if it is false then we just ignore second operand
+			// and leave the value on stack
+			auto indexFalse = JumpIfFalse(opCode);
+			// remove the value because we didn't jump
+			// the whole and is dependent on second operand
+			opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->right);
-			opCode.push_back((uint8_t)InCode::AND);
+			//opCode.push_back((uint8_t)InCode::AND);
+			auto jumpLen = CalculateJumpIndex(opCode, indexFalse);
+			opCode[indexFalse] = jumpLen;
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::OR)
 		{
 			Generate(tree->left);
+			auto indexFalse = JumpIfFalse(opCode);
+			// if it is true we get to jump
+			auto jump = Jump(opCode);
+			
+			auto jumpLen = CalculateJumpIndex(opCode,indexFalse);
+			opCode[indexFalse] = jumpLen;
+
 			Generate(tree->right);
+			// the first is true- just skip second operand
+			jumpLen = CalculateJumpIndex(opCode, jump);
+			opCode[jump] = jumpLen;
 			opCode.push_back((uint8_t)InCode::OR);
 			return ValueType::BOOL;
 		}
@@ -364,23 +403,17 @@ ValueType VirtualMachine::Generate(const Expression * tree)
 		else if (tree->type == TokenType::IF)
 		{
 			Generate(tree->left);
-			opCode.push_back((uint8_t)InCode::JUMP_IF_FALSE);
-			// the address of else byteblock code - backpatching
-			// then branch
-			opCode.push_back((uint8_t)0);
-			auto indexJumpFalse = opCode.size() - 1;
+			auto indexJumpFalse = JumpIfFalse(opCode);
 
 			opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->right->right);
-			opCode.push_back((uint8_t)InCode::JUMP);
-			opCode.push_back((uint8_t)0);
-			auto indexJump= opCode.size() -1;
+			auto indexJump = Jump(opCode);
 			opCode[indexJumpFalse] = indexJump - indexJumpFalse;
 			// else branch
 			opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->right->left);
 			// once we execute then branch we need to skip else bytecode
-			// without -1 because we need next bytecode
+			// without -1 because we need index of next bytecode, not previous one
 			opCode[indexJump] = opCode.size()   - indexJump;
 
 		}

@@ -6,7 +6,7 @@ a : int = 15;
 //	check++;
 //}
 //Print check ;
-
+Print false || true;
 
 
 //if 3 == 4
@@ -17,20 +17,20 @@ a : int = 15;
 //{
 //	Print false;
 //}
-if a == 15
-{
-	Print "a is equal to 15";
-}
-elif a == 19
-{
-	Print "a is equal to 19";
-}
-elif a == 20
-{
-	Print "a is equal to 20";
-}
-else 
-{
-	Print "else branch";
-}
+//if a == 15
+//{
+//	Print "a is equal to 15";
+//}
+//elif a == 19
+//{
+//	Print "a is equal to 19";
+//}
+//elif a == 20
+//{
+//	Print "a is equal to 20";
+//}
+//else 
+//{
+//	Print "else branch";
+//}
 
