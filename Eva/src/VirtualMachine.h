@@ -18,6 +18,8 @@ public:
 		internalStrings = vm.internalStrings;
 		globalVariables = vm.globalVariables;
 		globalVariablesTypes = vm.globalVariablesTypes;
+		vmStack= vm.vmStack;
+
 	}
 	void Execute();
 	void GenerateBytecode(const std::vector<AST>& trees);
@@ -30,6 +32,7 @@ private:
 	ValueType Generate(const Expression* tree);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
+	friend void Debug(VirtualMachine& vm);
 	std::vector<Bytecode> opCode;
 	std::vector<ValueContainer> constants;
 	std::stack<ValueContainer> vmStack;

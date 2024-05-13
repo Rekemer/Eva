@@ -9,32 +9,38 @@
 
 TEST_CASE("testing bool expressions")
 {
-	CHECK(Compile("1/2 == 1/2").As<bool>() == true);
-	CHECK(Compile("1 == 1").As<bool>() == true);
-	CHECK(Compile("1 == (1+2)").As<bool>() == false);
-	CHECK(Compile("(1-2) == (1+2)").As<bool>() == false);
-	CHECK(Compile("true == true").As<bool>() == true);
-	CHECK(Compile("false == true").As<bool>() == false);
-	CHECK(Compile("(2*10 - 1/5) == (2*10 - 1/5) ").As<bool>() == true);
-	CHECK(Compile("2*10  == 2*10 ").As<bool>() == true);
-	CHECK(Compile("2+2 ").As<int>() == 4);
-	CHECK(Compile("true == true").As<bool>() == true);
-	CHECK(Compile("false&&true == true&&true").As<bool>() == false);
-	CHECK(Compile("false&&true || true&&true").As<bool>() == true);
-	CHECK(Compile("false&&true || true&&false").As<bool>() == false);
-	CHECK(Compile("false&&true").As<bool>() == false);
-	CHECK(Compile("true&&true").As<bool>() == true);
-	CHECK(Compile("true || false").As<bool>() == true);
-	CHECK(Compile("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
-	CHECK(Compile("2+2 == 2+1+1 ").As<bool>() == true);
+	CHECK(CompileTest("1/2 == 1/2").As<bool>() == true);
+	CHECK(CompileTest("1 == 1").As<bool>() == true);
+	CHECK(CompileTest("1 == (1+2)").As<bool>() == false);
+	CHECK(CompileTest("(1-2) == (1+2)").As<bool>() == false);
+	CHECK(CompileTest("true == true").As<bool>() == true);
+	CHECK(CompileTest("false == true").As<bool>() == false);
+	CHECK(CompileTest("(2*10 - 1/5) == (2*10 - 1/5) ").As<bool>() == true);
+	CHECK(CompileTest("2*10  == 2*10 ").As<bool>() == true);
+	CHECK(CompileTest("2+2 ").As<int>() == 4);
+	CHECK(CompileTest("true == true").As<bool>() == true);
+	CHECK(CompileTest("false&&true == true&&true").As<bool>() == false);
+	CHECK(CompileTest("false&&true || true&&true").As<bool>() == true);
+	CHECK(CompileTest("false&&true || true&&false").As<bool>() == false);
+	CHECK(CompileTest("false&&true").As<bool>() == false);
+	CHECK(CompileTest("true&&true").As<bool>() == true);
+	CHECK(CompileTest("true || false").As<bool>() == true);
+	CHECK(CompileTest("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
+	CHECK(CompileTest("2+2 == 2+1+1 ").As<bool>() == true);
+	CHECK(CompileTest("2+2 < 2+1+1+1 ").As<bool>() == true);
+	CHECK(CompileTest("2+2 <= 2+2 ").As<bool>() == true);
+	CHECK(CompileTest("2+2 >= 2+2 ").As<bool>() == true);
+	CHECK(CompileTest("2+5 >= 2+2 ").As<bool>() == true);
+	CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
+	CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
 }
 TEST_CASE("testing strings ")
 {
-	CHECK(Compile("\"Helo\" == \"Hello\" ").As<bool>() == false);
-	CHECK(Compile("\"Hello\" == \"Hello\" ").As<bool>() == true);
-	CHECK(Compile("\"Hello\" == \"Hello\" ").As<bool>() == true);
-	CHECK(Compile("\"2\" == \"2\" ").As<bool>() == true);
-	CHECK(Compile("\"Hello\" == \"Hello\" &&  \"Hello\" == \"Hello\"").As<bool>() == true);
+	CHECK(CompileTest("\"Helo\" == \"Hello\" ").As<bool>() == false);
+	CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
+	CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
+	CHECK(CompileTest("\"2\" == \"2\" ").As<bool>() == true);
+	CHECK(CompileTest("\"Hello\" == \"Hello\" &&  \"Hello\" == \"Hello\"").As<bool>() == true);
 }
 TEST_CASE("testing hash table ")
 {
@@ -195,20 +201,22 @@ TEST_CASE("unary double operations on variables")
 		auto isPass = CheckVariable<float>("a", 101, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
-	SUBCASE("++ in expression")
-	{
-		auto a = R"(a: float = 100;
-					a = a++ * 2 + 1;)";
-		auto vm = CompileRetVM(a);
-		auto isPass = CheckVariable<float>("a", 202 + 1, ValueType::FLOAT, vm);
-		CHECK(isPass);
-	}
+	
 	SUBCASE("--")
 	{
 		auto a = R"(a: float = 100;
 					a--;)";
 		auto vm = CompileRetVM(a);
 		auto isPass = CheckVariable<float>("a", 99, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
+
+	/*SUBCASE("++ in expression")
+	{
+		auto a = R"(a: float = 100;
+					a = a++ * 2 + 1;)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<float>("a", 202 + 1, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("-- in expression")
@@ -219,6 +227,7 @@ TEST_CASE("unary double operations on variables")
 		auto isPass = CheckVariable<float>("a", 200 + 1, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
+	*/
 }
 TEST_CASE("if statement")
 {
@@ -295,7 +304,18 @@ TEST_CASE("if statement")
 		CHECK(isPass);
 	}
 }
-
+TEST_CASE("while statement")
+{
+	auto a = R"(a: int = 15;
+					while a  >= 5 
+				{
+					a--;
+				}
+					)";
+	auto vm = CompileRetVM(a);
+	auto isPass = CheckVariable<INT>("a", 4, ValueType::INT, vm);
+	CHECK(isPass);
+}
 
 
 

@@ -29,11 +29,12 @@ ValueContainer Compile(const char* line)
 		AST tree;
 		tree.vm = &vm;
 		tree.Build(ptr);
-		tree.TypeCheck(vm);
 		if (tree.IsPanic())
 		{
 			panic = true;
+			continue;
 		}
+		tree.TypeCheck(vm);
 		trees.push_back(std::move( tree));
 
 	}
@@ -52,9 +53,12 @@ ValueContainer Compile(const char* line)
 	vm.GenerateBytecode(trees);
 
 	vm.Execute();
-	auto res = vm.GetStack().top();
-	return res;
+	//auto res = vm.GetStack().top();
+	return {};
 }
+
+
+
 
 VirtualMachine CompileRetVM(const char* line)
 {
@@ -107,3 +111,9 @@ VirtualMachine CompileRetVM(const char* line)
 	return vm;
 }
 
+ValueContainer CompileTest(const char* line)
+{
+	auto vm = CompileRetVM(line);
+	auto res = vm.GetStack().top();
+	return res;
+}

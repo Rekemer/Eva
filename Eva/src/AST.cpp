@@ -159,7 +159,12 @@ Expression::Expression(Expression&& e)
 		auto str = currentToken->value.As<String&>();
 		auto& table = vm->GetGlobals();
 		auto entry = table.Get(str.GetStringView());
-		assert(entry->key != nullptr && "The name is used but not declared");
+		if (entry->key == nullptr)
+		{
+			m_Panic = true;
+			std::cout << "ERROR[" << (currentToken)->line << "]: " << 
+				"The name " << str << " is used but not declared " << std::endl;
+		}
 		auto variableName = entry->key;
 		node->value = ValueContainer((Object*)variableName);
 	}
@@ -223,7 +228,7 @@ void Print(const Expression* tree, int level) {
 	 auto nextToken = (currentToken + 1);
 	 bool isCompare = nextToken->type == TokenType::LESS ||
 		 nextToken->type == TokenType::LESS_EQUAL || nextToken->type == TokenType::GREATER ||
-		 nextToken->type == TokenType::GREATER_EQUAL;
+		 nextToken->type == TokenType::GREATER_EQUAL || nextToken->type == TokenType::BANG_EQUAL;
 	 if (isCompare)
 	 {
 
@@ -360,6 +365,7 @@ void Print(const Expression* tree, int level) {
 				if (isEqualSign)
 				{
 
+					assert(false && "deduction of types is not supported yet");
 					auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
 					node->left = LogicalOr(currentToken);
 					//node->left->value = ValueContainer((Object*)variableName);
@@ -383,7 +389,8 @@ void Print(const Expression* tree, int level) {
 			}
 			else
 			{
-				assert("Handle semicolon" && false);
+				m_Panic = true;
+				std::cout << "ERROR[" << (currentToken )->line << "]: Expected ; at the end of expression\n";
 			}
 
 			return node;
@@ -479,7 +486,7 @@ void Print(const Expression* tree, int level) {
 		 currentToken++;
 		 if (currentToken->type != TokenType::SEMICOLON)
 		 {
-			 std::cout << "ERROR[ " << (currentToken-1)->line << " ]: Expected ; at the end of expression\n";
+			 std::cout << "ERROR[" << (currentToken)->line << "]: Expected ; at the end of expression\n";
 		 }
 		 else
 		 {
@@ -513,7 +520,17 @@ void Print(const Expression* tree, int level) {
 		 }
 		 return ifnode;
 	 }
-	 
+	 else if (currentToken->type == TokenType::WHILE)
+	 {
+		 auto whileNode = new Expression;
+		 whileNode->type = TokenType::WHILE;
+		 whileNode->line = currentToken->line;
+		 currentToken++;
+		 whileNode->left = LogicalOr(currentToken);
+		 currentToken++;
+		 whileNode->right = EatBlock(currentToken);
+		 return whileNode;
+	 }
 	 auto* expr = EqualOp(currentToken);
 	 currentToken++;
 	 return expr;

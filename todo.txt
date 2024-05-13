@@ -1,7 +1,10 @@
 add error if use undeclared variable
 refactor DETERMINE_X_RET
-add precedence evaluation in if condition
-add else if
+
+
+a= a++ doesn work
+make a = a++ to have zero effect on stack
+
 
 make user cast?
 if 2.0+2.0 == 4

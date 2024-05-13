@@ -1,36 +1,7 @@
-a : int = 15;
-
-//check : float = 100;
-//if check == 100.0
-//{
-//	check++;
-//}
-//Print check ;
-Print false || true;
 
 
-//if 3 == 4
-//{
-//	Print true;
-//}
-//else 
-//{
-//	Print false;
-//}
-//if a == 15
-//{
-//	Print "a is equal to 15";
-//}
-//elif a == 19
-//{
-//	Print "a is equal to 19";
-//}
-//elif a == 20
-//{
-//	Print "a is equal to 20";
-//}
-//else 
-//{
-//	Print "else branch";
-//}
+
+check : bool =  2+2 < 2+1+1 + 1;
+Print check;
+
 

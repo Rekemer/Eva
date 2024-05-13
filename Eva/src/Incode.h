@@ -33,7 +33,10 @@ enum class InCode
 	PRINT,
 	SET_VAR,
 	GET_VAR,
+
 	JUMP,
+	JUMP_BACK,
+	
 	JUMP_IF_FALSE,
 	// used when evaluate if and else statements
 	// to clear up stack from condition

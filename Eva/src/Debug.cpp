@@ -4,8 +4,11 @@
 const char* debugEnum(InCode code);
 
 
-void Debug(std::vector<Bytecode>& bytecode, std::vector<ValueContainer>& constants)
+void Debug(VirtualMachine& vm)
 {
+    auto& bytecode = vm.opCode;
+    auto& constants = vm.constants;
+    auto& globalVariables = vm.globalVariables;
     int ipIndex = 0;
     std::cout << "-------------Debug-----------\n";
     while (ipIndex != bytecode.size() - 1)
@@ -18,11 +21,21 @@ void Debug(std::vector<Bytecode>& bytecode, std::vector<ValueContainer>& constan
             std::cout << str << std::endl;
             std::cout << constant << std::endl;
         }
-        else if (instr == InCode::JUMP || instr == InCode::JUMP_IF_FALSE)
+        else if (instr == InCode::JUMP  || instr == InCode::JUMP_BACK
+            || instr == InCode::JUMP_IF_FALSE)
         {
             std::cout << str << std::endl;
             auto jumpIndexOffset = bytecode[ipIndex++];
             std::cout << static_cast<int>(jumpIndexOffset)<< std::endl;
+        }
+        else if (instr == InCode::SET_VAR || instr == InCode::GET_VAR)
+        {
+            std::cout << str << std::endl;
+            auto indexOfVariableName = bytecode[ipIndex++];
+            auto nameOfVariable = constants[indexOfVariableName];
+            auto string = static_cast<String*>(nameOfVariable.As<Object*>())->GetStringView();
+            std::cout << string << std::endl;
+
         }
         else
         {
@@ -68,6 +81,7 @@ const char* debugEnum(InCode code) {
     case InCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
     case InCode::POP: return "POP";
     case InCode::RETURN: return "RETURN";
+    case InCode::JUMP_BACK: return "JUMP_BACK";
     default: return "UNKNOWN";
     }
 }
