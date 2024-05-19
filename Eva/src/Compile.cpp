@@ -41,7 +41,6 @@ ValueContainer Compile(const char* line)
 	// type inference 
 
 
-
 	#if DEBUG
 	Print(tree.GetTree());
 	#endif // DEBUG

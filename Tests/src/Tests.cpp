@@ -34,6 +34,7 @@ TEST_CASE("testing bool expressions")
 	CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
 	CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
 }
+
 TEST_CASE("testing strings ")
 {
 	CHECK(CompileTest("\"Helo\" == \"Hello\" ").As<bool>() == false);

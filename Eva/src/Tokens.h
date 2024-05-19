@@ -40,17 +40,17 @@ enum class TokenType : uint8_t {
 	
 };
 
-inline bool IsVariableType(TokenType type)
+inline std::tuple<bool, TokenType> IsVariableType(TokenType type)
 {
 	auto castedType = (int)type;
 	for (int i = (int)TokenType::STRING_TYPE; i <= (int)TokenType::BOOL_TYPE; i++)
 	{
 		if (i == castedType)
 		{
-			return true;
+			return { true ,static_cast<TokenType>(i)};
 		}
 	}
-	return false;
+	return { false,static_cast<TokenType>(0) };
 }
 struct Token
 {
