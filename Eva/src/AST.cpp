@@ -2,24 +2,19 @@
 #include<iostream>
 #include<cassert>
 #include "VirtualMachine.h"
-Node::Node(const Node& e)
-{
-	childrenCount = e.childrenCount;
-	type = e.type;
-	line = e.line;
-	
-}
 
-Expression::Expression(Expression&& e) : Node(e)
+
+Expression::Expression(Expression&& e) : Node(std::move(e))
 {
-	left = e.left;
-	right = e.right;
+	left = std::move(e.left);
+	right = std::move(e.right);
 	value = std::move(e.value);
 	depth = e.depth;
-	e.left = e.right = nullptr;
+	e.left.reset();
+	e.right.reset();
 	e.childrenCount = 0;
 }
- Node* AST::Factor( Token*& currentToken)
+ std::unique_ptr<Node> AST::Factor( Token*& currentToken)
 {
 	auto left = UnaryOpPrefix(currentToken);
 	auto nextToken = (currentToken + 1);
@@ -29,12 +24,12 @@ Expression::Expression(Expression&& e) : Node(e)
 	{
 		currentToken++;
 		auto operation = currentToken->type;
-		auto parent = new Expression();
+		auto parent = std::make_unique<Expression>();
 		parent->line = currentToken->line;
 		currentToken++;
 		auto right = Factor(currentToken);
-		parent->left = left;
-		parent->right = right;
+		parent->left = std::move(left);
+		parent->right = std::move(right);
 		parent->type = operation;
 		return parent;
 
@@ -93,13 +88,13 @@ Expression::Expression(Expression&& e) : Node(e)
 		 break;
 	 }
  }
- Node* AST::UnaryOpPrefix( Token*&  currentToken)
+ std::unique_ptr<Node> AST::UnaryOpPrefix( Token*&  currentToken)
 {
 	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
 	if (isUnary)
 	{
 		auto prevOp = currentToken->type;
-		auto parent = new Expression();
+		auto parent = std::make_unique<Expression>();
 		parent->line = currentToken->line;
 		currentToken++;
 		parent->type = prevOp;
@@ -111,15 +106,15 @@ Expression::Expression(Expression&& e) : Node(e)
 	auto postfix = UnaryOpPostfix(currentToken);
 	if (postfix)
 	{
-		auto expr = static_cast<Expression*>(postfix);
-		expr->left = value;
+		auto expr = static_cast<Expression*>(postfix.get());
+		expr->left = std::move(value);
 		currentToken++;
 		return postfix;
 	}
 	
 	return value;
 }
- Node* AST::UnaryOpPostfix(Token*& currentToken)
+ std::unique_ptr<Node> AST::UnaryOpPostfix(Token*& currentToken)
  {
 	auto nextToken = currentToken + 1;
 	 bool isDouble = nextToken->type == TokenType::MINUS_MINUS || nextToken->type == TokenType::PLUS_PLUS;
@@ -127,7 +122,7 @@ Expression::Expression(Expression&& e) : Node(e)
 	 {
 		 currentToken++;
 		 auto prevOp = currentToken->type;
-		 auto parent = new Expression();
+		 auto parent = std::make_unique<Expression>();
 		 parent->line = currentToken->line;
 		 parent->type = prevOp;
 		 // child is initialized by the caller
@@ -136,9 +131,9 @@ Expression::Expression(Expression&& e) : Node(e)
 	 return nullptr;
  }
 
- Node* AST::Value( Token*& currentToken)
+ std::unique_ptr<Node> AST::Value( Token*& currentToken)
 {
-	Expression* node = new Expression();
+	auto node = std::make_unique<Expression>();
 	auto identiferToken = currentToken;
 	node->line = currentToken->line;
 	node->type = currentToken->type;
@@ -217,7 +212,7 @@ void Print(const Expression* tree, int level) {
 		//Print(tree->right, level + 1);
 	}
 }
- Node* AST::Term( Token*& currentToken)
+ std::unique_ptr<Node> AST::Term( Token*& currentToken)
 {
 	auto left = Factor(currentToken);
 	auto nextToken = (currentToken + 1);
@@ -227,13 +222,13 @@ void Print(const Expression* tree, int level) {
 	{
 
 		auto operation = nextToken->type;
-		auto parent = new Expression();
+		auto parent = std::make_unique<Expression>();
 		parent->line = currentToken->line;
 
 		currentToken += 2;
 		auto right = Term(currentToken);
-		parent->left = left;
-		parent->right = right;
+		parent->left = std::move(left);
+		parent->right = std::move(right);
 		parent->type = operation;
 		return parent;
 
@@ -241,7 +236,7 @@ void Print(const Expression* tree, int level) {
 	return left;
 }
 
- Node* AST::Comparison( Token*& currentToken)
+ std::unique_ptr<Node> AST::Comparison( Token*& currentToken)
  {
 	 auto left = Term(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -252,12 +247,12 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
-		 auto parent = new Expression();
+		 auto parent = std::make_unique<Expression>();
 		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = Comparison(currentToken);
-		 parent->left = left;
-		 parent->right = right;
+		 parent->left = std::move(left);
+		 parent->right = std::move(right);
 		 parent->type = operation;
 		 return parent;
 
@@ -265,7 +260,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Node* AST::Equality(Token*& currentToken)
+ std::unique_ptr<Node> AST::Equality(Token*& currentToken)
  {
 	 auto left = Comparison(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -275,12 +270,12 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
-		 auto parent = new Expression();
+		 auto parent = std::make_unique<Expression>();
 		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = Equality(currentToken);
-		 parent->left = left;
-		 parent->right = right;
+		 parent->left = std::move(left);
+		 parent->right = std::move(right);
 		 parent->type = operation;
 		 return parent;
 
@@ -288,7 +283,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Node* AST::LogicalAnd(Token*& currentToken)
+ std::unique_ptr<Node> AST::LogicalAnd(Token*& currentToken)
  {
 	 auto left = Equality(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -297,12 +292,12 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
-		 auto parent = new Expression();
+		 auto parent = std::make_unique<Expression>();
 		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = LogicalAnd(currentToken);
-		 parent->left = left;
-		 parent->right = right;
+		 parent->left = std::move(left);
+		 parent->right = std::move(right);
 		 parent->type = operation;
 		 return parent;
 
@@ -310,7 +305,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Node* AST::EqualOp(Token*& currentToken)
+ std::unique_ptr<Node> AST::EqualOp(Token*& currentToken)
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
 	 auto isOp = (currentToken+1)->type == TokenType::PLUS_EQUAL
@@ -321,7 +316,7 @@ void Print(const Expression* tree, int level) {
 	 {
 		 auto operation = (currentToken+1)->type;
 		 
-		 auto parent = new Expression();
+		 auto parent = std::make_unique<Expression>();
 		 parent->type = operation;
 		 parent->left = LogicalOr(currentToken);
 		 currentToken += 2;
@@ -332,7 +327,7 @@ void Print(const Expression* tree, int level) {
 	 return Equal(currentToken);
 
  }
- Node* AST::Equal(Token*& currentToken)
+ std::unique_ptr<Node> AST::Equal(Token*& currentToken)
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
 	 bool isDeclaration = (currentToken+1)->type == TokenType::COLON;
@@ -351,7 +346,7 @@ void Print(const Expression* tree, int level) {
 		auto entry = table.Get(str.GetStringView());
 		if (entry->key == nullptr)
 		{
-			Expression* node = new Expression();
+			auto node = std::make_unique<Expression>();
 			node->line = currentToken->line;
 			node->type = currentToken->type;
 
@@ -370,7 +365,7 @@ void Print(const Expression* tree, int level) {
 					{
 						scopeDeclarations++;
 						node->left = LogicalOr(currentToken);
-						auto leftExpression = static_cast<Expression*>(node->left);
+						auto leftExpression = static_cast<Expression*>(node->left.get());
 						leftExpression->value.type = LiteralToType(type);
 						currentToken += 4;
 						node->right = LogicalOr(currentToken);
@@ -385,7 +380,7 @@ void Print(const Expression* tree, int level) {
 						auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
 						// it will initialize node with the name of a variable
 						node->left = LogicalOr(currentToken);
-						auto leftExpression = static_cast<Expression*>(node->left);
+						auto leftExpression = static_cast<Expression*>(node->left.get());
 						leftExpression->value.type = LiteralToType(type);
 						//node->left->value = ValueContainer((Object*)variableName);
 						currentToken += 4;
@@ -439,7 +434,7 @@ void Print(const Expression* tree, int level) {
 	 }
 	 else if (isAssignment)
 	 {
-		 Expression* node = new Expression();
+		 auto node = std::make_unique<Expression>();
 		 auto identiferToken = currentToken;
 		 node->line = currentToken->line;
 		 node->type = currentToken->type;
@@ -452,7 +447,7 @@ void Print(const Expression* tree, int level) {
 	 return LogicalOr(currentToken);
  }
 
- Node* AST::LogicalOr(Token*& currentToken)
+ std::unique_ptr<Node> AST::LogicalOr(Token*& currentToken)
  {
 	 auto left = LogicalAnd(currentToken);
 	 auto nextToken = (currentToken + 1);
@@ -461,12 +456,12 @@ void Print(const Expression* tree, int level) {
 	 {
 
 		 auto operation = nextToken->type;
-		 auto parent = new Expression();
+		 auto parent = std::make_unique<Expression>();
 		 parent->line = currentToken->line;
 		 currentToken += 2;
 		 auto right = LogicalOr(currentToken);
-		 parent->left = left;
-		 parent->right = right;
+		 parent->left = std::move(left);
+		 parent->right = std::move(right);
 		 parent->type = operation;
 		 return parent;
 
@@ -474,17 +469,17 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- Node* AST::EatBlock(Token*& currentToken)
+ std::unique_ptr<Node> AST::EatBlock(Token*& currentToken)
  {
 	 assert(currentToken->type == TokenType::LEFT_BRACE);
-	 Scope* block = new Scope();
+	 auto block = std::make_unique<Scope>();
 	 block->type = TokenType::BLOCK;
 	 currentToken++;
 	 while (currentToken->type != TokenType::RIGHT_BRACE &&
 		 currentToken->type != TokenType::END)
 	 {
 		 auto expression = Statement(currentToken);
-		 block->expressions.push_back(expression);
+		 block->expressions.push_back(std::move(expression));
 	 }
 	 if (currentToken->type == TokenType::RIGHT_BRACE)
 	 {
@@ -495,33 +490,33 @@ void Print(const Expression* tree, int level) {
  }
 
  // eats then branch and if conition
- Node* AST::EatIf(Token*& currentToken)
+ std::unique_ptr<Node> AST::EatIf(Token*& currentToken)
  {
-	 auto ifnode = new Expression();
+	 auto ifnode = std::make_unique<Expression>();
 	 ifnode->line = currentToken->line;
 	 ifnode->type = TokenType::IF;
 	 currentToken++;
 	 ifnode->left = LogicalOr(currentToken);
 	 currentToken += 1;
-	 ifnode->right = new Expression();
+	 ifnode->right = std::make_unique<Expression>();
 	 auto then = EatBlock(currentToken);
 	 //ifnode->type= solutionType 
 	 // get all then statements in range { } 
 
-	 auto expr = static_cast<Expression*>(ifnode->right);
-	 expr->right = then;
+	 auto expr = static_cast<Expression*>(ifnode->right.get());
+	 expr->right = std::move(then);
 	 return ifnode;
  }
 
  // each statement is
  // required to have zero stack effect
- Node* AST::Statement(Token*& currentToken)
+ std::unique_ptr<Node> AST::Statement(Token*& currentToken)
  {
 
 
 	 if (currentToken->type == TokenType::PRINT)
 	 {
-		 auto* printNode = new Expression();
+		 auto printNode = std::make_unique<Expression>();
 		 printNode->line = currentToken->line;
 		 printNode->type = TokenType::PRINT;
 		 currentToken += 1;
@@ -544,15 +539,15 @@ void Print(const Expression* tree, int level) {
 	 else if (currentToken->type == TokenType::IF)
 	 {
 		 auto ifnode = EatIf(currentToken);
-		 auto tmpNode = ifnode;
+		 auto tmpNode = ifnode.get();
 		 auto expr = static_cast<Expression*>(tmpNode);
-		 auto right = static_cast<Expression*>(expr->right);
+		 auto right = static_cast<Expression*>(expr->right.get());
 		 // check elif blocks
 		 while (currentToken->type == TokenType::ELIF)
 		 {
 			 auto elifnode = EatIf(currentToken);
-			 right->left = elifnode;
-			 tmpNode = right->left;
+			 right->left = std::move(elifnode);
+			 tmpNode = right->left.get();
 
 		 }
 		 
@@ -561,13 +556,13 @@ void Print(const Expression* tree, int level) {
 		 {
 			 currentToken++;
 			 auto elseScope = EatBlock(currentToken);
-			 right->left = elseScope;
+			 right->left = std::move(elseScope);
 		 }
 		 return ifnode;
 	 }
 	 else if (currentToken->type == TokenType::WHILE)
 	 {
-		 auto whileNode = new Expression;
+		 auto whileNode = std::make_unique<Expression>();
 		 whileNode->type = TokenType::WHILE;
 		 whileNode->line = currentToken->line;
 		 currentToken++;
@@ -583,7 +578,7 @@ void Print(const Expression* tree, int level) {
 		 EndBlock(currentToken);
 		 return scope;
 	 }
-	 auto* expr = EqualOp(currentToken);
+	 auto expr = EqualOp(currentToken);
 	 currentToken++;
 	 return expr;
  }
@@ -597,7 +592,7 @@ void Print(const Expression* tree, int level) {
 	 scopeDepth--;
 	 scopeDeclarations = 0;
  }
-Node* AST::ParseExpression( Token*& currentToken)
+std::unique_ptr<Node> AST::ParseExpression( Token*& currentToken)
 {
 
 	auto tree = Statement(currentToken);
@@ -605,14 +600,13 @@ Node* AST::ParseExpression( Token*& currentToken)
 }
 bool AST::Build(Token*& firstToken)
 {
-	auto expr = ParseExpression(firstToken);
-	tree = expr;
+	tree = ParseExpression(firstToken);
 	return true;
 }
 
 void AST::TypeCheck(VirtualMachine& vm)
 {
-	TypeCheck(tree,vm);
+	TypeCheck(tree.get(), vm);
 }
 bool IsCastable(ValueType to, ValueType from)
 {
@@ -638,18 +632,18 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 
 		for (auto& e : block->expressions)
 		{
-			TypeCheck(e, vm);
+			TypeCheck(e.get(), vm);
 		}
 		return TokenType::BLOCK;
 	}
 auto expr = static_cast<Expression*>(node);
 if (expr->left != nullptr)
 {
-	childType = TypeCheck(expr->left,vm);
+	childType = TypeCheck(expr->left.get(), vm);
 }
 if (expr->right != nullptr)
 {
-	childType1 = TypeCheck(expr->right,vm);
+	childType1 = TypeCheck(expr->right.get(),vm);
 }
 auto& globalsType = vm.GetGlobalsType();
 auto& globals = vm.GetGlobals();

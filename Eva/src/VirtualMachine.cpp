@@ -105,13 +105,13 @@ ValueType VirtualMachine::Generate(const Node * tree)
 {
 		if (!tree) return ValueType::NIL;
 		 auto expr = static_cast<const Expression*>(tree);
-		 auto exprLeft = static_cast<const Expression*>(tree->As<Expression>()->left);
+		 auto exprLeft = static_cast<const Expression*>(tree->As<Expression>()->left.get());
 		if (tree->type == TokenType::BLOCK)
 		{
 			auto block = static_cast<const Scope*>(tree);
-			for (auto expression : block->expressions)
+			for (auto& expression : block->expressions)
 			{
-				Generate(expression);
+				Generate(expression.get());
 			}
 			int popAmount = block->popAmount;
 			while (popAmount > 0 )
@@ -121,16 +121,16 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		if (tree->type == TokenType::PLUS)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 
 			DETERMINE_OP_TYPE_RET(expr->value.type ,ADD);
 		}
 		else if (tree->type == TokenType::PLUS_PLUS)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 
 
 
@@ -145,7 +145,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::MINUS_MINUS)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 
 
 
@@ -160,20 +160,20 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::STAR)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_OP_TYPE_RET(expr->value.type, MULTIPLY);
 		}
 		else if (tree->type == TokenType::MINUS)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 
-			if (tree->As<Expression>()->right)
+			if (tree->As<Expression>()->right.get())
 			{	
 				CAST_INT_FLOAT(left, expr->value.type);
-				auto right = Generate(tree->As<Expression>()->right);
+				auto right = Generate(tree->As<Expression>()->right.get());
 				CAST_INT_FLOAT(right, expr->value.type);
 				DETERMINE_OP_TYPE_RET(expr->value.type, SUBSTRACT);
 			}
@@ -186,9 +186,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::SLASH)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_OP_TYPE_RET(expr->value.type ,DIVIDE);
 		}
@@ -245,18 +245,18 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::GREATER)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_BOOL(left,right, GREATER);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::GREATER_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_BOOL(left, right, LESS);
 			opCode.push_back((uint8_t)InCode::NOT);
@@ -264,15 +264,15 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::EQUAL_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto left = Generate(tree->As<Expression>()->left.get());
+			auto right = Generate(tree->As<Expression>()->right.get());
 			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::BANG_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto left = Generate(tree->As<Expression>()->left.get());
+			auto right = Generate(tree->As<Expression>()->right.get());
 			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
@@ -280,8 +280,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		else if (tree->type == TokenType::EQUAL)
 		{
 			// declaring a variable
-			auto expressionType = Generate(tree->As<Expression>()->right);
-			assert(tree->As<Expression>()->left!= nullptr);
+			auto expressionType = Generate(tree->As<Expression>()->right.get());
+			assert(tree->As<Expression>()->left.get()!= nullptr);
 			
 
 
@@ -309,8 +309,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::PLUS_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
-			auto expressionType = Generate(tree->As<Expression>()->right);
+			auto left = Generate(tree->As<Expression>()->left.get());
+			auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
 			CAST_INT_FLOAT(expressionType, left);
@@ -326,8 +326,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::STAR_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
-			auto expressionType = Generate(tree->As<Expression>()->right);
+			auto left = Generate(tree->As<Expression>()->left.get());
+			auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
 			CAST_INT_FLOAT(expressionType, left);
@@ -343,8 +343,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			}
 		else if (tree->type == TokenType::SLASH_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
-			auto expressionType = Generate(tree->As<Expression>()->right);
+			auto left = Generate(tree->As<Expression>()->left.get());
+			auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
 			CAST_INT_FLOAT(expressionType, left);
@@ -360,8 +360,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::MINUS_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
-			auto expressionType = Generate(tree->As<Expression>()->right);
+			auto left = Generate(tree->As<Expression>()->left.get());
+			auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
 			CAST_INT_FLOAT(expressionType, left);
@@ -377,9 +377,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			}
 		else if (tree->type == TokenType::LESS_EQUAL)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_BOOL(left, right, GREATER);
 			opCode.push_back((uint8_t)InCode::NOT);
@@ -387,23 +387,23 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::LESS)
 		{
-			auto left = Generate(tree->As<Expression>()->left);
+			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right);
+			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_BOOL(left, right, LESS);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::AND)
 		{
-			Generate(tree->As<Expression>()->left);
+			Generate(tree->As<Expression>()->left.get());
 			// check if it is false then we just ignore second operand
 			// and leave the value on stack
 			auto indexFalse = JumpIfFalse(opCode);
 			// remove the value because we didn't jump
 			// the whole and is dependent on second operand
 			opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right);
+			Generate(tree->As<Expression>()->right.get());
 			//opCode.push_back((uint8_t)InCode::AND);
 			auto jumpLen = CalculateJumpIndex(opCode, indexFalse);
 			opCode[indexFalse] = jumpLen;
@@ -411,7 +411,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::OR)
 		{
-			Generate(tree->As<Expression>()->left);
+			Generate(tree->As<Expression>()->left.get());
 			auto indexFalse = JumpIfFalse(opCode);
 			// if it is true we get to jump
 			auto jump = Jump(opCode);
@@ -419,7 +419,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto jumpLen = CalculateJumpIndex(opCode,indexFalse);
 			opCode[indexFalse] = jumpLen;
 
-			Generate(tree->As<Expression>()->right);
+			Generate(tree->As<Expression>()->right.get());
 			// the first is true- just skip second operand
 			jumpLen = CalculateJumpIndex(opCode, jump);
 			opCode[jump] = jumpLen;
@@ -429,28 +429,28 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		
 		else if (tree->type == TokenType::BANG)
 		{
-			Generate(tree->As<Expression>()->left);
+			Generate(tree->As<Expression>()->left.get());
 			opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::PRINT)
 		{
-			Generate(tree->As<Expression>()->left);
+			Generate(tree->As<Expression>()->left.get());
 			opCode.push_back((uint8_t)InCode::PRINT);
 			return ValueType::NIL;
 		}
 		else if (tree->type == TokenType::IF)
 		{
-			Generate(tree->As<Expression>()->left);
+			Generate(tree->As<Expression>()->left.get());
 			auto indexJumpFalse = JumpIfFalse(opCode);
 
 			opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right->As<Expression>()->right);
+			Generate(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
 			auto indexJump = Jump(opCode);
 			opCode[indexJumpFalse] = indexJump - indexJumpFalse;
 			// else branch
 			opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right->As<Expression>()->left);
+			Generate(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
 			// once we execute then branch we need to skip else bytecode
 			// without -1 because we need index of next bytecode, not previous one
 			opCode[indexJump] = opCode.size()   - indexJump;
@@ -459,10 +459,10 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		else if (tree->type == TokenType::WHILE)
 		{
 			auto startIndex = opCode.size();
-			Generate(tree->As<Expression>()->left);
+			Generate(tree->As<Expression>()->left.get());
 			auto indexJumpFalse = JumpIfFalse(opCode);
 			opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right);
+			Generate(tree->As<Expression>()->right.get());
 			auto jump = JumpBack(opCode);
 			auto len = CalculateJumpIndex(opCode, indexJumpFalse);
 			opCode[indexJumpFalse] = len;

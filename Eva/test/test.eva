@@ -2,4 +2,7 @@
 a: int = 100;
 {
 	Print a;
+	{
+	Print a;
+	}
 }
