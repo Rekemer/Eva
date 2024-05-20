@@ -560,6 +560,7 @@ bool Lexer::Parse(const char* source, VirtualMachine& vm)
 	currentSymbol = source;
 	while (*currentSymbol != '\0')
 	{
+		
 		EatWhiteSpace();
 		
 		startSymbol = currentSymbol;

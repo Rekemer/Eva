@@ -355,7 +355,7 @@ void Print(const Expression* tree, int level) {
 		auto [isType,type]= IsVariableType(declaredType);
 		auto node = std::make_unique<Expression>();
 		node->type = TokenType::EQUAL;
-		if (entry->key == nullptr)
+		if (entry->key == nullptr && scopeDepth == 0)
 		{
 			node->line = currentToken->line;
 
@@ -425,7 +425,7 @@ void Print(const Expression* tree, int level) {
 			// define a local variable
 			if (scopeDepth > 0)
 			{
-				scopeDeclarations++;
+				scopeDeclarations.top()++;
 				vm->AddLocal(str, scopeDepth);
 				node->left = LogicalOr(currentToken);
 				auto leftExpression = static_cast<Expression*>(node->left.get());
@@ -433,7 +433,7 @@ void Print(const Expression* tree, int level) {
 				currentToken += 4;
 				node->right = LogicalOr(currentToken);
 				currentToken++;
-
+				return node;
 			}
 		}
 		 
@@ -448,6 +448,7 @@ void Print(const Expression* tree, int level) {
 		 node->left = LogicalOr(currentToken);
 		 currentToken += 2;
 		 node->right = LogicalOr(currentToken);
+		 currentToken++;
 		 return node;
 	 }
 	 return LogicalOr(currentToken);
@@ -491,7 +492,7 @@ void Print(const Expression* tree, int level) {
 	 {
 		 currentToken++;
 	 }
-	 block->popAmount = scopeDeclarations;
+	 block->popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
 	 return block;
  }
 
@@ -592,11 +593,12 @@ void Print(const Expression* tree, int level) {
  void AST::BeginBlock(Token*& currentToken)
  {
 	 scopeDepth++;
+	 scopeDeclarations.push(0);
  }
  void AST::EndBlock(Token*& currentToken)
  {
 	 scopeDepth--;
-	 scopeDeclarations = 0;
+	 scopeDeclarations.pop();
  }
 std::unique_ptr<Node> AST::ParseExpression( Token*& currentToken)
 {

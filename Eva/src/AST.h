@@ -2,6 +2,7 @@
 #include "Tokens.h"
 #include "Value.h"
 #include  <memory>
+#include  <stack>
 #include  <vector>
 
 
@@ -107,5 +108,6 @@ private:
 	inline static int scopeDepth = 0;
 	// so we now how many pop commands must be executed
 	// once block ends
-	inline static int scopeDeclarations = 0;
+
+	std::stack<int> scopeDeclarations;
 };

@@ -6,12 +6,13 @@
 #include "AST.h"
 ValueContainer Compile(const char* line)
 {
+	
 	Lexer parser;
 	VirtualMachine vm;
+	
 	if (!parser.Parse(line,vm)) return ValueContainer{};
 
-
-
+	
 	auto& tokens = parser.GetTokens();
 	#if DEBUG
 	for (auto token : tokens)
@@ -24,6 +25,7 @@ ValueContainer Compile(const char* line)
 	std::vector<AST> trees;
 	Token* ptr = &tokens[0];
 	bool panic = false;
+	
 	while (ptr->type!=TokenType::END)
 	{
 		AST tree;
@@ -49,6 +51,7 @@ ValueContainer Compile(const char* line)
 	{
 		return{};
 	}
+	
 	vm.GenerateBytecode(trees);
 
 	vm.Execute();

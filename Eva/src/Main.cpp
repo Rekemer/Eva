@@ -31,6 +31,7 @@ int main(int argc, const char* argv[])
 	}
 	else
 	{
+		
 		// parse file
 		auto scirptPath = std::string{ SCRIPT_PATH } + std::string{ argv[1] };
 		std::ifstream scriptFile(scirptPath.data());
@@ -40,6 +41,7 @@ int main(int argc, const char* argv[])
 			std::stringstream sstream;
 			sstream << scriptFile.rdbuf();
 			std::string contents = sstream.str();
+			
 			Compile(contents.data());
 		}
 		scriptFile.close();

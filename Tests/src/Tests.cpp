@@ -329,4 +329,20 @@ TEST_CASE("scope test")
 	auto isPass = CheckVariable<INT>("a", 14, ValueType::INT, vm);
 	CHECK(isPass);
 }
-
+TEST_CASE("multiple scope test")
+{
+	auto a = R"(a: int = 3;
+			{
+				b : int = 2;
+				{
+					c : int = 1;
+					b = c;
+					b= b+2;
+				}
+				a = b;
+			}
+					)";
+	auto vm = CompileRetVM(a);
+	auto isPass = CheckVariable<INT>("a", 3, ValueType::INT, vm);
+	CHECK(isPass);
+}

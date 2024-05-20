@@ -109,6 +109,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		if (tree->type == TokenType::BLOCK)
 		{
 			auto block = static_cast<const Scope*>(tree);
+			// empty block
+			if (block->expressions.size() == 0)
+			{
+				return{};
+			}
 			for (auto& expression : block->expressions)
 			{
 				Generate(expression.get());
@@ -120,6 +125,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				opCode.push_back((uint8_t)InCode::POP);
 				popAmount--;
 			}
+			localPtr -= block->popAmount;
+			assert(localPtr >= 0);
+
 		}
 		else if (tree->type == TokenType::PLUS)
 		{
