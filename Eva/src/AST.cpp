@@ -429,6 +429,8 @@ void Print(const Expression* tree, int level) {
 				vm->AddLocal(str, scopeDepth);
 				node->left = LogicalOr(currentToken);
 				auto leftExpression = static_cast<Expression*>(node->left.get());
+				
+				currentScope->types.Add(str.GetStringView(),LiteralToType(declaredType));
 				leftExpression->value.type = LiteralToType(type);
 				currentToken += 4;
 				node->right = LogicalOr(currentToken);
@@ -480,6 +482,7 @@ void Print(const Expression* tree, int level) {
  {
 	 assert(currentToken->type == TokenType::LEFT_BRACE);
 	 auto block = std::make_unique<Scope>();
+	 currentScope = block.get();
 	 block->type = TokenType::BLOCK;
 	 currentToken++;
 	 while (currentToken->type != TokenType::RIGHT_BRACE &&

@@ -16,6 +16,7 @@ struct Local
 
 class AST;
 struct Node;
+struct Scope;
 class VirtualMachine
 {
 public:
@@ -63,6 +64,7 @@ private:
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
+	const Scope* currentScope;
 	std::array<Local, 256> locals;
 	int localPtr = 0;
 };

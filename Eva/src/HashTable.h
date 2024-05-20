@@ -105,9 +105,9 @@ public:
 		return retrievedEntry;
 	}
 	void Delete(std::string_view key);
-	Entry* Get(std::string_view key);
+	Entry* Get(std::string_view key)const;
 private:
-	Entry* FindEntry(Entry* data,std::string_view key, int amountOfData);
+	Entry* FindEntry(Entry* data,std::string_view key, int amountOfData) const;
 
 	void MakeTombstone(Entry* entry);
 

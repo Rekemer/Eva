@@ -1,6 +1,7 @@
 #pragma once
 #include "Tokens.h"
 #include "Value.h"
+#include "Hashtable.h"
 #include  <memory>
 #include  <stack>
 #include  <vector>
@@ -48,6 +49,7 @@ struct Expression : public Node
 struct Scope : public Node
 {
 	std::vector<std::unique_ptr<Node>> expressions;
+	HashTable types;
 	Scope() = default;
 	// Delete the copy constructor and copy assignment operator
 	Scope(const Scope&) = delete;
@@ -108,6 +110,7 @@ private:
 	inline static int scopeDepth = 0;
 	// so we now how many pop commands must be executed
 	// once block ends
-
 	std::stack<int> scopeDeclarations;
+	// to populate types of local variables
+	 Scope* currentScope;
 };

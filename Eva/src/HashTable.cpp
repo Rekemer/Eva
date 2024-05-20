@@ -64,14 +64,14 @@ bool HashTable::IsExist(std::string_view key)
 	return IsSet(entry);
 }
 
-Entry* HashTable::Get(std::string_view key)
+Entry* HashTable::Get(std::string_view key) const
 {
 	return FindEntry(m_Data,key, m_Size);
 }
 
 
 // works for insertion and looking up
-Entry* HashTable::FindEntry(Entry* data, std::string_view key, int amountOfData)
+Entry* HashTable::FindEntry(Entry* data, std::string_view key, int amountOfData)  const
 {
 	auto hash = HashString(key.data(), key.size());
 	auto index = hash % amountOfData;

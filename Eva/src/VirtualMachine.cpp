@@ -114,6 +114,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			{
 				return{};
 			}
+			currentScope = block;
 			for (auto& expression : block->expressions)
 			{
 				Generate(expression.get());
@@ -249,7 +250,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				
 				opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
 				opCode.push_back(index);
-				return expr->value.type;
+				auto entry = currentScope->types.Get(str->GetStringView());
+				return entry->value.type;
 			}
 
 
@@ -337,17 +339,27 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		{
 			auto left = Generate(tree->As<Expression>()->left.get());
 			auto expressionType = Generate(tree->As<Expression>()->right.get());
-
+			auto str = (String*)exprLeft->value.as.object;
 
 			CAST_INT_FLOAT(expressionType, left);
 
 
 			DETERMINE_OP_TYPE(left, ADD);
 
-
-			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-			opCode.push_back(constants.size() - 1);
+			if (exprLeft->depth == 0)
+			{
+				constants.emplace_back(exprLeft->value.as.object);
+				opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
+				opCode.push_back(constants.size() - 1);
+			}
+			else
+			{
+				auto [isDeclared, index] = IsLocalExist(*str);
+				if (!isDeclared)
+					assert(false && "Local variable is used but not declared");
+				opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
+				opCode.push_back(index);
+			}
 			return exprLeft->value.type;
 		}
 		else if (tree->type == TokenType::STAR_EQUAL)

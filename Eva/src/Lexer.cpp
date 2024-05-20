@@ -136,10 +136,11 @@ void Lexer::EatType(TokenType type)
 }
 void Lexer::EatComments()
 {
-	while ((*currentSymbol) != '\n')
+	while ((*currentSymbol) != '\n' && (*currentSymbol) != '\0')
 	{
 		currentSymbol++;
 	}
+	if ((*currentSymbol) != '\0')
 	currentSymbol++;
 	currentLine++;
 }
@@ -149,6 +150,8 @@ void Lexer::EatWhiteSpace()
 	while (isRunning)
 	{
 		bool isComment = (*currentSymbol) == '/' && (*(currentSymbol+1)) == '/';
+		//std::cout << "--------------------------------------" << std::endl;
+		//std::cout << currentSymbol << std::endl;
 		if (isComment)
 		{
 			EatComments();
