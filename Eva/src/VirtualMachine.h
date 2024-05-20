@@ -30,16 +30,24 @@ public:
 	}
 	void Execute();
 	void GenerateBytecode(const std::vector<AST>& trees);
-	const std::stack<ValueContainer>& GetStack() { return vmStack; };
+	const std::vector<ValueContainer>& GetStack() { return vmStack; };
 	Object* AllocateString(const char* ptr, size_t size);
 
-	inline void ClearLocals(int currentScope)
+	void AddLocal(String& name, int currentScope);
+	
+	// checks if exists and returns index
+	inline std::tuple<bool, int> IsLocalExist(String & name)
 	{
-		while (currentScope > 0
-			&& currentScope > locals[localPtr].depth)
+		auto temp = localPtr;
+		while (temp >= 0)
 		{
-			localPtr--;
+			if (name == locals[temp].name)
+			{
+				return { true ,temp};
+			}
+			temp--;
 		}
+		return { false ,-1};
 	}
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
@@ -51,7 +59,7 @@ private:
 	friend void Debug(VirtualMachine& vm);
 	std::vector<Bytecode> opCode;
 	std::vector<ValueContainer> constants;
-	std::stack<ValueContainer> vmStack;
+	std::vector<ValueContainer> vmStack;
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;

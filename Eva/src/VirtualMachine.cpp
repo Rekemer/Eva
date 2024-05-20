@@ -6,20 +6,20 @@
 #include <cassert>
 #define BINARY_OP(type,operation)\
 {\
-auto v = vmStack.top().as.type;\
-vmStack.pop();\
-auto v2 = vmStack.top().as.type;\
-vmStack.pop();\
-vmStack.push(ValueContainer{v2 operation v});\
+auto v = vmStack.back().as.type;\
+vmStack.pop_back();\
+auto v2 = vmStack.back().as.type;\
+vmStack.pop_back();\
+vmStack.push_back(ValueContainer{v2 operation v});\
 }\
 
 #define UNARY_OP(type,operation)\
 {\
-auto v = vmStack.top().as.type;\
-vmStack.pop();\
-auto v2 = vmStack.top().as.type;\
-vmStack.pop();\
-vmStack.push(ValueContainer{v2 operation v});\
+auto v = vmStack.back().as.type;\
+vmStack.pop_back();\
+auto v2 = vmStack.back().as.type;\
+vmStack.pop_back();\
+vmStack.push_back(ValueContainer{v2 operation v});\
 }\
 while(false)
 
@@ -113,13 +113,15 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			{
 				Generate(expression.get());
 			}
+			// once we finish block, we must clear the stack
 			int popAmount = block->popAmount;
 			while (popAmount > 0 )
 			{
 				opCode.push_back((uint8_t)InCode::POP);
+				popAmount--;
 			}
 		}
-		if (tree->type == TokenType::PLUS)
+		else if (tree->type == TokenType::PLUS)
 		{
 			auto left = Generate(tree->As<Expression>()->left.get());
 			CAST_INT_FLOAT(left, expr->value.type);
@@ -138,7 +140,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 
 			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 			opCode.push_back(constants.size() - 1);
 			return expr->value.type;
 
@@ -153,7 +155,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 
 			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 			opCode.push_back(constants.size() - 1);
 			return expr->value.type;
 
@@ -216,17 +218,29 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::IDENTIFIER)
 		{
+			// global
 			if (expr->depth == 0)
 			{
-				opCode.push_back((uint8_t)InCode::GET_VAR);
+				opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
 				constants.emplace_back(expr->value.as.object);
 				opCode.push_back(constants.size() - 1);
 				auto str = (String*)expr->value.as.object;
 				auto entry = globalVariablesTypes.Get(str->GetStringView());
 				return entry->value.type;
 			}
+			// local
 			else if (expr->depth > 0)
 			{
+				auto str = (String*)expr->value.as.object;
+				// check if it does exsist
+				auto [isDeclared,index]= IsLocalExist(*str);
+				// if local doesn exist then it could be globals
+
+				if (!isDeclared)
+				assert(false && "Local variable is used but not declared");
+				
+				opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
+				opCode.push_back(index);
 				return expr->value.type;
 			}
 
@@ -282,26 +296,30 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			// declaring a variable
 			auto expressionType = Generate(tree->As<Expression>()->right.get());
 			assert(tree->As<Expression>()->left.get()!= nullptr);
-			
+			auto str = (String*)exprLeft->value.as.object;
 
 
 			// local variable
 			if (exprLeft->depth > 0)
 			{
+				auto [isDeclared, index] = IsLocalExist(*str);
+				if (!isDeclared)
+					assert(false && "Local variable is used but not declared");
 
 				CAST_INT_FLOAT(expressionType, exprLeft->value.type);
+				opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
+				opCode.push_back(index);
 
 			}
 			// global variable
 			else
 			{
-				auto str = (String*)exprLeft->value.as.object;
 				// during ast generation variable was declared
 				auto entry = globalVariablesTypes.Get(str->GetStringView());
 				assert(entry->key != nullptr);
 				CAST_INT_FLOAT(expressionType, entry->value.type);
 				constants.emplace_back(exprLeft->value.as.object);
-				opCode.push_back((uint8_t)InCode::SET_VAR);
+				opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 				opCode.push_back(constants.size() - 1);
 				return exprLeft->value.type;
 			}
@@ -320,7 +338,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 
 			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 			opCode.push_back(constants.size() - 1);
 			return exprLeft->value.type;
 		}
@@ -337,7 +355,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 
 			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 			opCode.push_back(constants.size() - 1);
 			return exprLeft->value.type;
 			}
@@ -354,7 +372,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 
 			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 			opCode.push_back(constants.size() - 1);
 			return exprLeft->value.type;
 		}
@@ -371,7 +389,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 
 			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_VAR);
+			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 			opCode.push_back(constants.size() - 1);
 			return exprLeft->value.type;
 			}
@@ -471,6 +489,10 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			opCode[jump] = negativeOffset;
 
 		}
+		else
+		{
+			assert(false && "weird type");
+		}
 
 }
 
@@ -483,6 +505,17 @@ Object* VirtualMachine::AllocateString(const char* ptr, size_t size)
 	}
 	auto* entry = internalStrings.Add(std::string_view{ptr,size}, ValueContainer{});
 	return static_cast<Object*>(entry->key);
+}
+
+void VirtualMachine::AddLocal(String& name, int currentScope)
+{
+	auto iter = std::find_if(locals.begin(), locals.end(), [&](auto& local)
+		{
+			return local.name == name;
+		});
+	if (iter != locals.end()) assert(false && "variable already declared");
+	locals[localPtr].name = name;
+	locals[localPtr++].depth = currentScope;
 }
 
 VirtualMachine::~VirtualMachine()
@@ -529,17 +562,17 @@ void VirtualMachine::Execute()
 		{
 		case InCode::CONST_VALUE:
 		{
-			vmStack.push(constants[opCode[ipIndex++]]);
+			vmStack.push_back(constants[opCode[ipIndex++]]);
 			break;
 		}
 		case InCode::TRUE:
 		{
-			vmStack.push(ValueContainer{ true });
+			vmStack.push_back(ValueContainer{ true });
 			break;
 		}
 		case InCode::FALSE:
 		{
-			vmStack.push(ValueContainer{ false });
+			vmStack.push_back(ValueContainer{ false });
 			break;
 		}
 		case InCode::ADD_FLOAT:
@@ -569,14 +602,14 @@ void VirtualMachine::Execute()
 		}
 		case InCode::CAST_FLOAT:
 		{
-			auto& value = vmStack.top();
+			auto& value = vmStack.back();
 			value.type = ValueType::FLOAT;
 			value.as.numberFloat = value.as.numberInt;
 			break;
 		}
 		case InCode::CAST_INT:
 		{
-			auto& value = vmStack.top();
+			auto& value = vmStack.back();
 			value.type = ValueType::INT;
 			value.as.numberInt= value.as.numberFloat;
 			break;
@@ -598,39 +631,39 @@ void VirtualMachine::Execute()
 		}
 		case InCode::INCREMENT_INT:
 		{
-			auto& value = vmStack.top();
+			auto& value = vmStack.back();
 			value.AsRef<int>()++;
 			break;
 		}
 		case InCode::DECREMENT_INT:
 		{
-			auto& value = vmStack.top();
+			auto& value = vmStack.back();
 			value.AsRef<int>()--;
 			break;
 		}
 		case InCode::INCREMENT_FLOAT:
 		{
-			auto& value = vmStack.top();
+			auto& value = vmStack.back();
 			value.AsRef<float>()++;
 			break;
 		}
 		case InCode::DECREMENT_FLOAT:
 		{
-			auto& value = vmStack.top();
+			auto& value = vmStack.back();
 			value.AsRef<float>()--;
 			break;
 		}
 		case InCode::NEGATE:
 		{
-			auto value = vmStack.top();
-			vmStack.pop();
+			auto value = vmStack.back();
+			vmStack.pop_back();
 			if (value.type == ValueType::FLOAT)
 			{
-				vmStack.push(ValueContainer{-value.as.numberFloat});
+				vmStack.push_back(ValueContainer{-value.as.numberFloat});
 			}
 			else if (value.type == ValueType::INT)
 			{
-				vmStack.push(ValueContainer{-value.as.numberInt});
+				vmStack.push_back(ValueContainer{-value.as.numberInt});
 			}
 			else
 			{
@@ -640,9 +673,9 @@ void VirtualMachine::Execute()
 		}
 		case InCode::NOT:
 		{
-			auto value = vmStack.top();
-			vmStack.pop();
-			vmStack.push(ValueContainer{ !value.as.boolean });
+			auto value = vmStack.back();
+			vmStack.pop_back();
+			vmStack.push_back(ValueContainer{ !value.as.boolean });
 			break;
 		}
 		case InCode::LESS_FLOAT:
@@ -668,11 +701,11 @@ void VirtualMachine::Execute()
 
 		case InCode::EQUAL_EQUAL:
 		{
-			auto&  v2 = vmStack.top();
-			vmStack.pop();
-			auto&  v1 = vmStack.top();
-			vmStack.pop();
-			vmStack.push(ValueContainer{ AreEqual(v1,v2) });
+			auto&  v2 = vmStack.back();
+			vmStack.pop_back();
+			auto&  v1 = vmStack.back();
+			vmStack.pop_back();
+			vmStack.push_back(ValueContainer{ AreEqual(v1,v2) });
 			break;
 		}
 		case InCode::AND:
@@ -690,34 +723,49 @@ void VirtualMachine::Execute()
 			return;
 		}
 		case InCode::PRINT:
-		{	auto& v = vmStack.top();
+		{	auto& v = vmStack.back();
 			std::cout << v << "\n";
-			vmStack.pop();
+			vmStack.pop_back();
 			break;
 		}
-		case InCode::GET_VAR:
+		case InCode::GET_GLOBAL_VAR:
 		{	
 			auto& nameOfVariable = constants[opCode[ipIndex++]];
 			auto string = static_cast<String*>(nameOfVariable.As<Object*>())->GetStringView();
 			auto entry = globalVariables.Get(string);
-			vmStack.push(entry->value);
+			vmStack.push_back(entry->value);
 			break;
 		}
-		case InCode::SET_VAR:
+		case InCode::SET_GLOBAL_VAR:
 		{	
-			auto& value = vmStack.top();
+			auto& value = vmStack.back();
 			auto& nameOfVariable = constants[opCode[ipIndex++]];
 			auto string = ((String*)(nameOfVariable.As<Object*>()))->GetStringView();
 			auto entry = globalVariables.Get(string);
 			entry->value = value;
-			vmStack.pop();
+			vmStack.pop_back();
 			break;
 		}
+
+		case InCode::GET_LOCAL_VAR:
+		{
+			auto index = opCode[ipIndex++];
+			vmStack.push_back(vmStack[index]);
+			break;
+		}
+		case InCode::SET_LOCAL_VAR:
+		{
+			auto index = opCode[ipIndex++];
+			auto value = vmStack.back();
+			vmStack[index] = value;
+			break;
+		}
+
 		case InCode::JUMP_IF_FALSE:
 		{
 			// if it is not false, then we should get to then block
 			auto offset = opCode[ipIndex++];
-			auto condition = vmStack.top().As<bool>();
+			auto condition = vmStack.back().As<bool>();
 			if (!condition) ipIndex += offset;
 			break;
 		}
@@ -735,7 +783,7 @@ void VirtualMachine::Execute()
 		}
 		case InCode::POP:
 		{
-			vmStack.pop();
+			vmStack.pop_back();
 		}
 		default:
 			break;

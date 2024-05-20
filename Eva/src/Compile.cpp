@@ -113,6 +113,6 @@ VirtualMachine CompileRetVM(const char* line)
 ValueContainer CompileTest(const char* line)
 {
 	auto vm = CompileRetVM(line);
-	auto res = vm.GetStack().top();
+	auto res = vm.GetStack().back();
 	return res;
 }

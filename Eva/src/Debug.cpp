@@ -15,6 +15,7 @@ void Debug(VirtualMachine& vm)
     {
         auto instr = (InCode)bytecode[ipIndex++];
         auto str = debugEnum(instr);
+        auto isLocal = instr == InCode::SET_LOCAL_VAR || instr == InCode::GET_LOCAL_VAR;
         if (instr == InCode::CONST_VALUE)
         {
             auto constant = constants[bytecode[ipIndex++]];
@@ -28,13 +29,23 @@ void Debug(VirtualMachine& vm)
             auto jumpIndexOffset = bytecode[ipIndex++];
             std::cout << static_cast<int>(jumpIndexOffset)<< std::endl;
         }
-        else if (instr == InCode::SET_VAR || instr == InCode::GET_VAR)
+        else if (instr == InCode::SET_GLOBAL_VAR || instr == InCode::GET_GLOBAL_VAR ||
+            isLocal)
         {
             std::cout << str << std::endl;
             auto indexOfVariableName = bytecode[ipIndex++];
-            auto nameOfVariable = constants[indexOfVariableName];
-            auto string = static_cast<String*>(nameOfVariable.As<Object*>())->GetStringView();
-            std::cout << string << std::endl;
+            // hmmm... can't show local variable name, because there is no stack...
+            // show index instead
+            if (isLocal)
+            {
+                std::cout << indexOfVariableName << std::endl;
+            }
+            else
+            {
+                auto nameOfVariable = constants[indexOfVariableName];
+                auto string = static_cast<String*>(nameOfVariable.As<Object*>())->GetStringView();
+                std::cout << string << std::endl;
+            }
 
         }
         else
@@ -75,8 +86,12 @@ const char* debugEnum(InCode code) {
     case InCode::OR: return "OR";
     case InCode::NOT: return "NOT";
     case InCode::PRINT: return "PRINT";
-    case InCode::SET_VAR: return "SET_VAR";
-    case InCode::GET_VAR: return "GET_VAR";
+
+    case InCode::SET_GLOBAL_VAR: return "SET_GLOBAL_VAR";
+    case InCode::GET_GLOBAL_VAR: return "GET_GLOBAL_VAR";
+    case InCode::SET_LOCAL_VAR: return "SET_LOCAL_VAR";
+    case InCode::GET_LOCAL_VAR: return "GET_LOCAL_VAR";
+    
     case InCode::JUMP: return "JUMP";
     case InCode::JUMP_IF_FALSE: return "JUMP_IF_FALSE";
     case InCode::POP: return "POP";

@@ -157,27 +157,32 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	{
 		node->value = std::move(currentToken->value);
 	}
+	// only creates node, prior to that in equal declared
 	else if (currentToken->type == TokenType::IDENTIFIER)
-	{
-		if (scopeDepth > 0)
+	{	
+		auto str = currentToken->value.As<String&>();
+		auto& table = vm->GetGlobals();
+		auto entry = table.Get(str.GetStringView());
+		auto [isLocalDeclared, index] = vm->IsLocalExist(str);
+		auto isGlobal = entry->key != nullptr;
+		// it is local variable
+		if (scopeDepth > 0 && isLocalDeclared)
 		{
+			// should check whether it is declared variable
 			auto& variableName = currentToken->value.As<String&>();
 			node->value = ValueContainer((Object*)&variableName);
-			
+			node->depth = scopeDepth;
+		}
+		else if (isGlobal && !isLocalDeclared)
+		{
+			auto variableName = entry->key;
+			node->value = ValueContainer((Object*)variableName);
 		}
 		else
 		{
-			auto str = currentToken->value.As<String&>();
-			auto& table = vm->GetGlobals();
-			auto entry = table.Get(str.GetStringView());
-			if (entry->key == nullptr)
-			{
-				m_Panic = true;
-				std::cout << "ERROR[" << (currentToken)->line << "]: " <<
-					"The name " << str << " is used but not declared " << std::endl;
-			}
-			auto variableName = entry->key;
-			node->value = ValueContainer((Object*)variableName);
+			m_Panic = true;
+			std::cout << "ERROR[" << (currentToken)->line << "]: " <<
+				"The name " << str << " is used but not declared " << std::endl;
 		}
 		
 	}
@@ -327,6 +332,7 @@ void Print(const Expression* tree, int level) {
 	 return Equal(currentToken);
 
  }
+ 
  std::unique_ptr<Node> AST::Equal(Token*& currentToken)
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
@@ -343,51 +349,37 @@ void Print(const Expression* tree, int level) {
 		auto& globalsType = vm->GetGlobalsType();
 		auto& str= currentToken->value.As<String&>();
 
+		auto declaredType = (currentToken + 2)->type;
+		auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
 		auto entry = table.Get(str.GetStringView());
+		auto [isType,type]= IsVariableType(declaredType);
+		auto node = std::make_unique<Expression>();
+		node->type = TokenType::EQUAL;
 		if (entry->key == nullptr)
 		{
-			auto node = std::make_unique<Expression>();
 			node->line = currentToken->line;
-			node->type = currentToken->type;
 
 			// if there are tokens that correspond to declaration
 			// number :int = 2; number :=2;
-			auto declaredType = (currentToken + 2)->type;
-			auto [isType,type]= IsVariableType(declaredType);
 			if (isType)
 			{
-				auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
 				if (isEqualSign)
 				{
-					node->type = TokenType::EQUAL;
-					// define a local variable
-					if (scopeDepth > 0)
-					{
-						scopeDeclarations++;
-						node->left = LogicalOr(currentToken);
-						auto leftExpression = static_cast<Expression*>(node->left.get());
-						leftExpression->value.type = LiteralToType(type);
-						currentToken += 4;
-						node->right = LogicalOr(currentToken);
-						currentToken ++;
-
-					}
+					
 					// define global variable
-					else
-					{
-						globalsType.Add(str.GetStringView(), LiteralToType(declaredType));
-						// to note global that variable is declared, so that in value it can be used
-						auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
-						// it will initialize node with the name of a variable
-						node->left = LogicalOr(currentToken);
-						auto leftExpression = static_cast<Expression*>(node->left.get());
-						leftExpression->value.type = LiteralToType(type);
-						//node->left->value = ValueContainer((Object*)variableName);
-						currentToken += 4;
-						node->depth = 0;
-						node->right = LogicalOr(currentToken);
-						currentToken ++;
-					}
+					globalsType.Add(str.GetStringView(), LiteralToType(declaredType));
+					// to note global that variable is declared, so that in value it can be used
+					auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
+					// it will initialize node with the name of a variable
+					node->left = LogicalOr(currentToken);
+					auto leftExpression = static_cast<Expression*>(node->left.get());
+					leftExpression->value.type = LiteralToType(type);
+					//node->left->value = ValueContainer((Object*)variableName);
+					currentToken += 4;
+					node->depth = 0;
+					node->right = LogicalOr(currentToken);
+					currentToken ++;
+					
 				}
 
 			}
@@ -427,8 +419,22 @@ void Print(const Expression* tree, int level) {
 			}
 
 			return node;
+		}
+		else
+		{
+			// define a local variable
+			if (scopeDepth > 0)
+			{
+				scopeDeclarations++;
+				vm->AddLocal(str, scopeDepth);
+				node->left = LogicalOr(currentToken);
+				auto leftExpression = static_cast<Expression*>(node->left.get());
+				leftExpression->value.type = LiteralToType(type);
+				currentToken += 4;
+				node->right = LogicalOr(currentToken);
+				currentToken++;
 
-
+			}
 		}
 		 
 	 }
@@ -709,6 +715,10 @@ if (expr->type == TokenType::EQUAL)
 }
 if (expr->type == TokenType::IDENTIFIER)
 {
+	if (expr->depth > 0)
+	{
+		return TypeToLiteral(expr->value.type);
+	}
 	auto str = (String*)expr->value.As<Object*>();
 	auto entry = globalsType.Get(str->GetStringView());
 	assert(entry->key != nullptr);

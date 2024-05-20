@@ -31,8 +31,13 @@ enum class InCode
 	OR,
 	NOT,
 	PRINT,
-	SET_VAR,
-	GET_VAR,
+
+
+	SET_GLOBAL_VAR,
+	GET_GLOBAL_VAR,
+
+	SET_LOCAL_VAR,
+	GET_LOCAL_VAR,
 
 	JUMP,
 	JUMP_BACK,

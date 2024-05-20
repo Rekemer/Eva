@@ -79,10 +79,6 @@ public:
 	const Node* GetTree()const  { return tree.get(); }
 	class VirtualMachine* vm;
 	bool IsPanic() { return m_Panic; }
-	~AST()
-	{
-		//delete tree;
-	}
 private:
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Token*& currentToken);
@@ -104,10 +100,12 @@ private:
 	void EndBlock(Token*& currentToken);
 private:
 	// unique_ptr causes slicing 
-	// if std::make_unique<Node>(std::move(expr))
+	// if std::make_unique<Node>(std::move(*expr))
 	
 	std::unique_ptr<Node> tree;
 	bool m_Panic = false;
 	inline static int scopeDepth = 0;
+	// so we now how many pop commands must be executed
+	// once block ends
 	inline static int scopeDeclarations = 0;
 };

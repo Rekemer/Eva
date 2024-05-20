@@ -9,3 +9,9 @@ make a = a++ to have zero effect on stack
 make user cast?
 if 2.0+2.0 == 4
 
+
+refactor equal in AST and compile.cpp
+
+local variables are on stack
+if we want to change them or read them,
+we use indicies that we calcualte prior to usage of variables
