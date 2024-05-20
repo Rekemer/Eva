@@ -318,5 +318,15 @@ TEST_CASE("while statement")
 	CHECK(isPass);
 }
 
-
+TEST_CASE("scope test")
+{
+	auto a = R"(a: int = 15;
+				{
+					a--;
+				}
+					)";
+	auto vm = CompileRetVM(a);
+	auto isPass = CheckVariable<INT>("a", 14, ValueType::INT, vm);
+	CHECK(isPass);
+}
 
