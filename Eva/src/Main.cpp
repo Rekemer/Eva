@@ -25,7 +25,7 @@ int main(int argc, const char* argv[])
 			{
 				break;
 			}
-			auto res = Compile(line);
+			auto [res,vm]= Compile(line);
 			std::cout << "result: " << res << std::endl;
 		}
 	}

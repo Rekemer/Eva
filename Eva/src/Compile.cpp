@@ -4,13 +4,13 @@
 #include "Lexer.h"
 #include "VirtualMachine.h"
 #include "AST.h"
-ValueContainer Compile(const char* line)
+std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
 	
 	Lexer parser;
 	VirtualMachine vm;
 	
-	if (!parser.Parse(line,vm)) return ValueContainer{};
+	if (!parser.Parse(line, vm)) return { ValueContainer{} ,vm};
 
 	
 	auto& tokens = parser.GetTokens();
@@ -55,67 +55,16 @@ ValueContainer Compile(const char* line)
 	vm.GenerateBytecode(trees);
 
 	vm.Execute();
-	//auto res = vm.GetStack().top();
-	return {};
-}
-
-
-
-
-VirtualMachine CompileRetVM(const char* line)
-{
-	Lexer parser;
-	VirtualMachine vm;
-	if (!parser.Parse(line, vm)) return vm;
-
-
-
-	auto& tokens = parser.GetTokens();
-#if DEBUG
-	for (auto token : tokens)
+	if (vm.GetStack().size() > 0)
 	{
-		std::cout << tokenToString(token.type) << " ";
+		auto res = vm.GetStack().back();
+		return { res,vm };
 	}
-
-	std::cout << "\n";
-#endif // DEBUG
-	std::vector<AST> trees;
-	Token* ptr = &tokens[0];
-	bool panic = false;
-	while (ptr->type != TokenType::END)
-	{
-		AST tree;
-		tree.vm = &vm;
-		tree.Build(ptr);
-		tree.TypeCheck(vm);
-		if (tree.IsPanic())
-		{
-			panic = true;
-		}
-		trees.push_back(std::move(tree));
-
-	}
-	// type inference 
-
-
-
-#if DEBUG
-	Print(tree.GetTree());
-#endif // DEBUG
-
-	if (panic)
-	{
-		return{};
-	}
-	vm.GenerateBytecode(trees);
-
-	vm.Execute();
-	return vm;
+	return { {},vm };
 }
 
 ValueContainer CompileTest(const char* line)
 {
-	auto vm = CompileRetVM(line);
-	auto res = vm.GetStack().back();
+	auto [res, vm] = Compile(line);
 	return res;
 }

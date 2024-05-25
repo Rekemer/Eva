@@ -99,7 +99,7 @@ TEST_CASE("variable declared and has values")
 	SUBCASE("declare int")
 	{
 		auto str = R"(a : int = 2;)";
-		auto vm = CompileRetVM(str);
+		auto [res,vm]= Compile(str);
 		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
 		auto isPass = CheckVariable<int>("a", 2, ValueType::INT,vm);
 		CHECK(isPass);
@@ -107,21 +107,21 @@ TEST_CASE("variable declared and has values")
 	SUBCASE("declare float")
 	{
 		auto str = R"(a : float = 45.00;)";
-		auto vm = CompileRetVM(str);
+		auto [res,vm]= Compile(str);
 		auto isPass = CheckVariable<float>("a", 45.00, ValueType::FLOAT,  vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare bool")
 	{
 		auto str = R"(a : bool = true;)";
-		auto vm = CompileRetVM(str);
+		auto [res,vm]= Compile(str);
 		auto isPass = CheckVariable<bool>("a", true, ValueType::BOOL, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare String")
 	{
 		auto str = R"(a : String = "Hello, New Year!";)";
-		auto vm = CompileRetVM(str);
+		auto [res,vm]= Compile(str);
 		//auto str = String("Hello, New Year!");
 		auto isPass = CheckVariable<String>("a", "Hello, New Year!", ValueType::STRING, vm);
 		//Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
@@ -141,14 +141,14 @@ TEST_CASE("variable declared and cast value to type")
 	SUBCASE("cast float to int")
 	{
 		auto floatToInt = R"(intValue : int = 2.0;)";
-		auto vm = CompileRetVM(floatToInt);
+		auto [res, vm] = Compile(floatToInt);
 		auto isPass = CheckVariable<int>("intValue",2, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("cast int to float ")
 	{
 		auto intToFloat = R"(floatValue : float = 2;)";
-		auto vm = CompileRetVM(intToFloat);
+		auto [res, vm] = Compile(intToFloat);
 		auto isPass = CheckVariable<float>("floatValue",2.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 
@@ -162,7 +162,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 2;
 					a+=2;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 4.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 
@@ -171,7 +171,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a-=2;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 98.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -179,7 +179,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a /=2;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 50.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -187,7 +187,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a *=2;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 200.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -198,7 +198,7 @@ TEST_CASE("unary double operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a++;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 101, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -207,7 +207,7 @@ TEST_CASE("unary double operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a--;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 99, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -216,7 +216,7 @@ TEST_CASE("unary double operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a = a++ * 2 + 1;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 202 + 1, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -224,7 +224,7 @@ TEST_CASE("unary double operations on variables")
 	{
 		auto a = R"(a: float = 101;
 					a = a-- * 2 + 1;)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<float>("a", 200 + 1, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -240,7 +240,7 @@ TEST_CASE("if statement")
 						a++;
 					}
 					)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<int>("a", 101, ValueType::INT, vm);
 		CHECK(isPass);
 	}
@@ -257,7 +257,7 @@ TEST_CASE("if statement")
 						a+=5;
 					}
 					)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<INT>("a", 105, ValueType::INT, vm);
 		CHECK(isPass);
 	}
@@ -277,7 +277,7 @@ TEST_CASE("if statement")
 					a +=10;		
 					} 
 					)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<INT>("a", 115, ValueType::INT, vm);
 		CHECK(isPass);
 	}
@@ -300,7 +300,7 @@ TEST_CASE("if statement")
 						a +=20;		
 					} 
 					)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<INT>("a", 125, ValueType::INT, vm);
 		CHECK(isPass);
 	}
@@ -313,7 +313,7 @@ TEST_CASE("while statement")
 					a--;
 				}
 					)";
-	auto vm = CompileRetVM(a);
+	auto [res,vm]= Compile(a);
 	auto isPass = CheckVariable<INT>("a", 4, ValueType::INT, vm);
 	CHECK(isPass);
 }
@@ -327,7 +327,7 @@ TEST_CASE("scope test")
 					a--;
 				}
 					)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<INT>("a", 14, ValueType::INT, vm);
 		CHECK(isPass);
 	}
@@ -344,7 +344,7 @@ TEST_CASE("scope test")
 		}
 
 					)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<INT>("a", 12, ValueType::INT, vm);
 		CHECK(isPass);
 	}
@@ -363,7 +363,7 @@ TEST_CASE("scope test")
 		}
 
 					)";
-		auto vm = CompileRetVM(a);
+		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<INT>("a", -13, ValueType::INT, vm);
 		CHECK(isPass);
 	}

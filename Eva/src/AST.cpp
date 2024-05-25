@@ -383,7 +383,7 @@ void Print(const Expression* tree, int level) {
 				}
 
 			}
-			// deduce type
+			// deduce type is not supported yet, asserts will be removed
 			else
 			{
 				auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;

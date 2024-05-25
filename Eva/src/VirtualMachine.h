@@ -54,7 +54,8 @@ public:
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
 private:
-	void SetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
+	void SetVariable(std::vector<Bytecode>& opCode,
+		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
 	ValueType Generate(const Node* tree);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);

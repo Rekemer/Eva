@@ -49,7 +49,7 @@ while(false)
 	{\
 	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	}\
-else{assert(false && "unknown type of operation");}\
+	else{assert(false && "unknown type of operation");}\
 }\
 
 #define DETERMINE_BOOL(left,right,OP)\
@@ -69,10 +69,14 @@ if (child== ValueType::INT && parentType== ValueType::FLOAT)\
 {\
 	opCode.push_back(((uint8_t)InCode::CAST_FLOAT));\
 }\
-if (child== ValueType::FLOAT && parentType== ValueType::INT)\
+else if (child== ValueType::FLOAT && parentType== ValueType::INT)\
 {\
 	opCode.push_back(((uint8_t)InCode::CAST_INT));\
 }\
+else\
+{\
+  /*do nothing*/\
+}
 
 // returns the index for backpatching
 int JumpIfFalse(std::vector<Bytecode>& opCode)
@@ -121,10 +125,6 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		auto str = (String*)expr->value.as.object;
 		// check if it does exsist
 		auto [isDeclared,index] = IsLocalExist(*str);
-		// if local doesn exist then it could be globals
-	
-		if (!isDeclared)
-		assert(false && "Local variable is used but not declared");
 	
 		opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
 		opCode.push_back(index);
@@ -140,6 +140,9 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 	}
 }
 
+
+
+
 void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression* expression)
 {
 	assert(expression != nullptr);
@@ -153,8 +156,6 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	else
 	{
 		auto [isDeclared, index] = IsLocalExist(*str);
-		if (!isDeclared)
-			assert(false && "Local variable is used but not declared");
 		opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
 		opCode.push_back(index);
 	}
@@ -340,31 +341,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			assert(tree->As<Expression>()->left.get()!= nullptr);
 			auto str = (String*)exprLeft->value.as.object;
 
-
-			// local variable
-			if (exprLeft->depth > 0)
-			{
-				auto [isDeclared, index] = IsLocalExist(*str);
-				if (!isDeclared)
-					assert(false && "Local variable is used but not declared");
-
-				CAST_INT_FLOAT(expressionType, exprLeft->value.type);
-				opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
-				opCode.push_back(index);
-
-			}
-			// global variable
-			else
-			{
-				// during ast generation variable was declared
-				auto entry = globalVariablesTypes.Get(str->GetStringView());
-				assert(entry->key != nullptr);
-				CAST_INT_FLOAT(expressionType, entry->value.type);
-				constants.emplace_back(exprLeft->value.as.object);
-				opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-				opCode.push_back(constants.size() - 1);
-				return exprLeft->value.type;
-			}
+			CAST_INT_FLOAT(expressionType, exprLeft->value.type);
+			SetVariable(opCode, exprLeft);
 
 		}
 		else if (tree->type == TokenType::PLUS_EQUAL)
