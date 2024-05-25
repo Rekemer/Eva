@@ -22,8 +22,13 @@
 a: int = 3;
 {
 	b : int = 15;
-	b+=12;
-	a = b;
+	b+=2;
+	{
+		c : float = -1;
+		b*= c;
+		a -=c;
+	}
+	a+=b;
 }
 Print a;
 

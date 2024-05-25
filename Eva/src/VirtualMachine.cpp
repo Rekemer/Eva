@@ -4,6 +4,7 @@
 #include "Debug.h"
 #include "String.hpp"
 #include <cassert>
+#include <algorithm>
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.back().as.type;\
@@ -48,7 +49,7 @@ while(false)
 	{\
 	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	}\
-else{assert(false);}\
+else{assert(false && "unknown type of operation");}\
 }\
 
 #define DETERMINE_BOOL(left,right,OP)\
@@ -101,6 +102,64 @@ int CalculateJumpIndex(std::vector<Bytecode>& opCode, int from)
 {
 	return opCode.size() - 1 - from;
 }
+
+ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expression* expr)
+{
+	// global
+	if (expr->depth == 0)
+	{
+		opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+		constants.emplace_back(expr->value.as.object);
+		opCode.push_back(constants.size() - 1);
+		auto str = (String*)expr->value.as.object;
+		auto entry = globalVariablesTypes.Get(str->GetStringView());
+		return entry->value.type;
+	}
+	// local
+	else if (expr->depth > 0)
+	{
+		auto str = (String*)expr->value.as.object;
+		// check if it does exsist
+		auto [isDeclared,index] = IsLocalExist(*str);
+		// if local doesn exist then it could be globals
+	
+		if (!isDeclared)
+		assert(false && "Local variable is used but not declared");
+	
+		opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
+		opCode.push_back(index);
+
+		Entry* entry = nullptr;
+		for (auto& scope : currentScopes)
+		{
+			entry = scope->types.Get(str->GetStringView());
+			if (entry->key != nullptr) break;
+		}
+		assert(entry->key != nullptr);
+		return entry->value.type;
+	}
+}
+
+void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression* expression)
+{
+	assert(expression != nullptr);
+	auto str = (String*)expression->value.as.object;
+	if (expression->depth == 0)
+	{
+		constants.emplace_back(expression->value.as.object);
+		opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
+		opCode.push_back(constants.size() - 1);
+	}
+	else
+	{
+		auto [isDeclared, index] = IsLocalExist(*str);
+		if (!isDeclared)
+			assert(false && "Local variable is used but not declared");
+		opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
+		opCode.push_back(index);
+	}
+}
+
 ValueType VirtualMachine::Generate(const Node * tree)
 {
 		if (!tree) return ValueType::NIL;
@@ -114,7 +173,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			{
 				return{};
 			}
-			currentScope = block;
+			currentScopes.push_back(block);
 			for (auto& expression : block->expressions)
 			{
 				Generate(expression.get());
@@ -126,6 +185,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				opCode.push_back((uint8_t)InCode::POP);
 				popAmount--;
 			}
+			currentScopes.pop_back();
 			localPtr -= block->popAmount;
 			assert(localPtr >= 0);
 
@@ -227,35 +287,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		else if (tree->type == TokenType::IDENTIFIER)
 		{
-			// global
-			if (expr->depth == 0)
-			{
-				opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
-				constants.emplace_back(expr->value.as.object);
-				opCode.push_back(constants.size() - 1);
-				auto str = (String*)expr->value.as.object;
-				auto entry = globalVariablesTypes.Get(str->GetStringView());
-				return entry->value.type;
-			}
-			// local
-			else if (expr->depth > 0)
-			{
-				auto str = (String*)expr->value.as.object;
-				// check if it does exsist
-				auto [isDeclared,index]= IsLocalExist(*str);
-				// if local doesn exist then it could be globals
-
-				if (!isDeclared)
-				assert(false && "Local variable is used but not declared");
-				
-				opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
-				opCode.push_back(index);
-				auto entry = currentScope->types.Get(str->GetStringView());
-				return entry->value.type;
-			}
-
-
-			
+			return GetVariable(opCode, expr);
 		}
 		else if (tree->type == TokenType::TRUE)
 		{
@@ -339,27 +371,13 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		{
 			auto left = Generate(tree->As<Expression>()->left.get());
 			auto expressionType = Generate(tree->As<Expression>()->right.get());
-			auto str = (String*)exprLeft->value.as.object;
 
 			CAST_INT_FLOAT(expressionType, left);
 
 
 			DETERMINE_OP_TYPE(left, ADD);
 
-			if (exprLeft->depth == 0)
-			{
-				constants.emplace_back(exprLeft->value.as.object);
-				opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-				opCode.push_back(constants.size() - 1);
-			}
-			else
-			{
-				auto [isDeclared, index] = IsLocalExist(*str);
-				if (!isDeclared)
-					assert(false && "Local variable is used but not declared");
-				opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
-				opCode.push_back(index);
-			}
+			SetVariable(opCode, exprLeft);
 			return exprLeft->value.type;
 		}
 		else if (tree->type == TokenType::STAR_EQUAL)
@@ -373,10 +391,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 			DETERMINE_OP_TYPE(left, MULTIPLY);
 
+			SetVariable(opCode, exprLeft);
 
-			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-			opCode.push_back(constants.size() - 1);
 			return exprLeft->value.type;
 			}
 		else if (tree->type == TokenType::SLASH_EQUAL)
@@ -391,9 +407,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			DETERMINE_OP_TYPE(left, DIVIDE);
 
 
-			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-			opCode.push_back(constants.size() - 1);
+			SetVariable(opCode, exprLeft);
 			return exprLeft->value.type;
 		}
 		else if (tree->type == TokenType::MINUS_EQUAL)
@@ -408,9 +422,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			DETERMINE_OP_TYPE(left, SUBSTRACT);
 
 
-			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-			opCode.push_back(constants.size() - 1);
+			SetVariable(opCode, exprLeft);
 			return exprLeft->value.type;
 			}
 		else if (tree->type == TokenType::LESS_EQUAL)

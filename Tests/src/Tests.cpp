@@ -320,26 +320,51 @@ TEST_CASE("while statement")
 
 TEST_CASE("scope test")
 {
-	auto a = R"(a: int = 15;
+	SUBCASE("change global variable in local context")
+	{
+		auto a = R"(a: int = 15;
 				{
 					a--;
 				}
 					)";
-	auto vm = CompileRetVM(a);
-	auto isPass = CheckVariable<INT>("a", 14, ValueType::INT, vm);
-	CHECK(isPass);
-}
-TEST_CASE("multiple scope test")
-{
-	auto a = R"(a: int = 3;
-{
-	b : int = 15;
-	b+=2;
-	a = b;
-}
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<INT>("a", 14, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("change global variable in via local variable")
+	{
+		auto a = R"(a: int = 3;
+		{
+			b : int = 15;
+			b+=2;
+			b-=2;
+			b/=5;
+			b*=4.0;
+			a = b;
+		}
 
 					)";
-	auto vm = CompileRetVM(a);
-	auto isPass = CheckVariable<INT>("a", 17, ValueType::INT, vm);
-	CHECK(isPass);
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<INT>("a", 12, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("multiple scopes")
+	{
+		auto a = R"(a: int = 3;
+		{
+			b : int = 15;
+			b+=2;
+			{
+				c : float = -1;
+				b*= c;
+				a -=c;
+			}
+			a+=b;
+		}
+
+					)";
+		auto vm = CompileRetVM(a);
+		auto isPass = CheckVariable<INT>("a", -13, ValueType::INT, vm);
+		CHECK(isPass);
+	}
 }

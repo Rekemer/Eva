@@ -16,6 +16,7 @@ struct Local
 
 class AST;
 struct Node;
+struct Expression;
 struct Scope;
 class VirtualMachine
 {
@@ -35,8 +36,7 @@ public:
 	Object* AllocateString(const char* ptr, size_t size);
 
 	void AddLocal(String& name, int currentScope);
-	
-	// checks if exists and returns index
+	// checks if  exists in imitation of runtime stack and returns index
 	inline std::tuple<bool, int> IsLocalExist(String & name)
 	{
 		auto temp = localPtr;
@@ -54,6 +54,8 @@ public:
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
 private:
+	void SetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
+	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
 	ValueType Generate(const Node* tree);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
@@ -64,7 +66,8 @@ private:
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
-	const Scope* currentScope;
+	// so we can access previous scopes too
+	std::vector<const Scope*> currentScopes;
 	std::array<Local, 256> locals;
 	int localPtr = 0;
 };
