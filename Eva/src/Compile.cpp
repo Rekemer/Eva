@@ -53,7 +53,6 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	}
 	
 	vm.GenerateBytecode(trees);
-
 	vm.Execute();
 	if (vm.GetStack().size() > 0)
 	{

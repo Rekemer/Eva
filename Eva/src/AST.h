@@ -112,5 +112,5 @@ private:
 	// once block ends
 	std::stack<int> scopeDeclarations;
 	// to populate types of local variables
-	 Scope* currentScope;
+	Scope* currentScope;
 };

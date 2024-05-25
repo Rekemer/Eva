@@ -44,6 +44,7 @@ String::String(String&& string)
 
 String::~String()
 {
+	//std::cout << "string dealloc\n";
 	delete[] m_Data;
 }
 

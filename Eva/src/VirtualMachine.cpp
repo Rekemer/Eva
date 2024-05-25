@@ -5,6 +5,7 @@
 #include "String.hpp"
 #include <cassert>
 #include <algorithm>
+#include <sstream>
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.back().as.type;\
@@ -124,6 +125,8 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 	{
 		auto str = (String*)expr->value.as.object;
 		// check if it does exsist
+		// maybe we should move it to ast tree, but the indexing will get 
+		// compilcated since we don't know in indexing how much scopes we have passed
 		auto [isDeclared,index] = IsLocalExist(*str);
 	
 		opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
@@ -135,7 +138,13 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 			entry = scope->types.Get(str->GetStringView());
 			if (entry->key != nullptr) break;
 		}
-		assert(entry->key != nullptr);
+		if (entry->key == nullptr)
+		{
+			std::stringstream ss;
+			ss << "ERROR[" << (expr->line) << "]: " <<
+				"The name " << str->GetRaw() << " is used but not declared " << std::endl;
+			throw std::exception{ss.str().c_str()};
+		}
 		return entry->value.type;
 	}
 }
@@ -528,6 +537,20 @@ void VirtualMachine::AddLocal(String& name, int currentScope)
 	locals[localPtr++].depth = currentScope;
 }
 
+std::tuple<bool, int> VirtualMachine::IsLocalExist(String& name)
+{
+	auto temp = localPtr;
+	while (temp >= 0 )
+	{
+		if (name == locals[temp].name)
+		{
+			return { true ,temp };
+		}
+		temp--;
+	}
+	return { false ,-1 };
+}
+
 VirtualMachine::~VirtualMachine()
 {
 }
@@ -558,7 +581,7 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 void VirtualMachine::Execute()
 {
 	int ipIndex = 0;
-
+	if (m_Panic)return;
 
 	#if DEBUG
 	Debug(*this);
@@ -803,9 +826,18 @@ void VirtualMachine::Execute()
 
 void VirtualMachine::GenerateBytecode(const std::vector<AST>& trees)
 {
-	for (auto& tree : trees)
+	try
 	{
-		Generate(tree.GetTree());
+		for (auto& tree : trees)
+		{
+			Generate(tree.GetTree());
+		}
+		opCode.push_back((uint8_t)InCode::RETURN);
 	}
-	opCode.push_back((uint8_t)InCode::RETURN);
+	catch (const std::exception& e)
+	{
+		m_Panic = true;
+		std::cout << e.what();
+	}
+	
 }

@@ -37,19 +37,8 @@ public:
 
 	void AddLocal(String& name, int currentScope);
 	// checks if  exists in imitation of runtime stack and returns index
-	inline std::tuple<bool, int> IsLocalExist(String & name)
-	{
-		auto temp = localPtr;
-		while (temp >= 0)
-		{
-			if (name == locals[temp].name)
-			{
-				return { true ,temp};
-			}
-			temp--;
-		}
-		return { false ,-1};
-	}
+	// amountDeclaration is amount of declarations in current scope, if 0 then check the whole stack
+	std::tuple<bool, int> IsLocalExist(String& name);
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
@@ -71,4 +60,5 @@ private:
 	std::vector<const Scope*> currentScopes;
 	std::array<Local, 256> locals;
 	int localPtr = 0;
+	bool m_Panic = false;
 };

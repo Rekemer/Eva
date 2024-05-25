@@ -160,20 +160,36 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	// only creates node, prior to that in equal declared
 	else if (currentToken->type == TokenType::IDENTIFIER)
 	{	
-		auto str = currentToken->value.As<String&>();
-		auto& table = vm->GetGlobals();
-		auto entry = table.Get(str.GetStringView());
-		auto [isLocalDeclared, index] = vm->IsLocalExist(str);
+		auto& str = currentToken->value.As<String&>();
+		auto& globalTable = vm->GetGlobals();
+		auto entry = globalTable.Get(str.GetStringView());
 		auto isGlobal = entry->key != nullptr;
-		// it is local variable
-		if (scopeDepth > 0 && isLocalDeclared)
-		{
-			// should check whether it is declared variable
-			auto& variableName = currentToken->value.As<String&>();
-			node->value = ValueContainer((Object*)&variableName);
-			node->depth = scopeDepth;
+		// if local scope then read global or local
+		if (scopeDepth > 0)
+		{	
+
+			auto [isLocalDeclared, index] = vm->IsLocalExist(str);
+			if (isLocalDeclared)
+			{
+				// should check whether it is declared variable
+				auto& variableName = currentToken->value.As<String&>();
+				node->value = ValueContainer((Object*)&variableName);
+				node->depth = scopeDepth;
+			}
+			else if (isGlobal)
+			{
+				auto variableName = entry->key;
+				node->value = ValueContainer((Object*)variableName);
+			}
+			else
+			{
+				m_Panic = true;
+				std::cout << "ERROR[" << (currentToken)->line << "]: " <<
+					"The name " << str << " is used but not declared " << std::endl;
+			}
 		}
-		else if (isGlobal && !isLocalDeclared)
+		// if scope == 0 then can read only global
+		else if (isGlobal && scopeDepth == 0)
 		{
 			auto variableName = entry->key;
 			node->value = ValueContainer((Object*)variableName);
