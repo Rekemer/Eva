@@ -1,24 +1,3 @@
-a: int = 3;
-{
-	//b: int = 3;
-	//b+=2;
-	{
-		v : float = -1;
-		//b*= c;
-		//a -=c;
-	}
-	{
-		e : float = -1;
-		//b*= c;
-		//a -=c;
-	}
-	{
-		c : float = -1;
-		//b*= c;
-		//a -=c;
-	}
-	Print v;
-	//a+=b;
-}
-//Print a;
-
+a: int = 3 + 2;
+b : int = 1;
+a = b;

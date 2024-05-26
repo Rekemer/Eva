@@ -88,6 +88,26 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		 break;
 	 }
  }
+ void AST::Declare(Token*& currentToken,
+	 String& str, TokenType type, HashTable& table,
+	 HashTable& globalTypes, Expression* node,
+	 int offset)
+ {
+	 globalTypes.Add(str.GetStringView(), LiteralToType(type));
+	 // define global variable
+	 table.Add(str.GetStringView(), LiteralToType(type));
+	 // to note global that variable is declared, so that in value it can be used
+	 auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
+	 // it will initialize node with the name of a variable
+	 node->left = LogicalOr(currentToken);
+	 auto leftExpression = static_cast<Expression*>(node->left.get());
+	 leftExpression->value.type = LiteralToType(type);
+	 //node->left->value = ValueContainer((Object*)variableName);
+	 currentToken += offset;
+	 node->depth = scopeDepth;
+	 node->right = LogicalOr(currentToken);
+	 currentToken++;
+ }
  std::unique_ptr<Node> AST::UnaryOpPrefix( Token*&  currentToken)
 {
 	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
@@ -381,45 +401,15 @@ void Print(const Expression* tree, int level) {
 			{
 				if (isEqualSign)
 				{
-					
-					// define global variable
-					globalsType.Add(str.GetStringView(), LiteralToType(declaredType));
-					// to note global that variable is declared, so that in value it can be used
-					auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
-					// it will initialize node with the name of a variable
-					node->left = LogicalOr(currentToken);
-					auto leftExpression = static_cast<Expression*>(node->left.get());
-					leftExpression->value.type = LiteralToType(type);
-					//node->left->value = ValueContainer((Object*)variableName);
-					currentToken += 4;
-					node->depth = 0;
-					node->right = LogicalOr(currentToken);
-					currentToken ++;
-					
+					Declare(currentToken, str, declaredType,table, globalsType,node.get(),4);
 				}
 
 			}
-			// deduce type is not supported yet, asserts will be removed
+			// deduce type is not supported yet
+			// we can deduce for globals, but it is less straighforward for locals
 			else
 			{
-				auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
-				if (isEqualSign)
-				{
-
-					assert(false && "deduction of types is not supported yet");
-					auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
-					node->left = LogicalOr(currentToken);
-					//node->left->value = ValueContainer((Object*)variableName);
-
-					currentToken += 3;
-					node->right = LogicalOr(currentToken);
-					currentToken ++;
-
-				}
-				else
-				{
-					assert("No equal sign " && false);
-				}
+				
 
 			}
 
@@ -663,95 +653,73 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		}
 		return TokenType::BLOCK;
 	}
-auto expr = static_cast<Expression*>(node);
-if (expr->left != nullptr)
-{
-	childType = TypeCheck(expr->left.get(), vm);
-}
-if (expr->right != nullptr)
-{
-	childType1 = TypeCheck(expr->right.get(),vm);
-}
-auto& globalsType = vm.GetGlobalsType();
-auto& globals = vm.GetGlobals();
-if (expr->type == TokenType::IDENTIFIER)
-{
-	//declare a variable
-	if (childType != TokenType::END)
+	auto expr = static_cast<Expression*>(node);
+	if (expr->left != nullptr)
 	{
-		auto str = (String*)expr->value.As<Object*>();
-		auto entry = globalsType.Get(str->GetStringView());
-		if (entry->key!= nullptr)
-		{	// already know type
-			auto childValueType = LiteralToType(childType);
-			if (!IsCastable(entry->value.type,childValueType) )
-			{
-				m_Panic = true;
-				std::cout << "line [ " << expr->line <<" ]: Cannot cast " << ValueToStr(childValueType)<< 
-					" to " << ValueToStr(entry->value.type) << std::endl;
-			}
-		}
-		else
+		childType = TypeCheck(expr->left.get(), vm);
+	}
+	if (expr->right != nullptr)
+	{
+		childType1 = TypeCheck(expr->right.get(),vm);
+	}
+	auto& globalsType = vm.GetGlobalsType();
+	auto& globals = vm.GetGlobals();
+
+
+	// determine what kind of type operations returns 
+	bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
+	bool isTermOp = expr->type==TokenType::PLUS || expr->type == TokenType::STAR ||
+		expr->type == TokenType::SLASH || expr->type == TokenType::MINUS;
+	bool isTermOpEqual = expr->type == TokenType::PLUS_EQUAL ||
+		expr->type == TokenType::SLASH_EQUAL ||
+		expr->type == TokenType::MINUS_EQUAL ||
+		expr->type == TokenType::STAR_EQUAL ;
+	if(areChildren&& isTermOp)
+	{
+		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
 		{
-			globalsType.Add(str->GetStringView(), LiteralToType (childType));
+			expr->value = ValueContainer{ ValueType::INT };
+			return TokenType::INT_LITERAL;
 		}
+		expr->value = ValueContainer{ ValueType::FLOAT };
+		return TokenType::FLOAT_LITERAL;
+	}
+	else if (childType != TokenType::END && isTermOpEqual)
+	{
+		if (childType == TokenType::INT_LITERAL)
+		{
+			expr->value = ValueContainer{ ValueType::INT };
+			return TokenType::INT_LITERAL;
+		}
+		expr->value = ValueContainer{ ValueType::FLOAT };
+		return TokenType::FLOAT_LITERAL;
 	}
 	
-}
-// determine what kind of type operations returns
-bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
-bool isTermOp = expr->type==TokenType::PLUS || expr->type == TokenType::STAR ||
-	expr->type == TokenType::SLASH || expr->type == TokenType::MINUS;
-bool isTermOpEqual = expr->type == TokenType::PLUS_EQUAL ||
-	expr->type == TokenType::SLASH_EQUAL ||
-	expr->type == TokenType::MINUS_EQUAL ||
-	expr->type == TokenType::STAR_EQUAL ;
-if(areChildren&& isTermOp)
-{
-	if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
+	
+	
+	
+	if (expr->type == TokenType::EQUAL)
 	{
-		expr->value = ValueContainer{ ValueType::INT };
-		return TokenType::INT_LITERAL;
+		return childType1;
 	}
-	expr->value = ValueContainer{ ValueType::FLOAT };
-	return TokenType::FLOAT_LITERAL;
-}
-else if (childType != TokenType::END && isTermOpEqual)
-{
-	if (childType == TokenType::INT_LITERAL)
+	if (expr->type == TokenType::IDENTIFIER)
 	{
-		expr->value = ValueContainer{ ValueType::INT };
-		return TokenType::INT_LITERAL;
+		if (expr->depth > 0)
+		{
+			return TypeToLiteral(expr->value.type);
+		}
+		auto str = (String*)expr->value.As<Object*>();
+		auto entry = globalsType.Get(str->GetStringView());
+		assert(entry->key != nullptr);
+		return TypeToLiteral(entry->value.type);
 	}
-	expr->value = ValueContainer{ ValueType::FLOAT };
-	return TokenType::FLOAT_LITERAL;
-}
-
-
-
-
-if (expr->type == TokenType::EQUAL)
-{
-	return childType1;
-}
-if (expr->type == TokenType::IDENTIFIER)
-{
-	if (expr->depth > 0)
+	bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::MINUS_MINUS
+		|| expr->type == TokenType::PLUS_PLUS;
+	if (isUnary && childType != TokenType::END)
 	{
-		return TypeToLiteral(expr->value.type);
+		return childType;
 	}
-	auto str = (String*)expr->value.As<Object*>();
-	auto entry = globalsType.Get(str->GetStringView());
-	assert(entry->key != nullptr);
-	return TypeToLiteral(entry->value.type);
-}
-bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::MINUS_MINUS
-	|| expr->type == TokenType::PLUS_PLUS;
-if (isUnary && childType != TokenType::END)
-{
-	return childType;
-}
-return expr->type;
+	return expr->type;
 
 }
 
