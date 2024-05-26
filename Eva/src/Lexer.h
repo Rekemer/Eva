@@ -20,7 +20,6 @@ private:
 	void ParseString(VirtualMachine& vm);
 	void ParseBool();
 	void ParseDeclaration(VirtualMachine& vm);
-	bool IsEndExpression();
 	void ParseStatement();
 	void Eat();
 	void EatWhiteSpace();

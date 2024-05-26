@@ -587,6 +587,29 @@ void Print(const Expression* tree, int level) {
 		 whileNode->right = EatBlock(currentToken);
 		 return whileNode;
 	 }
+	 else if (currentToken->type == TokenType::FOR)
+	 {
+		 // can be classic c for without ()
+		 // can be for 1..10
+		 auto forNode= std::make_unique<Expression>();
+		 forNode->type = TokenType::FOR;
+		 forNode->line = currentToken->line;
+		 auto isDoubleDot = (currentToken + 2)->type == TokenType::DOUBLE_DOT;
+		 auto isIdentifier= (currentToken + 1)->type == TokenType::IDENTIFIER;
+		 if (isDoubleDot)
+		 {
+
+		 }
+		 else if (isIdentifier)
+		 {
+			 // init node
+			 forNode->left = LogicalOr(currentToken);
+			 currentToken++;
+			 // check and action nodes
+			 forNode->right = EatBlock(currentToken);
+		 }
+		 return forNode;
+	 }
 	 else if (currentToken->type == TokenType::LEFT_BRACE)
 	 {
 		 BeginBlock(currentToken);

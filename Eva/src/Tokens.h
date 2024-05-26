@@ -8,7 +8,7 @@ enum class TokenType : uint8_t {
 	// Single-character tokens.
 	LEFT_PAREN, RIGHT_PAREN,
 	LEFT_BRACE, RIGHT_BRACE,
-	COMMA, DOT, MINUS, PLUS,
+	COMMA, DOT,DOUBLE_DOT, MINUS, PLUS,
 	COLON,SEMICOLON, SLASH, STAR,
 	// One or two character tokens.
 	BANG, BANG_EQUAL,
