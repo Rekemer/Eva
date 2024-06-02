@@ -1,21 +1,20 @@
-
-{
-	a: int = 3 + 2;
-	b : int = 5;
-	Print a;
-	while a-b > 0
-	{	
-		a-=1;
-		Print a;
-	}
-}
-
+//{
+//	a: int = 3 + 2;
+//	b : int = 5;
+//	Print a;
+//	while a-b > 0
+//	{	
+//		a-=1;
+//		Print a;
+//	}
+//}
+//i: int = 2;
 
 //for 1..10 
 //{
 //
 //}
-//for i  = 0; i < 2; i+=2;
-//{
-//	
-//}
+for  i : int = 0; i < 20; i+=2;
+{
+	Print i;
+}

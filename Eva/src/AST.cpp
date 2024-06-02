@@ -486,22 +486,18 @@ void Print(const Expression* tree, int level) {
 
  std::unique_ptr<Node> AST::EatBlock(Token*& currentToken)
  {
-	 assert(currentToken->type == TokenType::LEFT_BRACE);
+	 Error(TokenType::LEFT_BRACE, currentToken, "Expected { at the beginning of the block");
 	 BeginBlock(currentToken);
 	 auto block = std::make_unique<Scope>();
 	 currentScope = block.get();
 	 block->type = TokenType::BLOCK;
-	 currentToken++;
 	 while (currentToken->type != TokenType::RIGHT_BRACE &&
 		 currentToken->type != TokenType::END)
 	 {
 		 auto expression = Statement(currentToken);
 		 block->expressions.push_back(std::move(expression));
 	 }
-	 if (currentToken->type == TokenType::RIGHT_BRACE)
-	 {
-		 currentToken++;
-	 }
+	 Error(TokenType::RIGHT_BRACE, currentToken, "Expected } at the end of the block");
 	 block->popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
 	 EndBlock(currentToken);
 	 return block;
@@ -524,6 +520,19 @@ void Print(const Expression* tree, int level) {
 	 auto expr = static_cast<Expression*>(ifnode->right.get());
 	 expr->right = std::move(then);
 	 return ifnode;
+ }
+
+ void AST::Error(TokenType expectedType, Token*& currentToken, const char* msg)
+ {
+	 if (currentToken->type != expectedType)
+	 {
+		 m_Panic = true;
+		 std::cout << "ERROR[" << (currentToken)->line << "]:" << msg;
+	 }
+	 else
+	 {
+		 currentToken++;
+	 }
  }
 
  // each statement is
@@ -593,7 +602,7 @@ void Print(const Expression* tree, int level) {
 	 {
 		 // can be classic c for without ()
 		 // can be for 1..10
-		 auto forNode= std::make_unique<Expression>();
+		 auto forNode = std::make_unique<For>();
 		 forNode->type = TokenType::FOR;
 		 forNode->line = currentToken->line;
 		 auto isDoubleDot = (currentToken + 2)->type == TokenType::DOUBLE_DOT;
@@ -604,11 +613,18 @@ void Print(const Expression* tree, int level) {
 		 }
 		 else if (isIdentifier)
 		 {
+			 currentToken += 1;
 			 // init node
-			 forNode->left = LogicalOr(currentToken);
-			 currentToken++;
-			 // check and action nodes
-			 forNode->right = EatBlock(currentToken);
+			 forNode->init = Equal(currentToken);
+			 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+			 
+			 // check and action node
+			 forNode->condition = LogicalOr(currentToken);
+			 currentToken += 1;
+			 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+
+			 forNode->action= Statement(currentToken);
+			 forNode->body = EatBlock(currentToken);
 		 }
 		 return forNode;
 	 }
@@ -676,6 +692,10 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			TypeCheck(e.get(), vm);
 		}
 		return TokenType::BLOCK;
+	}
+	if (node->type == TokenType::FOR)
+	{
+		return TokenType::FOR;
 	}
 	auto expr = static_cast<Expression*>(node);
 	if (expr->left != nullptr)

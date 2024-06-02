@@ -508,6 +508,20 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			opCode[jump] = negativeOffset;
 
 		}
+		else if (tree->type== TokenType::FOR)
+		{
+			auto forNode = tree->As<For>();
+			Generate(forNode->init.get());
+			auto startIndex = opCode.size();
+			Generate(forNode->condition.get());
+			auto indexJumpFalse = JumpIfFalse(opCode);
+			opCode.push_back((uint8_t)InCode::POP);
+			Generate(forNode->action.get());
+			Generate(forNode->body.get());
+			auto jump = JumpBack(opCode);
+			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
+			opCode[jump] = CalculateJumpIndex(opCode, startIndex);
+		}
 		else
 		{
 			assert(false && "weird type");

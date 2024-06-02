@@ -46,6 +46,14 @@ struct Expression : public Node
 	std::unique_ptr<Node> right = nullptr;
 
 };
+
+struct For : public Node
+{
+	std::unique_ptr<Node> init = nullptr;
+	std::unique_ptr<Node> condition = nullptr;
+	std::unique_ptr<Node> action = nullptr;
+	std::unique_ptr<Node> body = nullptr;
+};
 struct Scope : public Node
 {
 	std::vector<std::unique_ptr<Node>> expressions;
@@ -83,6 +91,7 @@ public:
 	class VirtualMachine* vm;
 	bool IsPanic() { return m_Panic; }
 private:
+	void Error(TokenType expectedType, Token*& currentToken, const char* msg);
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Token*& currentToken);
 	std::unique_ptr<Node> UnaryOpPostfix(Token*& currentToken);
