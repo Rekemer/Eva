@@ -133,4 +133,5 @@ private:
 	std::stack<int> scopeDeclarations;
 	// to populate types of local variables
 	Scope* currentScope;
+	std::vector<Scope*> currentScopes;
 };

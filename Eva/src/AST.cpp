@@ -716,17 +716,27 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::BLOCK)
 	{
 		auto block = static_cast<Scope*>(node);
-		currentScope = block;
+		currentScopes.push_back(block);
 		BeginBlock();
 		for (auto& e : block->expressions)
 		{
 			TypeCheck(e.get(), vm);
 		}
 		EndBlock();
+		currentScopes.pop_back();
 		return TokenType::BLOCK;
 	}
 	if (node->type == TokenType::FOR)
 	{
+		auto forNode = static_cast<For*>(node);
+		//currentScope = &forNode->initScope;
+		currentScopes.push_back(&forNode->initScope);
+		TypeCheck(forNode->init.get(), vm);
+		TypeCheck(forNode->condition.get(), vm);
+		TypeCheck(forNode->action.get(), vm);
+		TypeCheck(forNode->body.get(), vm);
+		currentScopes.pop_back();
+
 		return TokenType::FOR;
 	}
 	auto expr = static_cast<Expression*>(node);
@@ -783,7 +793,12 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			{
 				leftChild->value.type = LiteralToType(childType1);
 				auto str = (String*)leftChild->value.As<Object*>();
-				auto entry = currentScope->types.Get(str->GetStringView());
+				Entry* entry;
+				for (auto scope : currentScopes)
+				{
+					if (!scope->types.IsExist(str->GetStringView())) continue;
+					entry = scope->types.Get(str->GetStringView());
+				}
 				entry->value.type = leftChild->value.type;
 			}
 			else
@@ -803,7 +818,14 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	{
 		if (expr->depth > 0)
 		{
-			return TypeToLiteral(expr->value.type);
+			auto str = (String*)expr->value.As<Object*>();
+			Entry* entry;
+			for (auto scope : currentScopes)
+			{
+				if (!scope->types.IsExist(str->GetStringView())) continue;
+				entry = scope->types.Get(str->GetStringView());
+			}
+			return TypeToLiteral(entry->value.type);
 		}
 		auto str = (String*)expr->value.As<Object*>();
 		auto entry = globalsType.Get(str->GetStringView());
