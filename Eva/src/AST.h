@@ -47,13 +47,7 @@ struct Expression : public Node
 
 };
 
-struct For : public Node
-{
-	std::unique_ptr<Node> init = nullptr;
-	std::unique_ptr<Node> condition = nullptr;
-	std::unique_ptr<Node> action = nullptr;
-	std::unique_ptr<Node> body = nullptr;
-};
+;
 struct Scope : public Node
 {
 	std::vector<std::unique_ptr<Node>> expressions;
@@ -68,7 +62,14 @@ struct Scope : public Node
 	Scope& operator=(Scope&&) = default;
 	int popAmount = 0;
 };
-
+struct For : public Node
+{
+	Scope initScope;
+	std::unique_ptr<Node> init = nullptr;
+	std::unique_ptr<Node> condition = nullptr;
+	std::unique_ptr<Node> action = nullptr;
+	std::unique_ptr<Node> body = nullptr;
+};
 //const Token * currentToken = can change a pointer but not the contents
 // Token*  const currentToken = can change the contents but not the pointer
 

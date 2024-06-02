@@ -511,6 +511,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		else if (tree->type== TokenType::FOR)
 		{
 			auto forNode = tree->As<For>();
+			currentScopes.push_back(&forNode->initScope);
+			
 			Generate(forNode->init.get());
 			auto startIndex = opCode.size();
 			Generate(forNode->condition.get());
@@ -521,6 +523,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto jump = JumpBack(opCode);
 			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
 			opCode[jump] = CalculateJumpIndex(opCode, startIndex);
+
+			localPtr -= currentScopes.back()->popAmount;
+			currentScopes.pop_back();
+			assert(localPtr >= 0);
+
 		}
 		else
 		{

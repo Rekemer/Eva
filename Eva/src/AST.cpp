@@ -614,6 +614,8 @@ void Print(const Expression* tree, int level) {
 		 else if (isIdentifier)
 		 {
 			 currentToken += 1;
+			 currentScope = &forNode->initScope;
+			 BeginBlock(currentToken);
 			 // init node
 			 forNode->init = Equal(currentToken);
 			 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
@@ -625,6 +627,7 @@ void Print(const Expression* tree, int level) {
 
 			 forNode->action= Statement(currentToken);
 			 forNode->body = EatBlock(currentToken);
+			 EndBlock(currentToken);
 		 }
 		 return forNode;
 	 }
