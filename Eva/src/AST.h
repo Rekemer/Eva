@@ -32,6 +32,11 @@ struct Node
 	{
 		return static_cast<const T*>(this);
 	}
+	template <typename T>
+	T* AsMut() const
+	{
+		return (T*)(this);
+	}
 };
 
 struct Expression : public Node
@@ -112,7 +117,7 @@ private:
 	void BeginBlock(Token*& currentToken);
 	void EndBlock(Token*& currentToken);
 	void Declare(Token*& currentToken, String& str, 
-		TokenType declaredType, HashTable& table, 
+		ValueType declaredType, HashTable& table,
 		HashTable& globalTypes,
 		Expression* node,
 		int offset);

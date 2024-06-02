@@ -10,6 +10,7 @@ enum class ValueType
 	INT,
 	BOOL,
 	STRING,
+	DEDUCE,
 	NIL
 };
 const char* ValueToStr(ValueType valueType);

@@ -82,26 +82,29 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		 break;
 	 case ValueType::BOOL:
 		 return TokenType::BOOL_TYPE;
-		 break;	
+		 break;
+	 case ValueType::DEDUCE:
+		 return TokenType::DEDUCE;
+		 break;
 	 default:
 		 assert(false);
 		 break;
 	 }
  }
  void AST::Declare(Token*& currentToken,
-	 String& str, TokenType type, HashTable& table,
+	 String& str, ValueType type, HashTable& table,
 	 HashTable& globalTypes, Expression* node,
 	 int offset)
  {
-	 globalTypes.Add(str.GetStringView(), LiteralToType(type));
+	 globalTypes.Add(str.GetStringView(), type);
 	 // define global variable
-	 table.Add(str.GetStringView(), LiteralToType(type));
+	 table.Add(str.GetStringView(), type);
 	 // to note global that variable is declared, so that in value it can be used
 	 auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
 	 // it will initialize node with the name of a variable
 	 node->left = LogicalOr(currentToken);
 	 auto leftExpression = static_cast<Expression*>(node->left.get());
-	 leftExpression->value.type = LiteralToType(type);
+	 leftExpression->value.type = type;
 	 //node->left->value = ValueContainer((Object*)variableName);
 	 currentToken += offset;
 	 node->depth = scopeDepth;
@@ -348,7 +351,6 @@ void Print(const Expression* tree, int level) {
 
  std::unique_ptr<Node> AST::EqualOp(Token*& currentToken)
  {
-	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
 	 auto isOp = (currentToken+1)->type == TokenType::PLUS_EQUAL
 		 || (currentToken + 1)->type == TokenType::STAR_EQUAL
 		 || (currentToken + 1)->type == TokenType::SLASH_EQUAL
@@ -373,8 +375,8 @@ void Print(const Expression* tree, int level) {
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
 	 bool isDeclaration = (currentToken+1)->type == TokenType::COLON;
+	 bool isAssignment = (currentToken+1)->type == TokenType::EQUAL;
 	 auto varToken = currentToken;
-	 auto isAssignment = (currentToken + 1)->type == TokenType::EQUAL;
 	 Token* eqToken;
 
 	 
@@ -401,7 +403,7 @@ void Print(const Expression* tree, int level) {
 			{
 				if (isEqualSign)
 				{
-					Declare(currentToken, str, declaredType,table, globalsType,node.get(),4);
+					Declare(currentToken, str, LiteralToType(type),table, globalsType,node.get(),4);
 				}
 
 			}
@@ -409,8 +411,11 @@ void Print(const Expression* tree, int level) {
 			// we can deduce for globals, but it is less straighforward for locals
 			else
 			{
-				
-
+				auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
+				if (isEqualSign)
+				{
+					Declare(currentToken, str, ValueType::DEDUCE, table, globalsType, node.get(), 3);
+				}
 			}
 
 			if ((currentToken)->type == TokenType::SEMICOLON)
@@ -747,6 +752,17 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	
 	if (expr->type == TokenType::EQUAL)
 	{
+		auto leftChild = expr->left->AsMut<Expression>();
+		if (childType == TokenType::DEDUCE)
+		{
+			leftChild->value.type = LiteralToType(childType1);
+			auto str = (String*)leftChild->value.As<Object*>();
+			auto entry = globalsType.Get(str->GetStringView());
+			entry->value.type = leftChild->value.type;
+			entry = globals.Get(str->GetStringView());
+			entry->value.type = leftChild->value.type;
+
+		}
 		return childType1;
 	}
 	if (expr->type == TokenType::IDENTIFIER)
