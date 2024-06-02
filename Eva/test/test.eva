@@ -1,13 +1,14 @@
 
-//{
-//	a: int = 3 + 2;
-//	b : int = 1;
-//	while a - b > 0
-//	{	
-//		a-=b;
-//		Print a;
-//	}
-//}
+{
+	a: int = 3 + 2;
+	b : int = 5;
+	Print a;
+	while a-b > 0
+	{	
+		a-=1;
+		Print a;
+	}
+}
 
 
 //for 1..10 

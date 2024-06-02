@@ -487,6 +487,7 @@ void Print(const Expression* tree, int level) {
  std::unique_ptr<Node> AST::EatBlock(Token*& currentToken)
  {
 	 assert(currentToken->type == TokenType::LEFT_BRACE);
+	 BeginBlock(currentToken);
 	 auto block = std::make_unique<Scope>();
 	 currentScope = block.get();
 	 block->type = TokenType::BLOCK;
@@ -502,6 +503,7 @@ void Print(const Expression* tree, int level) {
 		 currentToken++;
 	 }
 	 block->popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
+	 EndBlock(currentToken);
 	 return block;
  }
 
@@ -612,9 +614,8 @@ void Print(const Expression* tree, int level) {
 	 }
 	 else if (currentToken->type == TokenType::LEFT_BRACE)
 	 {
-		 BeginBlock(currentToken);
+		
 		 auto scope = EatBlock(currentToken);
-		 EndBlock(currentToken);
 		 return scope;
 	 }
 	 auto expr = EqualOp(currentToken);
