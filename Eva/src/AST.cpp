@@ -393,6 +393,7 @@ void Print(const Expression* tree, int level) {
 		auto [isType,type]= IsVariableType(declaredType);
 		auto node = std::make_unique<Expression>();
 		node->type = TokenType::EQUAL;
+		node->depth = scopeDepth;
 		if (entry->key == nullptr && scopeDepth == 0)
 		{
 			node->line = currentToken->line;
@@ -436,17 +437,38 @@ void Print(const Expression* tree, int level) {
 			// define a local variable
 			if (scopeDepth > 0)
 			{
-				scopeDeclarations.top()++;
-				vm->AddLocal(str, scopeDepth);
-				node->left = LogicalOr(currentToken);
-				auto leftExpression = static_cast<Expression*>(node->left.get());
+				if (isType)
+				{
+					if (isEqualSign)
+					{
+						scopeDeclarations.top()++;
+						vm->AddLocal(str, scopeDepth);
+						node->left = LogicalOr(currentToken);
+						auto leftExpression = static_cast<Expression*>(node->left.get());
+
+						currentScope->types.Add(str.GetStringView(), LiteralToType(declaredType));
+						leftExpression->value.type = LiteralToType(type);
+						currentToken += 4;
+						node->right = LogicalOr(currentToken);
+						currentToken++;
+						return node;
+					}
+				}
+				else
+				{
+					scopeDeclarations.top()++;
+					vm->AddLocal(str, scopeDepth);
+					node->left = LogicalOr(currentToken);
+					auto leftExpression = static_cast<Expression*>(node->left.get());
+
+					currentScope->types.Add(str.GetStringView(), ValueType::DEDUCE);
+					leftExpression->value.type = ValueType::DEDUCE;
+					currentToken += 3;
+					node->right = LogicalOr(currentToken);
+					currentToken++;
+					return node;
+				}
 				
-				currentScope->types.Add(str.GetStringView(),LiteralToType(declaredType));
-				leftExpression->value.type = LiteralToType(type);
-				currentToken += 4;
-				node->right = LogicalOr(currentToken);
-				currentToken++;
-				return node;
 			}
 		}
 		 
@@ -492,7 +514,7 @@ void Print(const Expression* tree, int level) {
  std::unique_ptr<Node> AST::EatBlock(Token*& currentToken)
  {
 	 Error(TokenType::LEFT_BRACE, currentToken, "Expected { at the beginning of the block");
-	 BeginBlock(currentToken);
+	 BeginBlock();
 	 auto block = std::make_unique<Scope>();
 	 currentScope = block.get();
 	 block->type = TokenType::BLOCK;
@@ -504,7 +526,7 @@ void Print(const Expression* tree, int level) {
 	 }
 	 Error(TokenType::RIGHT_BRACE, currentToken, "Expected } at the end of the block");
 	 block->popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
-	 EndBlock(currentToken);
+	 EndBlock();
 	 return block;
  }
 
@@ -620,7 +642,7 @@ void Print(const Expression* tree, int level) {
 		 {
 			 currentToken += 1;
 			 currentScope = &forNode->initScope;
-			 BeginBlock(currentToken);
+			 BeginBlock();
 			 // init node
 			 forNode->init = Equal(currentToken);
 			 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
@@ -632,7 +654,7 @@ void Print(const Expression* tree, int level) {
 
 			 forNode->action= Statement(currentToken);
 			 forNode->body = EatBlock(currentToken);
-			 EndBlock(currentToken);
+			 EndBlock();
 		 }
 		 return forNode;
 	 }
@@ -647,12 +669,12 @@ void Print(const Expression* tree, int level) {
 	 return expr;
  }
  
- void AST::BeginBlock(Token*& currentToken)
+ void AST::BeginBlock()
  {
 	 scopeDepth++;
 	 scopeDeclarations.push(0);
  }
- void AST::EndBlock(Token*& currentToken)
+ void AST::EndBlock()
  {
 	 scopeDepth--;
 	 scopeDeclarations.pop();
@@ -694,11 +716,13 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::BLOCK)
 	{
 		auto block = static_cast<Scope*>(node);
-
+		currentScope = block;
+		BeginBlock();
 		for (auto& e : block->expressions)
 		{
 			TypeCheck(e.get(), vm);
 		}
+		EndBlock();
 		return TokenType::BLOCK;
 	}
 	if (node->type == TokenType::FOR)
@@ -755,12 +779,22 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		auto leftChild = expr->left->AsMut<Expression>();
 		if (childType == TokenType::DEDUCE)
 		{
-			leftChild->value.type = LiteralToType(childType1);
-			auto str = (String*)leftChild->value.As<Object*>();
-			auto entry = globalsType.Get(str->GetStringView());
-			entry->value.type = leftChild->value.type;
-			entry = globals.Get(str->GetStringView());
-			entry->value.type = leftChild->value.type;
+			if (expr->depth > 0)
+			{
+				leftChild->value.type = LiteralToType(childType1);
+				auto str = (String*)leftChild->value.As<Object*>();
+				auto entry = currentScope->types.Get(str->GetStringView());
+				entry->value.type = leftChild->value.type;
+			}
+			else
+			{
+				leftChild->value.type = LiteralToType(childType1);
+				auto str = (String*)leftChild->value.As<Object*>();
+				auto entry = globalsType.Get(str->GetStringView());
+				entry->value.type = leftChild->value.type;
+				entry = globals.Get(str->GetStringView());
+				entry->value.type = leftChild->value.type;
+			}
 
 		}
 		return childType1;

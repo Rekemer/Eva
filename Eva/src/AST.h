@@ -114,8 +114,8 @@ private:
 	std::unique_ptr<Node> Statement(Token*& currentToken);
 	std::unique_ptr<Node> EatIf(Token*& currentToken);
 	std::unique_ptr<Node> EatBlock(Token*& currentToken);
-	void BeginBlock(Token*& currentToken);
-	void EndBlock(Token*& currentToken);
+	void BeginBlock();
+	void EndBlock();
 	void Declare(Token*& currentToken, String& str, 
 		ValueType declaredType, HashTable& table,
 		HashTable& globalTypes,
