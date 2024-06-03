@@ -333,7 +333,7 @@ TEST_CASE("scope test")
 		auto isPass = CheckVariable<INT>("a", 14, ValueType::INT, vm);
 		CHECK(isPass);
 	}
-	SUBCASE("change global variable in via local variable")
+	SUBCASE("change global variable via local variable")
 	{
 		auto a = R"(a: int = 3;
 		{

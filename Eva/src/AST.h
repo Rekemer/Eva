@@ -109,7 +109,7 @@ private:
 	std::unique_ptr<Node> Equality(Token*& currentToken);
 	std::unique_ptr<Node> LogicalAnd(Token*& currentToken);
 	std::unique_ptr<Node> LogicalOr(Token*& currentToken);
-	std::unique_ptr<Node> Equal(Token*& currentToken);
+	std::unique_ptr<Node> Declaration(Token*& currentToken);
 	std::unique_ptr<Node> EqualOp(Token*& currentToken);
 	std::unique_ptr<Node> Statement(Token*& currentToken);
 	std::unique_ptr<Node> EatIf(Token*& currentToken);

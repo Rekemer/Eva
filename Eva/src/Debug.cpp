@@ -43,7 +43,7 @@ void Debug(VirtualMachine& vm)
             else
             {
                 auto nameOfVariable = constants[indexOfVariableName];
-                auto string = static_cast<String*>(nameOfVariable.As<Object*>())->GetStringView();
+                auto string = (nameOfVariable.As<String&>()).GetStringView();
                 std::cout << string << std::endl;
             }
 

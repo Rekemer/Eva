@@ -87,6 +87,7 @@ public:
 	{
 		return *reinterpret_cast<const T*>(&as);
 	}
+	
 	template <typename T>
 	T& AsRef()
 	{

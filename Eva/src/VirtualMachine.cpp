@@ -791,7 +791,7 @@ void VirtualMachine::Execute()
 		case InCode::GET_GLOBAL_VAR:
 		{	
 			auto& nameOfVariable = constants[opCode[ipIndex++]];
-			auto string = static_cast<String*>(nameOfVariable.As<Object*>())->GetStringView();
+			auto string = (nameOfVariable.As<String&>()).GetStringView();
 			auto entry = globalVariables.Get(string);
 			vmStack.push_back(entry->value);
 			break;
@@ -800,7 +800,7 @@ void VirtualMachine::Execute()
 		{	
 			auto& value = vmStack.back();
 			auto& nameOfVariable = constants[opCode[ipIndex++]];
-			auto string = ((String*)(nameOfVariable.As<Object*>()))->GetStringView();
+			auto string = (nameOfVariable.As<String&>()).GetStringView();
 			auto entry = globalVariables.Get(string);
 			entry->value = value;
 			vmStack.pop_back();
