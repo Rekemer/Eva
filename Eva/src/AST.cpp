@@ -91,11 +91,12 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		 break;
 	 }
  }
- void AST::Declare(Token*& currentToken,
-	 String& str, ValueType type, HashTable& table,
+ void AST::DeclareGlobal(Token*& currentToken,
+	  ValueType type, HashTable& table,
 	 HashTable& globalTypes, Expression* node,
 	 int offset)
  {
+	 auto& str = currentToken->value.As<String&>();
 	 globalTypes.Add(str.GetStringView(), type);
 	 // define global variable
 	 table.Add(str.GetStringView(), type);
@@ -110,6 +111,21 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 node->depth = scopeDepth;
 	 node->right = LogicalOr(currentToken);
 	 //currentToken++;
+ }
+ void AST::DeclareLocal(Token*& currentToken,
+	 VirtualMachine* vm, Expression* node,ValueType type, int offset)
+ {
+	 auto& str = currentToken->value.As<String&>();
+	 scopeDeclarations.top()++;
+	 vm->AddLocal(str, scopeDepth);
+	 node->left = LogicalOr(currentToken);
+	 auto leftExpression = static_cast<Expression*>(node->left.get());
+
+	 currentScope->types.Add(str.GetStringView(), type);
+	 leftExpression->value.type =type;
+	 currentToken += offset;
+	 node->right = LogicalOr(currentToken);
+	 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
  }
  std::unique_ptr<Node> AST::UnaryOpPrefix( Token*&  currentToken)
 {
@@ -383,8 +399,8 @@ void Print(const Expression* tree, int level) {
 	 {
 		auto& table = vm->GetGlobals();
 		auto& globalsType = vm->GetGlobalsType();
-		auto& str= currentToken->value.As<String&>();
-
+		
+		auto& str = currentToken->value.As<String&>();
 		auto declaredType = (currentToken + 2)->type;
 		auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
 		auto entry = table.Get(str.GetStringView());
@@ -402,7 +418,7 @@ void Print(const Expression* tree, int level) {
 			{
 				if (isEqualSign)
 				{
-					Declare(currentToken, str, LiteralToType(type),table,
+					DeclareGlobal(currentToken, LiteralToType(type),table,
 						globalsType,node.get(),3);
 				}
 
@@ -412,7 +428,7 @@ void Print(const Expression* tree, int level) {
 				auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
 				if (isEqualSign)
 				{
-					Declare(currentToken, str, ValueType::DEDUCE, table, globalsType, node.get(), 2);
+					DeclareGlobal(currentToken, ValueType::DEDUCE, table, globalsType, node.get(), 2);
 				}
 			}
 			//commented so we can run expression tests
@@ -429,31 +445,13 @@ void Print(const Expression* tree, int level) {
 				{
 					if (isEqualSign)
 					{
-						scopeDeclarations.top()++;
-						vm->AddLocal(str, scopeDepth);
-						node->left = LogicalOr(currentToken);
-						auto leftExpression = static_cast<Expression*>(node->left.get());
-
-						currentScope->types.Add(str.GetStringView(), LiteralToType(declaredType));
-						leftExpression->value.type = LiteralToType(type);
-						currentToken += 3;
-						node->right = LogicalOr(currentToken);
-						Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+						DeclareLocal(currentToken,vm,node.get(), LiteralToType(type),3);
 						return node;
 					}
 				}
 				else
 				{
-					scopeDeclarations.top()++;
-					vm->AddLocal(str, scopeDepth);
-					node->left = LogicalOr(currentToken);
-					auto leftExpression = static_cast<Expression*>(node->left.get());
-
-					currentScope->types.Add(str.GetStringView(), ValueType::DEDUCE);
-					leftExpression->value.type = ValueType::DEDUCE;
-					currentToken += 2;
-					node->right = LogicalOr(currentToken);
-					Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+					DeclareLocal(currentToken, vm, node.get(), ValueType::DEDUCE, 2);
 					return node;
 				}
 				

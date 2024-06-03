@@ -116,11 +116,13 @@ private:
 	std::unique_ptr<Node> EatBlock(Token*& currentToken);
 	void BeginBlock();
 	void EndBlock();
-	void Declare(Token*& currentToken, String& str, 
+	void DeclareGlobal(Token*& currentToken, 
 		ValueType declaredType, HashTable& table,
 		HashTable& globalTypes,
 		Expression* node,
 		int offset);
+	void DeclareLocal(Token*& currentToken, 
+		VirtualMachine* vm, Expression* node,ValueType type,int offset);
 private:
 	// unique_ptr causes slicing 
 	// if std::make_unique<Node>(std::move(*expr))
