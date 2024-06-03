@@ -69,7 +69,8 @@ bool AllTrue(bool condition,T... conditions)
 	return condition && AllTrue(conditions...);
 }
 template <typename ExpectedType>
-bool CheckVariable(std::string_view variableName, const ExpectedType& expectedValue, ValueType expectedValueType,VirtualMachine& vm)
+bool CheckVariable(std::string_view variableName, const ExpectedType& expectedValue, 
+	ValueType expectedValueType,VirtualMachine& vm)
 {
 	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
 	auto entry = tb.globals.Get(variableName);
@@ -79,6 +80,7 @@ bool CheckVariable(std::string_view variableName, const ExpectedType& expectedVa
 	auto isPass = AllTrue(isType, isRightValue);
 	return isPass;
 }
+
 
 template <>
 bool CheckVariable<String>(std::string_view variableName, const String& expectedValue, ValueType expectedValueType, VirtualMachine& vm)
@@ -367,4 +369,47 @@ TEST_CASE("scope test")
 		auto isPass = CheckVariable<INT>("a", -13, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+}
+TEST_CASE("deduction test")
+{
+	SUBCASE("global deduction scopes")
+	{
+		auto a = R"(a:= 3;
+					a-=2;
+					b := 2.2 + 2;
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("a", 1, ValueType::INT, vm) && 
+			CheckVariable<FLOAT>("b", 4.2, ValueType::FLOAT, vm);;
+		CHECK(isPass);
+	}
+	SUBCASE("local deduction scopes")
+	{
+		auto a = R"(
+					g := 0.0;
+					{
+						a:= 3;
+						a-=2;
+						b := 2.2 + 2;
+						g = a + b;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<FLOAT>("g", 5.2, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
+
+}
+TEST_CASE("for loop test")
+{
+	auto a = R"(
+					g := 0;
+					for  i:= 0; i < 10; i+=1;
+					{
+						g+=i;
+					}
+					)";
+	auto [res, vm] = Compile(a);
+	auto isPass = CheckVariable<INT>("g", 55, ValueType::INT, vm);
+	CHECK(isPass);
 }

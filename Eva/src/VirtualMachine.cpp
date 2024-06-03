@@ -103,6 +103,7 @@ int JumpBack(std::vector<Bytecode>& opCode)
 	auto indexJump = opCode.size() - 1;
 	return indexJump;
 }
+// from: to make jump relative
 int CalculateJumpIndex(std::vector<Bytecode>& opCode, int from)
 {
 	return opCode.size() - 1 - from;
@@ -514,15 +515,20 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			currentScopes.push_back(&forNode->initScope);
 			
 			Generate(forNode->init.get());
+			auto firstIteration = Jump(opCode);
+
 			auto startIndex = opCode.size();
 			Generate(forNode->condition.get());
 			auto indexJumpFalse = JumpIfFalse(opCode);
 			opCode.push_back((uint8_t)InCode::POP);
 			Generate(forNode->action.get());
+			opCode[firstIteration] = CalculateJumpIndex(opCode, firstIteration) + 1;
 			Generate(forNode->body.get());
 			auto jump = JumpBack(opCode);
+			
 			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
 			opCode[jump] = CalculateJumpIndex(opCode, startIndex);
+
 
 			localPtr -= currentScopes.back()->popAmount;
 			currentScopes.pop_back();

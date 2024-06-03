@@ -33,7 +33,7 @@ void Debug(VirtualMachine& vm)
             isLocal)
         {
             std::cout << str << std::endl;
-            auto indexOfVariableName = bytecode[ipIndex++];
+            auto indexOfVariableName = (int)bytecode[ipIndex++];
             // hmmm... can't show local variable name, because there is no stack...
             // show index instead
             if (isLocal)
