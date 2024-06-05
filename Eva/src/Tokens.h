@@ -20,7 +20,7 @@ enum class TokenType : uint8_t {
 	PLUS_PLUS, MINUS_MINUS,
 	
 	// Literals.
-	IDENTIFIER,INT_LITERAL,FLOAT_LITERAL,STRING_LITERAL,
+	IDENTIFIER ,INT_LITERAL,FLOAT_LITERAL,STRING_LITERAL,
 	
 	
 	ERROR,
@@ -39,6 +39,7 @@ enum class TokenType : uint8_t {
 	// should be reworked
 	BLOCK,
 	DEDUCE,
+	FOR_FOLDED,
 	
 	
 };

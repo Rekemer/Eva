@@ -4,6 +4,7 @@
 #include "VirtualMachine.h"
 
 
+
 Expression::Expression(Expression&& e) : Node(std::move(e))
 {
 	left = std::move(e.left);
@@ -110,7 +111,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 //node->left->value = ValueContainer((Object*)variableName);
 	 node->depth = scopeDepth;
 	 node->right = LogicalOr(currentToken);
-	 //currentToken++;
+	 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
  }
  void AST::DeclareLocal(Token*& currentToken,
 	 VirtualMachine* vm, Expression* node,ValueType type, int offset)
@@ -431,9 +432,6 @@ void Print(const Expression* tree, int level) {
 					DeclareGlobal(currentToken, ValueType::DEDUCE, table, globalsType, node.get(), 2);
 				}
 			}
-			//commented so we can run expression tests
-			Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
-
 			return node;
 		}
 		else
@@ -445,16 +443,14 @@ void Print(const Expression* tree, int level) {
 				{
 					if (isEqualSign)
 					{
-						DeclareLocal(currentToken,vm,node.get(), LiteralToType(type),3);
-						return node;
+					    DeclareLocal(currentToken,vm,node.get(), LiteralToType(type),3);
 					}
 				}
 				else
 				{
 					DeclareLocal(currentToken, vm, node.get(), ValueType::DEDUCE, 2);
-					return node;
 				}
-				
+				return node;
 			}
 		}
 		 
@@ -546,6 +542,7 @@ void Print(const Expression* tree, int level) {
 		 currentToken++;
 	 }
  }
+	
 
  // each statement is
  // required to have zero stack effect
@@ -610,13 +607,51 @@ void Print(const Expression* tree, int level) {
 		 forNode->line = currentToken->line;
 		 auto isDoubleDot = (currentToken + 2)->type == TokenType::DOUBLE_DOT;
 		 auto isIdentifier= (currentToken + 1)->type == TokenType::IDENTIFIER;
+		 // can be a..b  1..b b..2  1..2
 		 if (isDoubleDot)
 		 {
+			 currentToken++;
+
+			 currentScope = &forNode->initScope;
+			 BeginBlock();
+
+			 auto begin= (currentToken);
+			 auto end= (currentToken+2);
+			 auto startValue = begin->value;
+			 auto obj = vm->AllocateString("i", 1);
+			 std::vector<Token> forLoop =
+			 {
+				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
+				 CreateToken(TokenType::COLON,{},currentToken->line),
+				 CreateToken(TokenType::EQUAL,{},currentToken->line),
+				 CreateToken(TokenType::INT_LITERAL,std::move(startValue),currentToken->line),
+				 CreateToken(TokenType::SEMICOLON,{},currentToken->line),
+				 
+				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
+				 CreateToken(TokenType::LESS,{},currentToken->line),
+				 *end,
+				// CreateToken(TokenType::SEMICOLON,{},currentToken->line),
+				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
+				 CreateToken(TokenType::PLUS_EQUAL,{},currentToken->line),
+				 CreateToken(TokenType::INT_LITERAL,ValueContainer{1},currentToken->line),
+				 CreateToken(TokenType::SEMICOLON,{},currentToken->line),
+			 };
+			// forNode->type = TokenType::FOR_FOLDED;
+			 auto forLoopPtr = forLoop.data();
+			 forNode->init = Declaration(forLoopPtr);
+			 forNode->condition =LogicalOr(forLoopPtr);
+			 forNode->action = Statement(forLoopPtr);
+			 currentToken++;
+			 currentToken++;
+			 currentToken++;
+			 forNode->body = EatBlock(currentToken);
+			 EndBlock();
 
 		 }
 		 else if (isIdentifier)
 		 {
 			 currentToken += 1;
+			 // so we can create i iterator
 			 currentScope = &forNode->initScope;
 			 BeginBlock();
 			 // init node

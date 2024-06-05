@@ -16,7 +16,5 @@ local variables are on stack
 if we want to change them or read them,
 we use indicies that we calcualte prior to usage of variables
 
-rework access to string, make it more accessible
-rework token leaking to backend
 
-check that i is not used in body scope
+rework token leaking to backend

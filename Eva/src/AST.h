@@ -97,6 +97,20 @@ public:
 	class VirtualMachine* vm;
 	bool IsPanic() { return m_Panic; }
 private:
+	template<typename ...T>
+	 void ErrorMult(Token*& currentToken, const char* msg, T... expectedType )
+	{
+		// fold
+		if (((currentToken->type != expectedType) || ...))
+		{
+			m_Panic = true;
+			std::cout << "ERROR[" << (currentToken)->line << "]:" << msg << std::endl;
+		}
+		else
+		{
+			currentToken++;
+		}
+	}
 	void Error(TokenType expectedType, Token*& currentToken, const char* msg);
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Token*& currentToken);

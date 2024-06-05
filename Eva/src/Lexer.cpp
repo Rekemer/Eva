@@ -341,6 +341,7 @@ void Lexer::ParseOperator()
 		{
 			AddToken(TokenType::DOUBLE_DOT, currentLine);
 			Eat();
+			Eat();
 		}
 		else
 		{

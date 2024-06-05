@@ -402,14 +402,31 @@ TEST_CASE("deduction test")
 }
 TEST_CASE("for loop test")
 {
-	auto a = R"(
+	SUBCASE("basic for loop")
+	{
+		auto a = R"(
 					g := 0;
 					for  i:= 0; i < 10; i+=1;
 					{
 						g+=i;
 					}
 					)";
-	auto [res, vm] = Compile(a);
-	auto isPass = CheckVariable<INT>("g", 55, ValueType::INT, vm);
-	CHECK(isPass);
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", 55, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("basic folded for loop")
+	{
+		auto a = R"(
+					g := 0;
+					for 2..5;
+					{
+						g+=i;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", 10, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	
 }
