@@ -18,3 +18,6 @@ we use indicies that we calcualte prior to usage of variables
 
 
 rework token leaking to backend
+
+
+fix stack getting bloated by unneccesaty set local command during init of local variable

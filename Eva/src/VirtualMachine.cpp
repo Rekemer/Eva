@@ -343,13 +343,31 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
+		}
+		else if (tree->type == TokenType::DECLARE)
+		{
+			// declaring a variable
+			auto expressionType = Generate(tree->As<Expression>()->right.get());
+			assert(tree->As<Expression>()->left.get() != nullptr);
+			auto str = (String*)exprLeft->value.as.object;
+
+			CAST_INT_FLOAT(expressionType, exprLeft->value.type);
+
+
+			assert(exprLeft != nullptr);
+			if (exprLeft->depth == 0)
+			{
+				constants.emplace_back(exprLeft->value.as.object);
+				opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
+				opCode.push_back(constants.size() - 1);
 			}
+
+		}
 		else if (tree->type == TokenType::EQUAL)
 		{
 			// declaring a variable
 			auto expressionType = Generate(tree->As<Expression>()->right.get());
 			assert(tree->As<Expression>()->left.get()!= nullptr);
-			auto str = (String*)exprLeft->value.as.object;
 
 			CAST_INT_FLOAT(expressionType, exprLeft->value.type);
 			SetVariable(opCode, exprLeft);
@@ -518,10 +536,10 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto firstIteration = Jump(opCode);
 
 			auto startIndex = opCode.size();
+			Generate(forNode->action.get());
 			Generate(forNode->condition.get());
 			auto indexJumpFalse = JumpIfFalse(opCode);
 			opCode.push_back((uint8_t)InCode::POP);
-			Generate(forNode->action.get());
 			opCode[firstIteration] = CalculateJumpIndex(opCode, firstIteration) + 1;
 			Generate(forNode->body.get());
 			auto jump = JumpBack(opCode);
@@ -818,6 +836,7 @@ void VirtualMachine::Execute()
 			auto index = opCode[ipIndex++];
 			auto value = vmStack.back();
 			vmStack[index] = value;
+			vmStack.pop_back();
 			break;
 		}
 

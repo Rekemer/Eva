@@ -39,8 +39,7 @@ enum class TokenType : uint8_t {
 	// should be reworked
 	BLOCK,
 	DEDUCE,
-	FOR_FOLDED,
-	
+	DECLARE,
 	
 };
 

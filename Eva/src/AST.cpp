@@ -407,7 +407,7 @@ void Print(const Expression* tree, int level) {
 		auto entry = table.Get(str.GetStringView());
 		auto [isType,type]= IsVariableType(declaredType);
 		auto node = std::make_unique<Expression>();
-		node->type = TokenType::EQUAL;
+		node->type = TokenType::DECLARE;
 		node->depth = scopeDepth;
 		if (entry->key == nullptr && scopeDepth == 0)
 		{
@@ -795,7 +795,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	
 	
 	
-	if (expr->type == TokenType::EQUAL)
+	if (expr->type == TokenType::DECLARE)
 	{
 		auto leftChild = expr->left->AsMut<Expression>();
 		if (childType == TokenType::DEDUCE)
