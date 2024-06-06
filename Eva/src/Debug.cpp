@@ -19,7 +19,7 @@ void Debug(VirtualMachine& vm)
         if (instr == InCode::CONST_VALUE)
         {
             auto constant = constants[bytecode[ipIndex++]];
-            std::cout << "["<<ipIndex-1 <<"] " << str << std::endl;
+            std::cout << "["<<ipIndex-2 <<"] " << str << std::endl;
             std::cout << "["<<ipIndex-1 <<"] " << constant << std::endl;
         }
         else if (instr == InCode::JUMP  || instr == InCode::JUMP_BACK

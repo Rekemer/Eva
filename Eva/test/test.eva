@@ -5,13 +5,13 @@
 //}
 //a:=2;
 //c:=15;
-//for 0..5
-//{
-//	Print "Ia";
-//	//for j:=0; j < 5; j++;
-//	//{
-//	//	Print "Ja";
-//	//}
-//}
-Print false&&true || true&&true;
+for 0..5
+{
+	Print "Ia";
+	//for j:=0; j < 5; j++;
+	//{
+	//	Print "Ja";
+	//}
+}
+//Print false&&true == true&&true;
 //Print  3.2 % 2.4;

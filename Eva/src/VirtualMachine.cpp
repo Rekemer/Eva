@@ -484,9 +484,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			// the whole and is dependent on second operand
 			opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->As<Expression>()->right.get());
-			//opCode.push_back((uint8_t)InCode::AND);
-			auto jumpLen = CalculateJumpIndex(opCode, indexFalse);
-			opCode[indexFalse] = jumpLen;
+			opCode[indexFalse] = CalculateJumpIndex(opCode, indexFalse) + 1;
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::OR)
@@ -496,14 +494,12 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			// if it is true we get to jump
 			auto jump = Jump(opCode);
 			
-			auto jumpLen = CalculateJumpIndex(opCode,indexFalse);
-			opCode[indexFalse] = jumpLen;
+			opCode[indexFalse] = CalculateJumpIndex(opCode, indexFalse)+1;
 
 			Generate(tree->As<Expression>()->right.get());
 			// the first is true- just skip second operand
-			jumpLen = CalculateJumpIndex(opCode, jump);
-			opCode[jump] = jumpLen;
 			opCode.push_back((uint8_t)InCode::OR);
+			opCode[jump] = CalculateJumpIndex(opCode, jump)+1;
 			return ValueType::BOOL;
 		}
 		
@@ -527,7 +523,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
 			auto indexJump = Jump(opCode);
-			opCode[indexJumpFalse] = indexJump - indexJumpFalse;
+			opCode[indexJumpFalse] = (indexJump+1) - indexJumpFalse;
 			// else branch
 			opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
@@ -544,11 +540,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->As<Expression>()->right.get());
 			auto jump = JumpBack(opCode);
-			auto len = CalculateJumpIndex(opCode, indexJumpFalse);
-			opCode[indexJumpFalse] = len;
+			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse) + 1;
 			// jumping backwards
-			auto negativeOffset= (CalculateJumpIndex(opCode, startIndex));
-			opCode[jump] = negativeOffset;
+			opCode[jump] = CalculateJumpIndex(opCode, startIndex);
 
 		}
 		else if (tree->type== TokenType::FOR)
@@ -569,6 +563,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto jump = JumpBack(opCode);
 			
 			opCode[jump] = CalculateJumpIndex(opCode, m_StartLoopIndex);
+			// clean the check condition once we go finish the loop
+			opCode.push_back((uint8_t)InCode::POP);
+			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
 
 			// we hit break we should patch it
 			if (m_BreakIndex != -1)
@@ -576,7 +573,6 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				opCode[m_BreakIndex] = CalculateJumpIndex(opCode, m_BreakIndex) + 1;
 			}
 			ClearScope(currentScopes, m_StackPtr, opCode);
-			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
 
 			//int popAmount = currentScopes.back()->popAmount;
 			//while (popAmount > 0)
@@ -897,7 +893,7 @@ void VirtualMachine::Execute()
 			// if it is not false, then we should get to then block
 			auto offset = opCode[ipIndex++];
 			auto condition = vmStack.back().As<bool>();
-			if (!condition) ipIndex = (ipIndex) + (offset);
+			if (!condition) ipIndex = (ipIndex-1) + (offset);
 			break;
 		}
 		case InCode::JUMP:
