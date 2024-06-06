@@ -78,6 +78,11 @@ else\
 {\
   /*do nothing*/\
 }
+#define CAST_INT(child)\
+if (child== ValueType::FLOAT)\
+{\
+	opCode.push_back(((uint8_t)InCode::CAST_INT));\
+}\
 
 // returns the index for backpatching
 int JumpIfFalse(std::vector<Bytecode>& opCode)
@@ -268,6 +273,14 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_OP_TYPE_RET(expr->value.type ,DIVIDE);
+		}
+		else if (tree->type == TokenType::PERCENT)
+		{
+			auto left = Generate(tree->As<Expression>()->left.get());
+			CAST_INT(left);
+			auto right = Generate(tree->As<Expression>()->right.get());
+			CAST_INT(right);
+			opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT); 
 		}
 		else if (tree->type == TokenType::INT_LITERAL)
 		{
@@ -700,6 +713,11 @@ void VirtualMachine::Execute()
 		case InCode::DIVIDE_INT:
 		{
 			BINARY_OP(numberInt, / );
+			break;
+		}
+		case InCode::DIVIDE_PERCENT:
+		{
+			BINARY_OP(numberInt, % );
 			break;
 		}
 		case InCode::INCREMENT_INT:

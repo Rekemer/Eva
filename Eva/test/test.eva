@@ -1,15 +1,16 @@
 
-for  i:= 10; i > 0; i--;
-{
-	Print i ;
-}
-//a:=0;
-//c:=15;
-//
-//for a..c
+//for  i:= 10; i > 0; i--;
 //{
-//	if ( i == 3)
-//	{
-//		Print i;
-//	}
+//	Print i ;
 //}
+a:=2;
+c:=15;
+for a..c
+{
+	if ( i % a )
+	{
+		Print i;
+	}
+}
+
+//Print  3.2 % 2.4;

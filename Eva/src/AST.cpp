@@ -20,7 +20,8 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	auto left = UnaryOpPrefix(currentToken);
 	auto nextToken = (currentToken );
 	bool isMultiplication = nextToken->type == TokenType::STAR ||
-		nextToken->type == TokenType::SLASH;
+		nextToken->type == TokenType::SLASH || 
+		nextToken->type == TokenType::PERCENT;
 	if (isMultiplication)
 	{
 		//currentToken++;

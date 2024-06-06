@@ -479,6 +479,12 @@ void Lexer::ParseOperator()
 		}
 		break;
 	}
+	case '%':
+	{
+		AddToken(TokenType::PERCENT, currentLine);
+		Eat();
+		break;
+	}
 	case '&':
 	{
 		if (Peek(1) != '\0' && Peek(1) == '&')

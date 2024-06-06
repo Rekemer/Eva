@@ -66,6 +66,7 @@ const char* debugEnum(InCode code) {
     case InCode::ADD_INT: return "ADD_INT";
     case InCode::DIVIDE_INT: return "DIVIDE_INT";
     case InCode::DIVIDE_FLOAT: return "DIVIDE_FLOAT";
+    case InCode::DIVIDE_PERCENT: return "DIVIDE_PERCENT";
     case InCode::MULTIPLY_INT: return "MULTIPLY_INT";
     case InCode::MULTIPLY_FLOAT: return "MULTIPLY_FLOAT";
     case InCode::SUBSTRACT_FLOAT: return "SUBSTRACT_FLOAT";

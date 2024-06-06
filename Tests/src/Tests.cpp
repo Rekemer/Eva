@@ -18,6 +18,7 @@ TEST_CASE("testing bool expressions")
 	CHECK(CompileTest("(2*10 - 1/5) == (2*10 - 1/5) ").As<bool>() == true);
 	CHECK(CompileTest("2*10  == 2*10 ").As<bool>() == true);
 	CHECK(CompileTest("2+2 ").As<int>() == 4);
+	CHECK(CompileTest("3%2 ").As<int>() == 1);
 	CHECK(CompileTest("true == true").As<bool>() == true);
 	CHECK(CompileTest("false&&true == true&&true").As<bool>() == false);
 	CHECK(CompileTest("false&&true || true&&true").As<bool>() == true);
