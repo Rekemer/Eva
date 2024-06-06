@@ -553,7 +553,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			Generate(forNode->init.get());
 			auto firstIteration = Jump(opCode);
 
-			m_StartLoopIndex = opCode.size();
+			auto startLoopIndex = opCode.size();
 			Generate(forNode->action.get());
 			Generate(forNode->condition.get());
 			auto indexJumpFalse = JumpIfFalse(opCode);
@@ -562,7 +562,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			Generate(forNode->body.get());
 			auto jump = JumpBack(opCode);
 			
-			opCode[jump] = CalculateJumpIndex(opCode, m_StartLoopIndex);
+			opCode[jump] = CalculateJumpIndex(opCode, startLoopIndex);
 			// clean the check condition once we go finish the loop
 			opCode.push_back((uint8_t)InCode::POP);
 			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);

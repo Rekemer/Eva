@@ -3,15 +3,24 @@
 //{
 //	Print i ;
 //}
-//a:=2;
-//c:=15;
-for 0..5
-{
-	Print "Ia";
-	//for j:=0; j < 5; j++;
-	//{
-	//	Print "Ja";
-	//}
+a:=2;
+c:=3;
+//for 0..5
+//{
+//	Print "Ia";
+//	for j:=0; j < 5; j++;
+//	{
+//		Print "Ja";
+//	}
+//}
+while a > 0{
+	a--;
+	Print "a";
+	while c > 0
+	{
+		c--;
+		Print "c";
+	}
 }
 //Print false&&true == true&&true;
 //Print  3.2 % 2.4;
