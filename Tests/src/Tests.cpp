@@ -415,11 +415,54 @@ TEST_CASE("for loop test")
 		auto isPass = CheckVariable<INT>("g", 45, ValueType::INT, vm);
 		CHECK(isPass);
 	}
-	SUBCASE("basic folded for loop")
+	SUBCASE("basic folded constant for loop")
 	{
 		auto a = R"(
 					g := 0;
 					for 2..5
+					{
+						g+=i;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("folded end constant for loop")
+	{
+		auto a = R"(
+					g := 0;
+					a := 2;
+					for a..5
+					{
+						g+=i;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("folded start constant for loop")
+	{
+		auto a = R"(
+					g := 0;
+					a := 5;
+					for 2..a
+					{
+						g+=i;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("folded variable for loop")
+	{
+		auto a = R"(
+					g := 0;
+					a := 5;
+					c := 2;
+					for c..a
 					{
 						g+=i;
 					}

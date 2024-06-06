@@ -624,7 +624,7 @@ void Print(const Expression* tree, int level) {
 				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
 				 CreateToken(TokenType::COLON,{},currentToken->line),
 				 CreateToken(TokenType::EQUAL,{},currentToken->line),
-				 CreateToken(TokenType::INT_LITERAL,std::move(startValue),currentToken->line),
+				 CreateToken(begin->type,std::move(startValue),currentToken->line),
 				 CreateToken(TokenType::SEMICOLON,{},currentToken->line),
 				 
 				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
@@ -632,9 +632,9 @@ void Print(const Expression* tree, int level) {
 				 *end,
 				// CreateToken(TokenType::SEMICOLON,{},currentToken->line),
 				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
-				 CreateToken(TokenType::PLUS_EQUAL,{},currentToken->line),
-				 CreateToken(TokenType::INT_LITERAL,ValueContainer{1},currentToken->line),
-				 CreateToken(TokenType::SEMICOLON,{},currentToken->line),
+				 CreateToken(TokenType::PLUS_PLUS,{},currentToken->line),
+				 //CreateToken(TokenType::INT_LITERAL,ValueContainer{1},currentToken->line),
+				 //CreateToken(TokenType::SEMICOLON,{},currentToken->line),
 			 };
 			// forNode->type = TokenType::FOR_FOLDED;
 			 auto forLoopPtr = forLoop.data();

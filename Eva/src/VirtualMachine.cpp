@@ -218,10 +218,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 			DETERMINE_OP_TYPE(left, INCREMENT);
 
-
-			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-			opCode.push_back(constants.size() - 1);
+			SetVariable(opCode, exprLeft);
 			return expr->value.type;
 
 		}
@@ -234,9 +231,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			DETERMINE_OP_TYPE(left, DECREMENT);
 
 
-			constants.emplace_back(exprLeft->value.as.object);
-			opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-			opCode.push_back(constants.size() - 1);
+			SetVariable(opCode, exprLeft);
 			return expr->value.type;
 
 		}
