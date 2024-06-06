@@ -112,6 +112,7 @@ private:
 		}
 	}
 	void Error(TokenType expectedType, Token*& currentToken, const char* msg);
+	void Error(const Token* const& currentToken, const char* msg);
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Token*& currentToken);
 	std::unique_ptr<Node> UnaryOpPostfix(Token*& currentToken);
@@ -143,6 +144,9 @@ private:
 	
 	std::unique_ptr<Node> tree;
 	bool m_Panic = false;
+	// we can have loop in the loop, 
+	// so we need to support to notice breaks and continues
+	std::stack<bool> m_ParseLoops;
 	inline static int scopeDepth = 0;
 	// so we now how many pop commands must be executed
 	// once block ends

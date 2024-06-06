@@ -11,7 +11,7 @@ void Debug(VirtualMachine& vm)
     auto& globalVariables = vm.globalVariables;
     int ipIndex = 0;
     std::cout << "-------------Debug-----------\n";
-    while (ipIndex != bytecode.size() - 1)
+    while (ipIndex < bytecode.size())
     {
         auto instr = (InCode)bytecode[ipIndex++];
         auto str = debugEnum(instr);
@@ -19,38 +19,38 @@ void Debug(VirtualMachine& vm)
         if (instr == InCode::CONST_VALUE)
         {
             auto constant = constants[bytecode[ipIndex++]];
-            std::cout << str << std::endl;
-            std::cout << constant << std::endl;
+            std::cout << "["<<ipIndex-1 <<"] " << str << std::endl;
+            std::cout << "["<<ipIndex-1 <<"] " << constant << std::endl;
         }
         else if (instr == InCode::JUMP  || instr == InCode::JUMP_BACK
             || instr == InCode::JUMP_IF_FALSE)
         {
-            std::cout << str << std::endl;
+            std::cout << "[" << ipIndex - 1 << "] " << str << std::endl;
             auto jumpIndexOffset = bytecode[ipIndex++];
-            std::cout << static_cast<int>(jumpIndexOffset)<< std::endl;
+            std::cout << "[" << ipIndex - 1 << "] " << static_cast<int>(jumpIndexOffset)<< std::endl;
         }
         else if (instr == InCode::SET_GLOBAL_VAR || instr == InCode::GET_GLOBAL_VAR ||
             isLocal)
         {
-            std::cout << str << std::endl;
+            std::cout << "[" << ipIndex - 1 << "] " << str << std::endl;
             auto indexOfVariableName = (int)bytecode[ipIndex++];
             // hmmm... can't show local variable name, because there is no stack...
             // show index instead
             if (isLocal)
             {
-                std::cout << indexOfVariableName << std::endl;
+                std::cout << "[" << ipIndex - 1 << "] " << indexOfVariableName << std::endl;
             }
             else
             {
                 auto nameOfVariable = constants[indexOfVariableName];
                 auto string = (nameOfVariable.As<String&>()).GetStringView();
-                std::cout << string << std::endl;
+                std::cout << "[" << ipIndex - 1 << "] " << string << std::endl;
             }
 
         }
         else
         {
-            std::cout << str << std::endl;
+            std::cout << "[" << ipIndex - 1 << "] " << str << std::endl;
         }
     }
     std::cout << "-------------Debug-----------\n";

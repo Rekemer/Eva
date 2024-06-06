@@ -13,7 +13,6 @@ struct Local
 	int depth;
 	String name;
 };
-
 class AST;
 struct Node;
 struct Expression;
@@ -58,6 +57,13 @@ private:
 	// so we can access previous scopes too
 	std::vector<const Scope*> currentScopes;
 	std::array<Local, 256> locals;
-	int localPtr = 0;
+	// track the declared locals
+	int m_StackPtr = 0;
 	bool m_Panic = false;
+	// if we hit break or continue we should know where to jump
+	int m_StartLoopIndex = -1;
+	// Once we hit break we should remember the index
+	// to come back and  patch it with correct distance
+	// for a jump
+	int m_BreakIndex= -1;
 };

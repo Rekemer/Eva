@@ -531,12 +531,16 @@ void Print(const Expression* tree, int level) {
 	 return ifnode;
  }
 
+ void AST::Error(const Token* const& currentToken, const char* msg)
+ {
+	 std::cout << "ERROR[" << (currentToken)->line << "]:" << msg << std::endl;
+ }
  void AST::Error(TokenType expectedType, Token*& currentToken, const char* msg)
  {
 	 if (currentToken->type != expectedType)
 	 {
 		 m_Panic = true;
-		 std::cout << "ERROR[" << (currentToken)->line << "]:" << msg << std::endl;
+		 Error(currentToken, msg);
 	 }
 	 else
 	 {
@@ -591,16 +595,19 @@ void Print(const Expression* tree, int level) {
 	 }
 	 else if (currentToken->type == TokenType::WHILE)
 	 {
+		 m_ParseLoops.push(true);
 		 auto whileNode = std::make_unique<Expression>();
 		 whileNode->type = TokenType::WHILE;
 		 whileNode->line = currentToken->line;
 		 currentToken++;
 		 whileNode->left = LogicalOr(currentToken);
 		 whileNode->right = EatBlock(currentToken);
+		 m_ParseLoops.pop();
 		 return whileNode;
 	 }
 	 else if (currentToken->type == TokenType::FOR)
 	 {
+		 m_ParseLoops.push(true);
 		 // can be classic c for without ()
 		 // can be for 1..10
 		 auto forNode = std::make_unique<For>();
@@ -613,7 +620,7 @@ void Print(const Expression* tree, int level) {
 		 {
 			 currentToken++;
 
-			 currentScope = &forNode->initScope;
+			 currentScope = &(forNode->initScope);
 			 BeginBlock();
 
 			 auto begin= (currentToken);
@@ -637,7 +644,6 @@ void Print(const Expression* tree, int level) {
 				 //CreateToken(TokenType::INT_LITERAL,ValueContainer{1},currentToken->line),
 				 //CreateToken(TokenType::SEMICOLON,{},currentToken->line),
 			 };
-			// forNode->type = TokenType::FOR_FOLDED;
 			 auto forLoopPtr = forLoop.data();
 			 forNode->init = Declaration(forLoopPtr);
 			 forNode->condition =LogicalOr(forLoopPtr);
@@ -646,6 +652,7 @@ void Print(const Expression* tree, int level) {
 			 currentToken++;
 			 currentToken++;
 			 forNode->body = EatBlock(currentToken);
+ 			 forNode->initScope.popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
 			 EndBlock();
 
 		 }
@@ -665,9 +672,29 @@ void Print(const Expression* tree, int level) {
 
 			 forNode->action= Statement(currentToken);
 			 forNode->body = EatBlock(currentToken);
+			 forNode->initScope.popAmount = scopeDeclarations.size() > 0 ?
+				 scopeDeclarations.top() : 0;
 			 EndBlock();
 		 }
+		 m_ParseLoops.pop();
 		 return forNode;
+	 }
+	 else if (currentToken->type == TokenType::CONTINUE ||
+		 currentToken->type == TokenType::BREAK)
+	 {
+		 if (m_ParseLoops.size() > 0 && m_ParseLoops.top() == true)
+		 {
+			 auto loopAction = std::make_unique<Node>();
+			 loopAction->line = currentToken->line;
+			 loopAction->type= currentToken->type;
+			 currentToken++;
+			 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+			 return loopAction;
+		 }
+		 else
+		 {
+			 Error(currentToken,"Continue and break can be used only in the loop");
+		 }
 	 }
 	 else if (currentToken->type == TokenType::LEFT_BRACE)
 	 {
@@ -725,6 +752,10 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 {
 	TokenType childType = TokenType::END;
 	TokenType childType1 = TokenType::END;
+	if (node->type == TokenType::CONTINUE || node->type == TokenType::BREAK)
+	{
+		return node->type;
+	}
 	if (node->type == TokenType::BLOCK)
 	{
 		auto block = static_cast<Scope*>(node);

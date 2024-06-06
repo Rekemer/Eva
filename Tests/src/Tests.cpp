@@ -233,93 +233,7 @@ TEST_CASE("unary double operations on variables")
 	}
 	*/
 }
-TEST_CASE("if statement")
-{
-	SUBCASE("if")
-	{
-		auto a = R"(a: int = 100;
-					if a == 100
-					{
-						a++;
-					}
-					)";
-		auto [res,vm]= Compile(a);
-		auto isPass = CheckVariable<int>("a", 101, ValueType::INT, vm);
-		CHECK(isPass);
-	}
 
-	SUBCASE("if else")
-	{
-		auto a = R"(a: int = 100;
-					if a == 101
-					{
-						a++;
-					}
-					else 
-					{
-						a+=5;
-					}
-					)";
-		auto [res,vm]= Compile(a);
-		auto isPass = CheckVariable<INT>("a", 105, ValueType::INT, vm);
-		CHECK(isPass);
-	}
-
-	SUBCASE("elif")
-	{
-		auto a = R"(a: int = 105;
-					if a == 101
-					{
-						a++;
-					}
-					elif a == 102 
-					{
-						a+=5;
-					}
-					elif a == 105 {
-					a +=10;		
-					} 
-					)";
-		auto [res,vm]= Compile(a);
-		auto isPass = CheckVariable<INT>("a", 115, ValueType::INT, vm);
-		CHECK(isPass);
-	}
-	SUBCASE(" if elif else")
-	{
-		auto a = R"(a: int = 105;
-					if a == 101
-					{
-						a++;
-					}
-					elif a == 102 
-					{
-						a+=5;
-					}
-					elif a == 103 {
-						a +=10;		
-					} 
-					else
-					{
-						a +=20;		
-					} 
-					)";
-		auto [res,vm]= Compile(a);
-		auto isPass = CheckVariable<INT>("a", 125, ValueType::INT, vm);
-		CHECK(isPass);
-	}
-}
-TEST_CASE("while statement")
-{
-	auto a = R"(a: int = 15;
-					while a  >= 5 
-				{
-					a--;
-				}
-					)";
-	auto [res,vm]= Compile(a);
-	auto isPass = CheckVariable<INT>("a", 4, ValueType::INT, vm);
-	CHECK(isPass);
-}
 
 TEST_CASE("scope test")
 {
@@ -473,4 +387,93 @@ TEST_CASE("for loop test")
 		CHECK(isPass);
 	}
 	
+}
+
+TEST_CASE("while statement")
+{
+	auto a = R"(a: int = 15;
+					while a  >= 5 
+				{
+					a--;
+				}
+					)";
+	auto [res, vm] = Compile(a);
+	auto isPass = CheckVariable<INT>("a", 4, ValueType::INT, vm);
+	CHECK(isPass);
+}
+
+TEST_CASE("if statement")
+{
+	SUBCASE("if")
+	{
+		auto a = R"(a: int = 100;
+					if a == 100
+					{
+						a++;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 101, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("if else")
+	{
+		auto a = R"(a: int = 100;
+					if a == 101
+					{
+						a++;
+					}
+					else 
+					{
+						a+=5;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("a", 105, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("elif")
+	{
+		auto a = R"(a: int = 105;
+					if a == 101
+					{
+						a++;
+					}
+					elif a == 102 
+					{
+						a+=5;
+					}
+					elif a == 105 {
+					a +=10;		
+					} 
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("a", 115, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE(" if elif else")
+	{
+		auto a = R"(a: int = 105;
+					if a == 101
+					{
+						a++;
+					}
+					elif a == 102 
+					{
+						a+=5;
+					}
+					elif a == 103 {
+						a +=10;		
+					} 
+					else
+					{
+						a +=20;		
+					} 
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("a", 125, ValueType::INT, vm);
+		CHECK(isPass);
+	}
 }

@@ -114,6 +114,21 @@ int CalculateJumpIndex(std::vector<Bytecode>& opCode, int from)
 	return opCode.size() - 1 - from;
 }
 
+void ClearScope(std::vector<const Scope*>& scopes, int& stackPtr,
+	std::vector<Bytecode>& opCode)
+{
+	int popAmount = scopes.back()->popAmount;
+	while (popAmount > 0)
+	{
+		opCode.push_back((uint8_t)InCode::POP);
+		popAmount--;
+	}
+
+	stackPtr -= scopes.back()->popAmount;
+	scopes.pop_back();
+	assert(stackPtr >= 0);
+}
+
 ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expression* expr)
 {
 	// global
@@ -195,15 +210,16 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				Generate(expression.get());
 			}
 			// once we finish block, we must clear the stack
-			int popAmount = block->popAmount;
-			while (popAmount > 0 )
-			{
-				opCode.push_back((uint8_t)InCode::POP);
-				popAmount--;
-			}
-			currentScopes.pop_back();
-			localPtr -= block->popAmount;
-			assert(localPtr >= 0);
+			ClearScope(currentScopes, m_StackPtr, opCode);
+			//int popAmount = block->popAmount;
+			//while (popAmount > 0 )
+			//{
+			//	opCode.push_back((uint8_t)InCode::POP);
+			//	popAmount--;
+			//}
+			//currentScopes.pop_back();
+			//m_StackPtr -= block->popAmount;
+			//assert(m_StackPtr >= 0);
 
 		}
 		else if (tree->type == TokenType::PLUS)
@@ -539,11 +555,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		{
 			auto forNode = tree->As<For>();
 			currentScopes.push_back(&forNode->initScope);
-			
+			m_BreakIndex = -1;
 			Generate(forNode->init.get());
 			auto firstIteration = Jump(opCode);
 
-			auto startIndex = opCode.size();
+			m_StartLoopIndex = opCode.size();
 			Generate(forNode->action.get());
 			Generate(forNode->condition.get());
 			auto indexJumpFalse = JumpIfFalse(opCode);
@@ -552,18 +568,41 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			Generate(forNode->body.get());
 			auto jump = JumpBack(opCode);
 			
+			opCode[jump] = CalculateJumpIndex(opCode, m_StartLoopIndex);
+
+			// we hit break we should patch it
+			if (m_BreakIndex != -1)
+			{
+				opCode[m_BreakIndex] = CalculateJumpIndex(opCode, m_BreakIndex) + 1;
+			}
+			ClearScope(currentScopes, m_StackPtr, opCode);
 			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
-			opCode[jump] = CalculateJumpIndex(opCode, startIndex);
 
+			//int popAmount = currentScopes.back()->popAmount;
+			//while (popAmount > 0)
+			//{
+			//	opCode.push_back((uint8_t)InCode::POP);
+			//	popAmount--;
+			//}
 
-			localPtr -= currentScopes.back()->popAmount;
-			currentScopes.pop_back();
-			assert(localPtr >= 0);
+			//m_StackPtr -= currentScopes.back()->popAmount;
+			//currentScopes.pop_back();
+			//assert(m_StackPtr >= 0);
 
+		}
+		else if (tree->type == TokenType::CONTINUE)
+		{
+			int index = JumpBack(opCode);
+			assert(m_StartLoopIndex != -1);
+			opCode[index] = CalculateJumpIndex(opCode, m_StartLoopIndex);
+		}
+		else if (tree->type == TokenType::BREAK)
+		{
+			m_BreakIndex = Jump(opCode);
 		}
 		else
 		{
-			assert(false && "weird type");
+			assert(false && "Weird type during code generation");
 		}
 
 }
@@ -586,13 +625,13 @@ void VirtualMachine::AddLocal(String& name, int currentScope)
 			return local.name == name;
 		});
 	if (iter != locals.end()) assert(false && "variable already declared");
-	locals[localPtr].name = name;
-	locals[localPtr++].depth = currentScope;
+	locals[m_StackPtr].name = name;
+	locals[m_StackPtr++].depth = currentScope;
 }
 
 std::tuple<bool, int> VirtualMachine::IsLocalExist(String& name)
 {
-	auto temp = localPtr;
+	auto temp = m_StackPtr;
 	while (temp >= 0 )
 	{
 		if (name == locals[temp].name)
@@ -858,7 +897,7 @@ void VirtualMachine::Execute()
 			// if it is not false, then we should get to then block
 			auto offset = opCode[ipIndex++];
 			auto condition = vmStack.back().As<bool>();
-			if (!condition) ipIndex += offset;
+			if (!condition) ipIndex = (ipIndex) + (offset);
 			break;
 		}
 		case InCode::JUMP:
