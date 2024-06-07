@@ -613,7 +613,7 @@ void Print(const Expression* tree, int level) {
 		 auto forNode = std::make_unique<For>();
 		 forNode->type = TokenType::FOR;
 		 forNode->line = currentToken->line;
-		 auto isDoubleDot = (currentToken + 2)->type == TokenType::DOUBLE_DOT;
+		 auto isDoubleDot = (currentToken + 5)->type == TokenType::DOUBLE_DOT;
 		 auto isIdentifier= (currentToken + 1)->type == TokenType::IDENTIFIER;
 		 // can be a..b  1..b b..2  1..2
 		 if (isDoubleDot)
@@ -623,23 +623,22 @@ void Print(const Expression* tree, int level) {
 			 currentScope = &(forNode->initScope);
 			 BeginBlock();
 
-			 auto begin= (currentToken);
-			 auto end= (currentToken+2);
+			 auto begin= (currentToken+3);
+			 auto end= (currentToken+5);
 			 auto startValue = begin->value;
-			 auto obj = vm->AllocateString("i", 1);
 			 std::vector<Token> forLoop =
 			 {
-				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
+				 *(currentToken),
 				 CreateToken(TokenType::COLON,{},currentToken->line),
 				 CreateToken(TokenType::EQUAL,{},currentToken->line),
 				 CreateToken(begin->type,std::move(startValue),currentToken->line),
 				 CreateToken(TokenType::SEMICOLON,{},currentToken->line),
 				 
-				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
+				*(currentToken),
 				 CreateToken(TokenType::LESS,{},currentToken->line),
 				 *end,
 				// CreateToken(TokenType::SEMICOLON,{},currentToken->line),
-				 CreateToken(TokenType::IDENTIFIER,ValueContainer{obj},currentToken->line),
+				*(currentToken),
 				 CreateToken(TokenType::PLUS_PLUS,{},currentToken->line),
 				 //CreateToken(TokenType::INT_LITERAL,ValueContainer{1},currentToken->line),
 				 //CreateToken(TokenType::SEMICOLON,{},currentToken->line),
@@ -648,9 +647,7 @@ void Print(const Expression* tree, int level) {
 			 forNode->init = Declaration(forLoopPtr);
 			 forNode->condition =LogicalOr(forLoopPtr);
 			 forNode->action = Statement(forLoopPtr);
-			 currentToken++;
-			 currentToken++;
-			 currentToken++;
+			 currentToken+=6;
 			 forNode->body = EatBlock(currentToken);
  			 forNode->initScope.popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
 			 EndBlock();

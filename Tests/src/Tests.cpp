@@ -431,7 +431,7 @@ TEST_CASE("folded for loop test")
 	{
 		auto a = R"(
 				g := 0;
-				for 2..5
+				for i:=  2..5
 				{
 					g+=i;
 				}
@@ -445,7 +445,7 @@ TEST_CASE("folded for loop test")
 		auto a = R"(
 				g := 0;
 				a := 2;
-				for a..5
+				for i:= a..5
 				{
 					g+=i;
 				}
@@ -459,7 +459,7 @@ TEST_CASE("folded for loop test")
 		auto a = R"(
 				g := 0;
 				a := 5;
-				for 2..a
+				for i:= 2..a
 				{
 					g+=i;
 				}
@@ -474,7 +474,7 @@ TEST_CASE("folded for loop test")
 				g := 0;
 				a := 5;
 				c := 2;
-				for c..a
+				for i:= c..a
 				{
 					g+=i;
 				}
@@ -487,7 +487,7 @@ TEST_CASE("folded for loop test")
 	{
 		auto a = R"(
 				g := 0;
-				for 1..5
+				for i:= 1..5
 				{	
 					if i % 2 
 					{
@@ -504,7 +504,7 @@ TEST_CASE("folded for loop test")
 	{
 		auto a = R"(
 				g := 0;
-				for 1..5
+				for i:= 1..5
 				{	
 					if i == 4 
 					{
@@ -525,7 +525,7 @@ TEST_CASE("loops in loops")
 	{
 		auto a = R"(
 					a:=0;
-					for 0..5
+					for i:= 0..5
 					{
 						if i % 2 
 						{
