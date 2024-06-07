@@ -15,7 +15,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	e.right.reset();
 	e.childrenCount = 0;
 }
- std::unique_ptr<Node> AST::Factor( Token*& currentToken)
+ std::unique_ptr<Node> AST::Factor( Iterator& currentToken)
 {
 	auto left = UnaryOpPrefix(currentToken);
 	auto nextToken = (currentToken );
@@ -93,7 +93,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		 break;
 	 }
  }
- void AST::DeclareGlobal(Token*& currentToken,
+ void AST::DeclareGlobal(Iterator& currentToken,
 	  ValueType type, HashTable& table,
 	 HashTable& globalTypes, Expression* node,
 	 int offset)
@@ -114,7 +114,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 node->right = LogicalOr(currentToken);
 	 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
  }
- void AST::DeclareLocal(Token*& currentToken,
+ void AST::DeclareLocal(Iterator& currentToken,
 	 VirtualMachine* vm, Expression* node,ValueType type, int offset)
  {
 	 auto& str = currentToken->value.As<String&>();
@@ -129,7 +129,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 node->right = LogicalOr(currentToken);
 	 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
  }
- std::unique_ptr<Node> AST::UnaryOpPrefix( Token*&  currentToken)
+ std::unique_ptr<Node> AST::UnaryOpPrefix( Iterator&  currentToken)
 {
 	bool isUnary = currentToken->type == TokenType::MINUS  || currentToken->type == TokenType::BANG? true : false;
 	if (isUnary)
@@ -149,13 +149,16 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	{
 		auto expr = static_cast<Expression*>(postfix.get());
 		expr->left = std::move(value);
-		currentToken++;
+		if (currentToken->type == TokenType::SEMICOLON)
+		{
+			currentToken++;
+		}
 		return postfix;
 	}
 	
 	return value;
 }
- std::unique_ptr<Node> AST::UnaryOpPostfix(Token*& currentToken)
+ std::unique_ptr<Node> AST::UnaryOpPostfix(Iterator& currentToken)
  {
 	 bool isDouble = currentToken->type == TokenType::MINUS_MINUS || currentToken->type == TokenType::PLUS_PLUS;
 	 if (isDouble)
@@ -171,7 +174,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 return nullptr;
  }
 
- std::unique_ptr<Node> AST::Value( Token*& currentToken)
+ std::unique_ptr<Node> AST::Value( Iterator& currentToken)
 {
 	auto node = std::make_unique<Expression>();
 	auto identiferToken = currentToken;
@@ -271,7 +274,7 @@ void Print(const Expression* tree, int level) {
 		//Print(tree->right, level + 1);
 	}
 }
- std::unique_ptr<Node> AST::Term( Token*& currentToken)
+ std::unique_ptr<Node> AST::Term( Iterator& currentToken)
 {
 	auto left = Factor(currentToken);
 	auto nextToken = (currentToken );
@@ -295,7 +298,7 @@ void Print(const Expression* tree, int level) {
 	return left;
 }
 
- std::unique_ptr<Node> AST::Comparison( Token*& currentToken)
+ std::unique_ptr<Node> AST::Comparison( Iterator& currentToken)
  {
 	 auto left = Term(currentToken);
 	 auto nextToken = (currentToken );
@@ -319,7 +322,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- std::unique_ptr<Node> AST::Equality(Token*& currentToken)
+ std::unique_ptr<Node> AST::Equality(Iterator& currentToken)
  {
 	 auto left = Comparison(currentToken);
 	 auto nextToken = (currentToken );
@@ -342,7 +345,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- std::unique_ptr<Node> AST::LogicalAnd(Token*& currentToken)
+ std::unique_ptr<Node> AST::LogicalAnd(Iterator& currentToken)
  {
 	 auto left = Equality(currentToken);
 	 auto nextToken = (currentToken );
@@ -364,7 +367,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- std::unique_ptr<Node> AST::EqualOp(Token*& currentToken)
+ std::unique_ptr<Node> AST::EqualOp(Iterator& currentToken)
  {
 	 auto isOp = (currentToken+1)->type == TokenType::PLUS_EQUAL
 		 || (currentToken + 1)->type == TokenType::STAR_EQUAL
@@ -387,7 +390,7 @@ void Print(const Expression* tree, int level) {
 
  }
  
- std::unique_ptr<Node> AST::Declaration(Token*& currentToken)
+ std::unique_ptr<Node> AST::Declaration(Iterator& currentToken)
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
 	 bool isDeclaration = (currentToken+1)->type == TokenType::COLON;
@@ -471,7 +474,7 @@ void Print(const Expression* tree, int level) {
 	 return LogicalOr(currentToken);
  }
 
- std::unique_ptr<Node> AST::LogicalOr(Token*& currentToken)
+ std::unique_ptr<Node> AST::LogicalOr(Iterator& currentToken)
  {
 	 auto left = LogicalAnd(currentToken);
 	 auto nextToken = (currentToken );
@@ -493,7 +496,7 @@ void Print(const Expression* tree, int level) {
 	 return left;
  }
 
- std::unique_ptr<Node> AST::EatBlock(Token*& currentToken)
+ std::unique_ptr<Node> AST::EatBlock(Iterator& currentToken)
  {
 	 Error(TokenType::LEFT_BRACE, currentToken, "Expected { at the beginning of the block");
 	 BeginBlock();
@@ -513,7 +516,7 @@ void Print(const Expression* tree, int level) {
  }
 
  // eats then branch and if conition
- std::unique_ptr<Node> AST::EatIf(Token*& currentToken)
+ std::unique_ptr<Node> AST::EatIf(Iterator& currentToken)
  {
 	 auto ifnode = std::make_unique<Expression>();
 	 ifnode->line = currentToken->line;
@@ -531,11 +534,11 @@ void Print(const Expression* tree, int level) {
 	 return ifnode;
  }
 
- void AST::Error(const Token* const& currentToken, const char* msg)
+ void AST::Error(const Iterator& currentToken, const char* msg)
  {
 	 std::cout << "ERROR[" << (currentToken)->line << "]:" << msg << std::endl;
  }
- void AST::Error(TokenType expectedType, Token*& currentToken, const char* msg)
+ void AST::Error(TokenType expectedType, Iterator& currentToken, const char* msg)
  {
 	 if (currentToken->type != expectedType)
 	 {
@@ -551,7 +554,7 @@ void Print(const Expression* tree, int level) {
 
  // each statement is
  // required to have zero stack effect
- std::unique_ptr<Node> AST::Statement(Token*& currentToken)
+ std::unique_ptr<Node> AST::Statement(Iterator& currentToken)
  {
 
 
@@ -626,37 +629,44 @@ void Print(const Expression* tree, int level) {
 			 auto begin= (currentToken+3);
 			 auto end= (currentToken+5);
 			 auto startValue = begin->value;
-			 std::vector<Token> forLoop =
+			 if (isIdentifier)
 			 {
-				 *(currentToken),
-				 CreateToken(TokenType::COLON,{},currentToken->line),
-				 CreateToken(TokenType::EQUAL,{},currentToken->line),
-				 CreateToken(begin->type,std::move(startValue),currentToken->line),
-				 CreateToken(TokenType::SEMICOLON,{},currentToken->line),
-				 
-				*(currentToken),
-				 CreateToken(TokenType::LESS,{},currentToken->line),
-				 *end,
-				// CreateToken(TokenType::SEMICOLON,{},currentToken->line),
-				*(currentToken),
-				 CreateToken(TokenType::PLUS_PLUS,{},currentToken->line),
-				 //CreateToken(TokenType::INT_LITERAL,ValueContainer{1},currentToken->line),
-				 //CreateToken(TokenType::SEMICOLON,{},currentToken->line),
-			 };
-			 auto forLoopPtr = forLoop.data();
-			 forNode->init = Declaration(forLoopPtr);
-			 forNode->condition =LogicalOr(forLoopPtr);
-			 forNode->action = Statement(forLoopPtr);
-			 currentToken+=6;
-			 forNode->body = EatBlock(currentToken);
- 			 forNode->initScope.popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
-			 EndBlock();
+				 std::vector<Token> forLoop =
+				 {
+					 *(currentToken),
+					 CreateToken(TokenType::COLON,{},currentToken->line),
+					 CreateToken(TokenType::EQUAL,{},currentToken->line),
+					 CreateToken(begin->type,std::move(startValue),currentToken->line),
+					 CreateToken(TokenType::SEMICOLON,{},currentToken->line),
+					*(currentToken),
+					 CreateToken(TokenType::LESS,{},currentToken->line),
+					 *end,
+					*(currentToken),
+					 CreateToken(TokenType::PLUS_PLUS,{},currentToken->line),
+					 CreateToken(TokenType::END,{},currentToken->line),
+				 };
+				 auto forLoopPtr = forLoop.begin();
+				 forNode->init = Declaration(forLoopPtr);
+				 assert(forLoopPtr->type == currentToken->type);
+				 forNode->condition =LogicalOr(forLoopPtr);
+				 assert(forLoopPtr->type == currentToken->type);
+				 forNode->action = Statement(forLoopPtr);
+				 assert(forLoopPtr->type == TokenType::END);
+				 currentToken+=6;
+				 forNode->body = EatBlock(currentToken);
+ 				 forNode->initScope.popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
+				 EndBlock();
+			 }
+			 else
+			 {
+				 Error(currentToken,"missing Iterator& declaration");
+			 }
 
 		 }
 		 else if (isIdentifier)
 		 {
 			 currentToken += 1;
-			 // so we can create i iterator
+			 // so we can create i Iterator&
 			 currentScope = &forNode->initScope;
 			 BeginBlock();
 			 // init node
@@ -713,13 +723,13 @@ void Print(const Expression* tree, int level) {
 	 scopeDepth--;
 	 scopeDeclarations.pop();
  }
-std::unique_ptr<Node> AST::ParseExpression( Token*& currentToken)
+std::unique_ptr<Node> AST::ParseExpression( Iterator& currentToken)
 {
 
 	auto tree = Statement(currentToken);
 	return tree;
 }
-bool AST::Build(Token*& firstToken)
+bool AST::Build(Iterator& firstToken)
 {
 	tree = ParseExpression(firstToken);
 	return true;

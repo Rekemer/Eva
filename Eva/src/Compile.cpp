@@ -23,7 +23,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	std::cout << "\n";
 	#endif // DEBUG
 	std::vector<AST> trees;
-	Token* ptr = &tokens[0];
+	auto ptr = tokens.begin();
 	bool panic = false;
 	
 	while (ptr->type!=TokenType::END)

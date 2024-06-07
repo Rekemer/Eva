@@ -79,6 +79,7 @@ struct For : public Node
 // Token*  const currentToken = can change the contents but not the pointer
 
 
+using Iterator = std::vector<Token>::iterator;
 
 void Print(const Expression* tree, int level = 0);
 class AST
@@ -91,7 +92,7 @@ public:
 		e.tree = nullptr;
 	}
 	AST() = default;
-	bool Build(Token*& firstToken);
+	bool Build(Iterator& firstToken);
 	void TypeCheck(VirtualMachine& vm);
 	const Node* GetTree()const  { return tree.get(); }
 	class VirtualMachine* vm;
@@ -111,32 +112,32 @@ private:
 			currentToken++;
 		}
 	}
-	void Error(TokenType expectedType, Token*& currentToken, const char* msg);
-	void Error(const Token* const& currentToken, const char* msg);
+	void Error(TokenType expectedType, Iterator& currentToken, const char* msg);
+	void Error(const Iterator& currentToken, const char* msg);
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
-	std::unique_ptr<Node> UnaryOpPrefix(Token*& currentToken);
-	std::unique_ptr<Node> UnaryOpPostfix(Token*& currentToken);
-	std::unique_ptr<Node> Value(Token*& currentToken);
-	std::unique_ptr<Node> ParseExpression(Token*& currentToken);
-	std::unique_ptr<Node> Factor(Token*& currentToken);
-	std::unique_ptr<Node> Term(Token*& currentToken);
-	std::unique_ptr<Node> Comparison(Token*& currentToken);
-	std::unique_ptr<Node> Equality(Token*& currentToken);
-	std::unique_ptr<Node> LogicalAnd(Token*& currentToken);
-	std::unique_ptr<Node> LogicalOr(Token*& currentToken);
-	std::unique_ptr<Node> Declaration(Token*& currentToken);
-	std::unique_ptr<Node> EqualOp(Token*& currentToken);
-	std::unique_ptr<Node> Statement(Token*& currentToken);
-	std::unique_ptr<Node> EatIf(Token*& currentToken);
-	std::unique_ptr<Node> EatBlock(Token*& currentToken);
+	std::unique_ptr<Node> UnaryOpPrefix(Iterator& currentToken);
+	std::unique_ptr<Node> UnaryOpPostfix(Iterator& currentToken);
+	std::unique_ptr<Node> Value(Iterator& currentToken);
+	std::unique_ptr<Node> ParseExpression(Iterator& currentToken);
+	std::unique_ptr<Node> Factor(Iterator& currentToken);
+	std::unique_ptr<Node> Term(Iterator& currentToken);
+	std::unique_ptr<Node> Comparison(Iterator& currentToken);
+	std::unique_ptr<Node> Equality(Iterator& currentToken);
+	std::unique_ptr<Node> LogicalAnd(Iterator& currentToken);
+	std::unique_ptr<Node> LogicalOr(Iterator& currentToken);
+	std::unique_ptr<Node> Declaration(Iterator& currentToken);
+	std::unique_ptr<Node> EqualOp(Iterator& currentToken);
+	std::unique_ptr<Node> Statement(Iterator& currentToken);
+	std::unique_ptr<Node> EatIf(Iterator& currentToken);
+	std::unique_ptr<Node> EatBlock(Iterator& currentToken);
 	void BeginBlock();
 	void EndBlock();
-	void DeclareGlobal(Token*& currentToken, 
+	void DeclareGlobal(Iterator& currentToken,
 		ValueType declaredType, HashTable& table,
 		HashTable& globalTypes,
 		Expression* node,
 		int offset);
-	void DeclareLocal(Token*& currentToken, 
+	void DeclareLocal(Iterator& currentToken,
 		VirtualMachine* vm, Expression* node,ValueType type,int offset);
 private:
 	// unique_ptr causes slicing 
