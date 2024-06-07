@@ -703,8 +703,6 @@ void Print(const Expression* tree, int level) {
 		 return scope;
 	 }
 	 auto expr = EqualOp(currentToken);
-	 //Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
-	 //currentToken++;
 	 return expr;
  }
  

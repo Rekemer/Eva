@@ -1,26 +1,38 @@
 
-//for  i:= 10; i > 0; i--;
-//{
-//	Print i ;
-//}
-a:=2;
-c:=3;
-//for 0..5
-//{
-//	Print "Ia";
-//	for j:=0; j < 5; j++;
-//	{
-//		Print "Ja";
-//	}
-//}
-while a > 0{
-	a--;
-	Print "a";
-	while c > 0
+for 0..5
+{
+	Print "Ia";
+	if  i == 3
 	{
-		c--;
-		Print "c";
+		break;
 	}
 }
-//Print false&&true == true&&true;
-//Print  3.2 % 2.4;
+
+//c:=3;
+//a:=10;
+//for 1..10
+//{
+//	for j:=0; j < 5; j++; 
+//	{
+//		if j % 2
+//		{
+//			break;
+//		}
+//		Print "Ja";
+//		Print j;
+//	}
+//	if i % 2 
+//	{
+//		continue;
+//	}
+//	//Print "Ia";
+//	//Print i;
+//}
+//while a > 0{
+//	a--;
+//	if a % 2 == 1
+//	{
+//		continue;
+//	}
+//	Print "a";
+//}

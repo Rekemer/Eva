@@ -109,7 +109,7 @@ int JumpBack(std::vector<Bytecode>& opCode)
 	return indexJump;
 }
 // from: to make jump relative
-int CalculateJumpIndex(std::vector<Bytecode>& opCode, int from)
+int CalculateJumpIndex(const std::vector<Bytecode> const &  opCode, const int from)
 {
 	return opCode.size() - 1 - from;
 }
@@ -211,15 +211,6 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			}
 			// once we finish block, we must clear the stack
 			ClearScope(currentScopes, m_StackPtr, opCode);
-			//int popAmount = block->popAmount;
-			//while (popAmount > 0 )
-			//{
-			//	opCode.push_back((uint8_t)InCode::POP);
-			//	popAmount--;
-			//}
-			//currentScopes.pop_back();
-			//m_StackPtr -= block->popAmount;
-			//assert(m_StackPtr >= 0);
 
 		}
 		else if (tree->type == TokenType::PLUS)
@@ -549,55 +540,55 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		{
 			auto forNode = tree->As<For>();
 			currentScopes.push_back(&forNode->initScope);
-			m_BreakIndex = -1;
 			Generate(forNode->init.get());
 			auto firstIteration = Jump(opCode);
 
 			auto startLoopIndex = opCode.size();
+			m_StartLoopIndexes.push(startLoopIndex);
+
 			Generate(forNode->action.get());
 			Generate(forNode->condition.get());
 			auto indexJumpFalse = JumpIfFalse(opCode);
 			opCode.push_back((uint8_t)InCode::POP);
 			opCode[firstIteration] = CalculateJumpIndex(opCode, firstIteration) + 1;
+			auto prevSizeBreak = m_BreakIndexes.size();
 			Generate(forNode->body.get());
 			auto jump = JumpBack(opCode);
 			
+			m_StartLoopIndexes.pop();
+			
+			// we hit break we should patch it
+			if (m_BreakIndexes.size() - prevSizeBreak > 0)
+			{
+				// we need to skip one pop because there is condition check on the stack 
+				// when we execute body of the loop, hence +2. 
+				// 1 to get to the future instruction
+				// 1 to skip pop opeation
+				opCode[m_BreakIndexes.top()] =
+					CalculateJumpIndex(opCode, m_BreakIndexes.top()) + 2;
+				m_BreakIndexes.pop();
+			}
+
 			opCode[jump] = CalculateJumpIndex(opCode, startLoopIndex);
 			// clean the check condition once we go finish the loop
 			opCode.push_back((uint8_t)InCode::POP);
 			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
 
-			// we hit break we should patch it
-			if (m_BreakIndex != -1)
-			{
-				opCode[m_BreakIndex] = CalculateJumpIndex(opCode, m_BreakIndex) + 1;
-			}
 			ClearScope(currentScopes, m_StackPtr, opCode);
-
-			//int popAmount = currentScopes.back()->popAmount;
-			//while (popAmount > 0)
-			//{
-			//	opCode.push_back((uint8_t)InCode::POP);
-			//	popAmount--;
-			//}
-
-			//m_StackPtr -= currentScopes.back()->popAmount;
-			//currentScopes.pop_back();
-			//assert(m_StackPtr >= 0);
-
 		}
 		else if (tree->type == TokenType::CONTINUE)
 		{
 			int index = JumpBack(opCode);
-			assert(m_StartLoopIndex != -1);
-			opCode[index] = CalculateJumpIndex(opCode, m_StartLoopIndex);
+			assert(m_StartLoopIndexes.size() > 0);
+			opCode[index] = CalculateJumpIndex(opCode, m_StartLoopIndexes.top());
 		}
 		else if (tree->type == TokenType::BREAK)
 		{
-			m_BreakIndex = Jump(opCode);
+			m_BreakIndexes.push(Jump(opCode));
 		}
 		else
 		{
+			// should say what type it is
 			assert(false && "Weird type during code generation");
 		}
 

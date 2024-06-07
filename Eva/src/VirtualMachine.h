@@ -61,9 +61,10 @@ private:
 	int m_StackPtr = 0;
 	bool m_Panic = false;
 	// if we hit break or continue we should know where to jump
-	int m_StartLoopIndex = -1;
+	// we need stack because there can be loops in loops
+	std::stack<int> m_StartLoopIndexes;
 	// Once we hit break we should remember the index
 	// to come back and  patch it with correct distance
 	// for a jump
-	int m_BreakIndex= -1;
+	std::stack<int> m_BreakIndexes;
 };
