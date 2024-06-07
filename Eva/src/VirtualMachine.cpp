@@ -190,7 +190,41 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 		opCode.push_back(index);
 	}
 }
+int VirtualMachine::GenerateLoopCondition(const Node* node)
+{
+	Generate(node);
+	auto indexJumpFalse = JumpIfFalse(opCode);
+	opCode.push_back((uint8_t)InCode::POP);
+	return indexJumpFalse;
+}
 
+void VirtualMachine::BeginContinue(int startLoopIndex)
+{
+	m_StartLoopIndexes.push(startLoopIndex);
+}
+void VirtualMachine::EndContinue()
+{
+	m_StartLoopIndexes.pop();
+}
+int VirtualMachine::BeginBreak()
+{
+	return m_BreakIndexes.size();
+}
+void VirtualMachine::PatchBreak(int prevSizeBreak)
+{
+	// we hit break we should patch it
+	if (m_BreakIndexes.size() - prevSizeBreak > 0)
+	{
+		// we need to skip one pop because there is condition check on the stack 
+		// when we execute body of the loop, hence +2. 
+		// 1 to get to the future instruction
+		// 1 to skip pop opeation
+		auto index = m_BreakIndexes.top();
+		opCode[index] =
+			CalculateJumpIndex(opCode, index) + 2;
+		m_BreakIndexes.pop();
+	}
+}
 ValueType VirtualMachine::Generate(const Node * tree)
 {
 		if (!tree) return ValueType::NIL;
@@ -526,14 +560,25 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		else if (tree->type == TokenType::WHILE)
 		{
 			auto startIndex = opCode.size();
-			Generate(tree->As<Expression>()->left.get());
-			auto indexJumpFalse = JumpIfFalse(opCode);
-			opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right.get());
+			auto condition = tree->As<Expression>()->left.get();
+			auto indexJumpFalse = GenerateLoopCondition(condition);
+			
+			BeginContinue(startIndex);
+			auto prevSizeBreak = BeginBreak();
+			
+			auto body = tree->As<Expression>()->right.get();
+			Generate(body);
+			
 			auto jump = JumpBack(opCode);
-			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse) + 1;
 			// jumping backwards
 			opCode[jump] = CalculateJumpIndex(opCode, startIndex);
+			
+			EndContinue();
+			PatchBreak(prevSizeBreak);
+			
+			// clean the check condition 
+			opCode.push_back((uint8_t)InCode::POP);
+			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
 
 		}
 		else if (tree->type== TokenType::FOR)
@@ -542,38 +587,28 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			currentScopes.push_back(&forNode->initScope);
 			Generate(forNode->init.get());
 			auto firstIteration = Jump(opCode);
-
 			auto startLoopIndex = opCode.size();
-			m_StartLoopIndexes.push(startLoopIndex);
+
+			BeginContinue(startLoopIndex);
+			auto prevSizeBreak = BeginBreak();
 
 			Generate(forNode->action.get());
-			Generate(forNode->condition.get());
-			auto indexJumpFalse = JumpIfFalse(opCode);
-			opCode.push_back((uint8_t)InCode::POP);
+			auto indexJumpFalse = GenerateLoopCondition(forNode->condition.get());
 			opCode[firstIteration] = CalculateJumpIndex(opCode, firstIteration) + 1;
-			auto prevSizeBreak = m_BreakIndexes.size();
 			Generate(forNode->body.get());
+			
+			EndContinue();
+			
 			auto jump = JumpBack(opCode);
-			
-			m_StartLoopIndexes.pop();
-			
-			// we hit break we should patch it
-			if (m_BreakIndexes.size() - prevSizeBreak > 0)
-			{
-				// we need to skip one pop because there is condition check on the stack 
-				// when we execute body of the loop, hence +2. 
-				// 1 to get to the future instruction
-				// 1 to skip pop opeation
-				opCode[m_BreakIndexes.top()] =
-					CalculateJumpIndex(opCode, m_BreakIndexes.top()) + 2;
-				m_BreakIndexes.pop();
-			}
-
 			opCode[jump] = CalculateJumpIndex(opCode, startLoopIndex);
+			
+			PatchBreak(prevSizeBreak);
+			
+
 			// clean the check condition once we go finish the loop
 			opCode.push_back((uint8_t)InCode::POP);
 			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
-
+			// because for loop has declared iterator variable
 			ClearScope(currentScopes, m_StackPtr, opCode);
 		}
 		else if (tree->type == TokenType::CONTINUE)
@@ -589,7 +624,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		else
 		{
 			// should say what type it is
-			assert(false && "Weird type during code generation");
+			std::cout << "ERROR Code generation: weird type " << tokenToString(tree->type) << std::endl;
+			assert(false);
 		}
 
 }

@@ -1,38 +1,10 @@
-
-for 0..5
-{
-	Print "Ia";
-	if  i == 3
+g := 0;
+for 1..5
+{	
+	if i == 4 
 	{
 		break;
 	}
+	g+=i;
 }
-
-//c:=3;
-//a:=10;
-//for 1..10
-//{
-//	for j:=0; j < 5; j++; 
-//	{
-//		if j % 2
-//		{
-//			break;
-//		}
-//		Print "Ja";
-//		Print j;
-//	}
-//	if i % 2 
-//	{
-//		continue;
-//	}
-//	//Print "Ia";
-//	//Print i;
-//}
-//while a > 0{
-//	a--;
-//	if a % 2 == 1
-//	{
-//		continue;
-//	}
-//	Print "a";
-//}
+Print g;

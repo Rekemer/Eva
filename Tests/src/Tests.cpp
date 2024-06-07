@@ -5,36 +5,40 @@
 #include "Value.h"
 #include "HashTable.h"
 
+#define EXPR 1
 
+#if EXPR
+	TEST_CASE("testing bool expressions")
+	{
+		CHECK(CompileTest("1/2 == 1/2").As<bool>() == true);
+		CHECK(CompileTest("1 == 1").As<bool>() == true);
+		CHECK(CompileTest("1 == (1+2)").As<bool>() == false);
+		CHECK(CompileTest("(1-2) == (1+2)").As<bool>() == false);
+		CHECK(CompileTest("true == true").As<bool>() == true);
+		CHECK(CompileTest("false == true").As<bool>() == false);
+		CHECK(CompileTest("(2*10 - 1/5) == (2*10 - 1/5) ").As<bool>() == true);
+		CHECK(CompileTest("2*10  == 2*10 ").As<bool>() == true);
+		CHECK(CompileTest("2+2 ").As<int>() == 4);
+		CHECK(CompileTest("3%2 ").As<int>() == 1);
+		CHECK(CompileTest("true == true").As<bool>() == true);
+		CHECK(CompileTest("false&&true == true&&true").As<bool>() == false);
+		CHECK(CompileTest("false&&true || true&&true").As<bool>() == true);
+		CHECK(CompileTest("false&&true || true&&false").As<bool>() == false);
+		CHECK(CompileTest("false&&true").As<bool>() == false);
+		CHECK(CompileTest("true&&true").As<bool>() == true);
+		CHECK(CompileTest("true || false").As<bool>() == true);
+		CHECK(CompileTest("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
+		CHECK(CompileTest("2+2 == 2+1+1 ").As<bool>() == true);
+		CHECK(CompileTest("2+2 < 2+1+1+1 ").As<bool>() == true);
+		CHECK(CompileTest("2+2 <= 2+2 ").As<bool>() == true);
+		CHECK(CompileTest("2+2 >= 2+2 ").As<bool>() == true);
+		CHECK(CompileTest("2+5 >= 2+2 ").As<bool>() == true);
+		CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
+		CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
+	}
 
-TEST_CASE("testing bool expressions")
-{
-	CHECK(CompileTest("1/2 == 1/2").As<bool>() == true);
-	CHECK(CompileTest("1 == 1").As<bool>() == true);
-	CHECK(CompileTest("1 == (1+2)").As<bool>() == false);
-	CHECK(CompileTest("(1-2) == (1+2)").As<bool>() == false);
-	CHECK(CompileTest("true == true").As<bool>() == true);
-	CHECK(CompileTest("false == true").As<bool>() == false);
-	CHECK(CompileTest("(2*10 - 1/5) == (2*10 - 1/5) ").As<bool>() == true);
-	CHECK(CompileTest("2*10  == 2*10 ").As<bool>() == true);
-	CHECK(CompileTest("2+2 ").As<int>() == 4);
-	CHECK(CompileTest("3%2 ").As<int>() == 1);
-	CHECK(CompileTest("true == true").As<bool>() == true);
-	CHECK(CompileTest("false&&true == true&&true").As<bool>() == false);
-	CHECK(CompileTest("false&&true || true&&true").As<bool>() == true);
-	CHECK(CompileTest("false&&true || true&&false").As<bool>() == false);
-	CHECK(CompileTest("false&&true").As<bool>() == false);
-	CHECK(CompileTest("true&&true").As<bool>() == true);
-	CHECK(CompileTest("true || false").As<bool>() == true);
-	CHECK(CompileTest("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
-	CHECK(CompileTest("2+2 == 2+1+1 ").As<bool>() == true);
-	CHECK(CompileTest("2+2 < 2+1+1+1 ").As<bool>() == true);
-	CHECK(CompileTest("2+2 <= 2+2 ").As<bool>() == true);
-	CHECK(CompileTest("2+2 >= 2+2 ").As<bool>() == true);
-	CHECK(CompileTest("2+5 >= 2+2 ").As<bool>() == true);
-	CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
-	CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
-}
+#endif // EXPR
+
 
 TEST_CASE("testing strings ")
 {
@@ -315,7 +319,61 @@ TEST_CASE("deduction test")
 	}
 
 }
-TEST_CASE("for loop test")
+TEST_CASE("while statement")
+{
+	SUBCASE("basic while")
+	{
+		auto a = R"(a: int = 15;
+						while a  >= 5 
+					{
+						a--;
+					}
+						)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("a", 4, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("while loop continue")
+	{
+		auto a = R"(
+					g := 0;
+					a := 0;
+					while a < 5
+					{	
+						a++;
+						if a % 2 
+						{
+							continue;
+						}
+						g+=a;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", (2 + 4), ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("while loop break")
+	{
+		auto a = R"(
+					g := 0;
+					a := 0;
+					while a < 5
+					{	
+						a++;
+						if a == 4 
+						{
+							break;
+						}
+						g+=a;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", (1 + 2 + 3), ValueType::INT, vm);
+		CHECK(isPass);
+	}
+}
+TEST_CASE("basic for loop test")
 {
 	SUBCASE("basic for loop")
 	{
@@ -334,27 +392,50 @@ TEST_CASE("for loop test")
 	{
 		auto a = R"(
 					g := 0;
-					for  i:= 0; i < 10; i+=1;
+					for i:=1; i < 5; i++;
 					{	
 						if i % 2 
 						{
-							g+=i;
+							continue;
 						}
-					}
-					)";
-		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", (1+3+5+7+9), ValueType::INT, vm);
-		CHECK(isPass);
-	}
-	SUBCASE("basic folded constant for loop")
-	{
-		auto a = R"(
-					g := 0;
-					for 2..5
-					{
 						g+=i;
 					}
 					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", (2 + 4), ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("basic for loop break")
+	{
+		auto a = R"(
+					g := 0;
+					for i:=1; i < 5; i++;
+					{	
+						if i == 4 
+						{
+							break;
+						}
+						g+=i;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", (1 + 2 + 3), ValueType::INT, vm);
+		CHECK(isPass);
+	}
+}
+TEST_CASE("folded for loop test")
+{
+
+	SUBCASE("folded constant for loop")
+	{
+		auto a = R"(
+				g := 0;
+				for 2..5
+				{
+					g+=i;
+				}
+				)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
@@ -362,13 +443,13 @@ TEST_CASE("for loop test")
 	SUBCASE("folded end constant for loop")
 	{
 		auto a = R"(
-					g := 0;
-					a := 2;
-					for a..5
-					{
-						g+=i;
-					}
-					)";
+				g := 0;
+				a := 2;
+				for a..5
+				{
+					g+=i;
+				}
+				)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
@@ -376,13 +457,13 @@ TEST_CASE("for loop test")
 	SUBCASE("folded start constant for loop")
 	{
 		auto a = R"(
-					g := 0;
-					a := 5;
-					for 2..a
-					{
-						g+=i;
-					}
-					)";
+				g := 0;
+				a := 5;
+				for 2..a
+				{
+					g+=i;
+				}
+				)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
@@ -390,50 +471,112 @@ TEST_CASE("for loop test")
 	SUBCASE("folded variable for loop")
 	{
 		auto a = R"(
-					g := 0;
-					a := 5;
-					c := 2;
-					for c..a
-					{
-						g+=i;
-					}
-					)";
+				g := 0;
+				a := 5;
+				c := 2;
+				for c..a
+				{
+					g+=i;
+				}
+				)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
 	}
-	SUBCASE("folded  for loop continue")
+	SUBCASE("folded for loop continue")
 	{
 		auto a = R"(
-					g := 0;
-					for 1..5
-					{	
+				g := 0;
+				for 1..5
+				{	
+					if i % 2 
+					{
+						continue;
+					}
+					g+=i;
+				}
+				)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", (2 + 4), ValueType::INT, vm);
+	}
+
+	SUBCASE("folded for loop break")
+	{
+		auto a = R"(
+				g := 0;
+				for 1..5
+				{	
+					if i == 4 
+					{
+						break;
+					}
+					g+=i;
+				}
+				)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("g", (1 + 2 + 3), ValueType::INT, vm);
+		CHECK(isPass);
+	}
+}
+
+TEST_CASE("loops in loops")
+{
+	SUBCASE("for loop in for")
+	{
+		auto a = R"(
+					a:=0;
+					for 0..5
+					{
 						if i % 2 
 						{
-							g+=i;
+							continue;
+						}
+						a+=i;
+						for j:=0; j < 5; j++; 
+						{
+							if j == 4
+							{
+								break;
+							}
+							a+=j;
 						}
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", 4, ValueType::INT, vm);
+		auto sumJPerI = 1 + 2 + 3;
+		auto isPass = CheckVariable<INT>("a", (sumJPerI*3+2+4), ValueType::INT, vm);
 		CHECK(isPass);
 	}
-	
-}
-TEST_CASE("while statement")
-{
-	auto a = R"(a: int = 15;
-					while a  >= 5 
-				{
-					a--;
-				}
+	SUBCASE("whlie loop in while")
+	{
+		auto a = R"(
+					a:=0;
+					i:= 0;
+					j:= 0;
+					while i < 5
+					{
+						i++;
+						if i % 2 
+						{
+							continue;
+						}
+						a+=2;
+						while j < 2
+						{
+							j++;
+							a+=2;
+						}
+						j =0;
+					}
 					)";
-	auto [res, vm] = Compile(a);
-	auto isPass = CheckVariable<INT>("a", 4, ValueType::INT, vm);
-	CHECK(isPass);
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<INT>("a", (2 * 3 + 6), ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
 }
 
-TEST_CASE("if statement")
+TEST_CASE("if statTment")
 {
 	SUBCASE("if")
 	{

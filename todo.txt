@@ -21,3 +21,5 @@ rework token leaking to backend
 
 
 fix stack getting bloated by unneccesaty set local command during init of local variable
+
+replace pointer to tokens to iterator to ensnure we do not run out of vector

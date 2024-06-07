@@ -41,10 +41,16 @@ public:
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
 private:
+	void BeginContinue(int startLoopIndex);
+	int BeginBreak();
+	void EndContinue();
+	void PatchBreak(int prevSizeBreak);
 	void SetVariable(std::vector<Bytecode>& opCode,
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
 	ValueType Generate(const Node* tree);
+	// returns index to be patchd for a jump if loop is finished
+	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
 	friend void Debug(VirtualMachine& vm);
