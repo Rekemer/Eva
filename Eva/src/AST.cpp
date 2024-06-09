@@ -374,8 +374,8 @@ void Print(const Expression* tree, int level) {
  {
 	 auto isOp = (currentToken+1)->type == TokenType::PLUS_EQUAL
 		 || (currentToken + 1)->type == TokenType::STAR_EQUAL
-		 || (currentToken + 1)->type == TokenType::SLASH_EQUAL
 		 || (currentToken + 1)->type == TokenType::EQUAL
+		 || (currentToken + 1)->type == TokenType::SLASH_EQUAL
 		 || (currentToken + 1)->type == TokenType::MINUS_EQUAL;
 	 if (isOp)
 	 {
@@ -397,7 +397,33 @@ void Print(const Expression* tree, int level) {
 	 return LogicalOr(currentToken);
 
  }
- 
+ // fun foo() : int {}
+ std::unique_ptr<Node> AST::DeclareFunction(Iterator& currentToken)
+ {
+	 currentToken++;
+	 auto& name = currentToken->value.As<String&>();
+	 currentToken++;
+	 Error(TokenType::LEFT_BRACE,currentToken,"Function argument list must start with (");
+	 auto function = std::make_unique<Function>();
+	 function->name = std::move(name);
+	 BeginBlock();
+	 while (currentToken->type != TokenType::RIGHT_BRACE)
+	 {
+		 auto arg = Declaration(currentToken);
+		 function->arguments.push_back(std::move(arg));
+		 if (currentToken->type != TokenType::RIGHT_BRACE)
+		 {
+			Error(TokenType::COMMA,currentToken,"Arguments must be separated with comma");
+		 }
+	 }
+	 Error(TokenType::RIGHT_BRACE,currentToken,"Function argument list must end with )");
+	 Error(TokenType::SEMICOLON,currentToken,"Function must declare return type");
+	 function->type = currentToken->type;
+	 currentToken++;
+	 function->body = EatBlock(currentToken);
+	 EndBlock();
+	 return function;
+ }
  std::unique_ptr<Node> AST::DeclareVariable(Iterator& currentToken)
  {
 	 auto& table = vm->GetGlobals();
@@ -424,7 +450,6 @@ void Print(const Expression* tree, int level) {
 				 DeclareGlobal(currentToken, LiteralToType(type), table,
 					 globalsType, node.get(), 3);
 			 }
-
 		 }
 		 else
 		 {
@@ -459,6 +484,7 @@ void Print(const Expression* tree, int level) {
  std::unique_ptr<Node> AST::Declaration(Iterator& currentToken)
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
+	 bool isFunc = currentToken->type == TokenType::FUN;
 	 bool isDeclaration = (currentToken+1)->type == TokenType::COLON;
 	 bool isAssignment = (currentToken+1)->type == TokenType::EQUAL;
 	 auto varToken = currentToken;
@@ -468,9 +494,18 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return DeclareVariable(currentToken);
 	 }
+	 else if (isFunc)
+	 {
+		 return DeclareFunction(currentToken);
+	 }
+	 //return Assignment(currentToken);
 	 return EqualOp(currentToken);
  }
 
+ std::unique_ptr<Node> AST::Assignment(Iterator& currentToken)
+ {
+	 return {};
+ }
  std::unique_ptr<Node> AST::LogicalOr(Iterator& currentToken)
  {
 	 auto left = LogicalAnd(currentToken);

@@ -1,2 +1,15 @@
 
 a: float = 3;
+
+fun foo( a: int, b : int ) : int 
+{ 
+	Print a;
+	Print b;
+	return a;
+}
+
+fun main() : int
+{
+	foo(2,3);
+	return 0;
+}

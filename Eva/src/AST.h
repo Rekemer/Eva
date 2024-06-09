@@ -75,10 +75,16 @@ struct For : public Node
 	std::unique_ptr<Node> action = nullptr;
 	std::unique_ptr<Node> body = nullptr;
 };
-//const Token * currentToken = can change a pointer but not the contents
+
+struct Function : public Node
+{
+	std::unique_ptr<Node> body;
+	String name;
+	std::vector<std::unique_ptr<Node>> arguments;
+};
+
 // Token*  const currentToken = can change the contents but not the pointer
-
-
+//const Token * currentToken = can change a pointer but not the contents
 using Iterator = std::vector<Token>::iterator;
 
 void Print(const Expression* tree, int level = 0);
@@ -127,7 +133,9 @@ private:
 	std::unique_ptr<Node> LogicalOr(Iterator& currentToken);
 	std::unique_ptr<Node> Declaration(Iterator& currentToken);
 	std::unique_ptr<Node> DeclareVariable(Iterator& currentToken);
+	std::unique_ptr<Node> DeclareFunction(Iterator& currentToken);
 	std::unique_ptr<Node> EqualOp(Iterator& currentToken);
+	std::unique_ptr<Node> Assignment(Iterator& currentToken);
 	std::unique_ptr<Node> Statement(Iterator& currentToken);
 	std::unique_ptr<Node> EatIf(Iterator& currentToken);
 	std::unique_ptr<Node> EatBlock(Iterator& currentToken);
