@@ -36,10 +36,11 @@ public:
 
 	void AddLocal(String& name, int currentScope);
 	// checks if  exists in imitation of runtime stack and returns index
-	std::tuple<bool, int> IsLocalExist(String& name);
+	std::tuple<bool, int> IsLocalExist(String& name, size_t scope);
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
+	ValueType Generate(const Node* tree);
 private:
 	void BeginContinue(int startLoopIndex);
 	int BeginBreak();
@@ -48,7 +49,6 @@ private:
 	void SetVariable(std::vector<Bytecode>& opCode,
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
-	ValueType Generate(const Node* tree);
 	// returns index to be patchd for a jump if loop is finished
 	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);

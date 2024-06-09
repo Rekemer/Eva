@@ -211,10 +211,11 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		if (scopeDepth > 0)
 		{	
 
-			auto [isLocalDeclared, index] = vm->IsLocalExist(str);
+			auto [isLocalDeclared, index] = vm->IsLocalExist(str, scopeDepth);
 			if (isLocalDeclared)
 			{
 				// should check whether it is declared variable
+
 				auto& variableName = currentToken->value.As<String&>();
 				node->value = ValueContainer((Object*)&variableName);
 				node->depth = scopeDepth;
@@ -223,6 +224,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			{
 				auto variableName = entry->key;
 				node->value = ValueContainer((Object*)variableName);
+				node->depth = 0;
 			}
 			else
 			{
@@ -236,6 +238,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		{
 			auto variableName = entry->key;
 			node->value = ValueContainer((Object*)variableName);
+			node->depth = 0;
 		}
 		else
 		{

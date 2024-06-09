@@ -1,0 +1,15 @@
+
+//BUG: variable already declared
+//a: float = 1;
+//{
+//	a: float = 2;
+//	Print a;
+//	{
+//		a: float = 3;
+//		Print a;
+//		//{
+//		//	a: float = 4;
+//		//	Print a;
+//		// }
+//	}
+//}

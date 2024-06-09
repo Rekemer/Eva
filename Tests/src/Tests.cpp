@@ -288,6 +288,40 @@ TEST_CASE("scope test")
 		auto isPass = CheckVariable<INT>("a", -13, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+	SUBCASE("multiple scopes in a row")
+	{
+		auto a = R"(a: float = 3;
+			{
+				a: float = 2;
+				a+=2;
+			}
+			
+			{
+				b : int = 15;
+				b+=2;
+				{
+					c : float = -1;
+					b*= c;
+					a -=c;
+				}
+				a+=b;
+			}
+			{
+				b : int = 15;
+				b+=2;
+				{
+					c : float = -1;
+					b*= c;
+					a -=c;
+				}
+				a+=b;
+			}
+
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<FLOAT>("a", -29, ValueType::FLOAT, vm);
+		CHECK(isPass);
+	}
 }
 TEST_CASE("deduction test")
 {

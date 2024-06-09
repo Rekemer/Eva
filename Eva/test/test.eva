@@ -1,3 +1,28 @@
-a: float = 100;
-a++;
+
+a: float = 3;
+{
+	a: float = 2;
+	a+=2;
+}
+
+{
+	b : int = 15;
+	b+=2;
+	{
+		c : float = -1;
+		b*= c;
+		a -=c;
+	}
+	a+=b;
+}
+{
+	b : int = 15;
+	b+=2;
+	{
+		c : float = -1;
+		b*= c;
+		a -=c;
+	}
+	a+=b;
+}
 Print a;

@@ -148,7 +148,7 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
-		auto [isDeclared,index] = IsLocalExist(*str);
+		auto [isDeclared,index] = IsLocalExist(*str, expr->depth);
 	
 		opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
 		opCode.push_back(index);
@@ -185,7 +185,7 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	}
 	else
 	{
-		auto [isDeclared, index] = IsLocalExist(*str);
+		auto [isDeclared, index] = IsLocalExist(*str, expression->depth);
 		opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
 		opCode.push_back(index);
 	}
@@ -643,21 +643,26 @@ Object* VirtualMachine::AllocateString(const char* ptr, size_t size)
 
 void VirtualMachine::AddLocal(String& name, int currentScope)
 {
-	auto iter = std::find_if(locals.begin(), locals.end(), [&](auto& local)
+	auto endIterator = locals.begin() + m_StackPtr;
+	auto iter = std::find_if(locals.begin(), endIterator, [&](auto& local)
 		{
-			return local.name == name;
+			return local.name == name && local.depth == currentScope;
 		});
-	if (iter != locals.end()) assert(false && "variable already declared");
+
+	if (iter != endIterator)
+	{
+		assert(false && "variable already declared in current scope");
+	}
 	locals[m_StackPtr].name = name;
 	locals[m_StackPtr++].depth = currentScope;
 }
 
-std::tuple<bool, int> VirtualMachine::IsLocalExist(String& name)
+std::tuple<bool, int> VirtualMachine::IsLocalExist(String& name, size_t scope)
 {
-	auto temp = m_StackPtr;
+	auto temp = m_StackPtr - 1;
 	while (temp >= 0 )
 	{
-		if (name == locals[temp].name)
+		if (name == locals[temp].name && scope >= locals[temp].depth)
 		{
 			return { true ,temp };
 		}
@@ -697,7 +702,7 @@ void VirtualMachine::Execute()
 {
 	int ipIndex = 0;
 	if (m_Panic)return;
-
+	opCode.push_back((uint8_t)InCode::RETURN);
 	#if DEBUG
 	Debug(*this);
 	#endif
