@@ -75,9 +75,9 @@ struct For : public Node
 	std::unique_ptr<Node> action = nullptr;
 	std::unique_ptr<Node> body = nullptr;
 };
-
 struct Function : public Node
 {
+	Scope paramScope;
 	std::unique_ptr<Node> body;
 	String name;
 	std::vector<std::unique_ptr<Node>> arguments;
@@ -141,6 +141,8 @@ private:
 	std::unique_ptr<Node> EatBlock(Iterator& currentToken);
 	void BeginBlock();
 	void EndBlock();
+
+	// offsets go from semicolon
 	void DeclareGlobal(Iterator& currentToken,
 		ValueType declaredType, HashTable& table,
 		HashTable& globalTypes,
@@ -148,6 +150,8 @@ private:
 		int offset);
 	void DeclareLocal(Iterator& currentToken,
 		VirtualMachine* vm, Expression* node,ValueType type,int offset);
+
+	void BindValue(Iterator& currentToken, Node* variable);
 private:
 	// unique_ptr causes slicing 
 	// if std::make_unique<Node>(std::move(*expr))

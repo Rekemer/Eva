@@ -93,6 +93,15 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		 break;
 	 }
  }
+
+ void AST::BindValue(Iterator& currentToken, Node* variable)
+ {
+	 auto expr = static_cast<Expression*>(variable);
+	 expr->right = LogicalOr(currentToken);
+	 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+ }
+
+ 
  void AST::DeclareGlobal(Iterator& currentToken,
 	  ValueType type, HashTable& table,
 	 HashTable& globalTypes, Expression* node,
@@ -106,13 +115,11 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
 	 // it will initialize node with the name of a variable
 	 node->left = LogicalOr(currentToken);
-	 currentToken += offset;
+
 	 auto leftExpression = static_cast<Expression*>(node->left.get());
 	 leftExpression->value.type = type;
-	 //node->left->value = ValueContainer((Object*)variableName);
-	 node->depth = scopeDepth;
-	 node->right = LogicalOr(currentToken);
-	 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+	 node->depth = 0;
+	 currentToken += offset;
  }
  void AST::DeclareLocal(Iterator& currentToken,
 	 VirtualMachine* vm, Expression* node,ValueType type, int offset)
@@ -126,8 +133,6 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 currentScope->types.Add(str.GetStringView(), type);
 	 leftExpression->value.type =type;
 	 currentToken += offset;
-	 node->right = LogicalOr(currentToken);
-	 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
  }
  std::unique_ptr<Node> AST::UnaryOpPrefix( Iterator&  currentToken)
 {
@@ -372,9 +377,8 @@ void Print(const Expression* tree, int level) {
 
  std::unique_ptr<Node> AST::EqualOp(Iterator& currentToken)
  {
-	 auto isOp = (currentToken+1)->type == TokenType::PLUS_EQUAL
+	 auto isOp = (currentToken + 1)->type == TokenType::PLUS_EQUAL
 		 || (currentToken + 1)->type == TokenType::STAR_EQUAL
-		 || (currentToken + 1)->type == TokenType::EQUAL
 		 || (currentToken + 1)->type == TokenType::SLASH_EQUAL
 		 || (currentToken + 1)->type == TokenType::MINUS_EQUAL;
 	 if (isOp)
@@ -384,7 +388,7 @@ void Print(const Expression* tree, int level) {
 		 auto parent = std::make_unique<Expression>();
 		 parent->type = operation;
 		 parent->line = currentToken->line;
-		 parent->left = LogicalOr(currentToken);
+		 parent->left = LogicalOr((currentToken));
 		 currentToken++;
 		 parent->right = LogicalOr(currentToken);
 		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
@@ -403,21 +407,22 @@ void Print(const Expression* tree, int level) {
 	 currentToken++;
 	 auto& name = currentToken->value.As<String&>();
 	 currentToken++;
-	 Error(TokenType::LEFT_BRACE,currentToken,"Function argument list must start with (");
+	 Error(TokenType::LEFT_PAREN,currentToken,"Function argument list must start with (");
 	 auto function = std::make_unique<Function>();
 	 function->name = std::move(name);
+	 currentScope = &function->paramScope;
 	 BeginBlock();
-	 while (currentToken->type != TokenType::RIGHT_BRACE)
+	 while (currentToken->type != TokenType::RIGHT_PAREN)
 	 {
 		 auto arg = Declaration(currentToken);
 		 function->arguments.push_back(std::move(arg));
-		 if (currentToken->type != TokenType::RIGHT_BRACE)
+		 if (currentToken->type != TokenType::RIGHT_PAREN)
 		 {
 			Error(TokenType::COMMA,currentToken,"Arguments must be separated with comma");
 		 }
 	 }
-	 Error(TokenType::RIGHT_BRACE,currentToken,"Function argument list must end with )");
-	 Error(TokenType::SEMICOLON,currentToken,"Function must declare return type");
+	 Error(TokenType::RIGHT_PAREN,currentToken,"Function argument list must end with )");
+	 Error(TokenType::COLON,currentToken,"Function must declare return type");
 	 function->type = currentToken->type;
 	 currentToken++;
 	 function->body = EatBlock(currentToken);
@@ -445,10 +450,12 @@ void Print(const Expression* tree, int level) {
 		 // number :int = 2; number :=2;
 		 if (isType)
 		 {
+			DeclareGlobal(currentToken, LiteralToType(type), table,
+			 globalsType, node.get(), 2);
 			 if (isEqualSign)
 			 {
-				 DeclareGlobal(currentToken, LiteralToType(type), table,
-					 globalsType, node.get(), 3);
+				currentToken++;
+				BindValue(currentToken,node.get());
 			 }
 		 }
 		 else
@@ -457,6 +464,7 @@ void Print(const Expression* tree, int level) {
 			 if (isEqualSign)
 			 {
 				 DeclareGlobal(currentToken, ValueType::DEDUCE, table, globalsType, node.get(), 2);
+				 BindValue(currentToken,node.get());
 			 }
 		 }
 		 return node;
@@ -468,14 +476,17 @@ void Print(const Expression* tree, int level) {
 		 {
 			 if (isType)
 			 {
+				 DeclareLocal(currentToken, vm, node.get(), LiteralToType(type), 2);
 				 if (isEqualSign)
 				 {
-					 DeclareLocal(currentToken, vm, node.get(), LiteralToType(type), 3);
+					 currentToken++;
+					 BindValue(currentToken, node.get());
 				 }
 			 }
 			 else
 			 {
 				 DeclareLocal(currentToken, vm, node.get(), ValueType::DEDUCE, 2);
+				 BindValue(currentToken,node.get());
 			 }
 			 return node;
 		 }
@@ -489,7 +500,6 @@ void Print(const Expression* tree, int level) {
 	 bool isAssignment = (currentToken+1)->type == TokenType::EQUAL;
 	 auto varToken = currentToken;
 	 Token* eqToken;
-
 	 if (isVariable && isDeclaration)
 	 {
 		 return DeclareVariable(currentToken);
@@ -498,13 +508,28 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return DeclareFunction(currentToken);
 	 }
-	 //return Assignment(currentToken);
-	 return EqualOp(currentToken);
+	 return Assignment(currentToken);
+	 //return EqualOp(currentToken);
  }
 
  std::unique_ptr<Node> AST::Assignment(Iterator& currentToken)
  {
-	 return {};
+	 auto isOp = (currentToken + 1)->type == TokenType::EQUAL;
+	 if (isOp)
+	 {
+		 auto operation = (currentToken + 1)->type;
+
+		 auto parent = std::make_unique<Expression>();
+		 parent->type = operation;
+		 parent->line = currentToken->line;
+		 parent->left = LogicalOr(currentToken);
+		 currentToken++;
+		 parent->right = LogicalOr(currentToken);
+		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+		 return parent;
+	 }
+	 return EqualOp(currentToken);
+
  }
  std::unique_ptr<Node> AST::LogicalOr(Iterator& currentToken)
  {
@@ -734,6 +759,16 @@ void Print(const Expression* tree, int level) {
 		 {
 			 Error(currentToken,"Continue and break can be used only in the loop");
 		 }
+	 }
+	 else if (currentToken->type == TokenType::RETURN)
+	 {
+		 auto returnNode  = std::make_unique<Expression>();
+		 returnNode->line = currentToken->line;
+		 returnNode->type = currentToken->type;
+		 currentToken++;
+		 returnNode->left = Assignment(currentToken);
+		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
+		 return returnNode;
 	 }
 	 else if (currentToken->type == TokenType::LEFT_BRACE)
 	 {

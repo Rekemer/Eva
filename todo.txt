@@ -22,4 +22,4 @@ rework token leaking to backend
 
 fix stack getting bloated by unneccesaty set local command during init of local variable
 
-replace pointer to tokens to iterator to ensnure we do not run out of vector
+clean up type stuff, where exactly do we keep our types in value or hash table for types?
