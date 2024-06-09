@@ -126,6 +126,7 @@ private:
 	std::unique_ptr<Node> LogicalAnd(Iterator& currentToken);
 	std::unique_ptr<Node> LogicalOr(Iterator& currentToken);
 	std::unique_ptr<Node> Declaration(Iterator& currentToken);
+	std::unique_ptr<Node> DeclareVariable(Iterator& currentToken);
 	std::unique_ptr<Node> EqualOp(Iterator& currentToken);
 	std::unique_ptr<Node> Statement(Iterator& currentToken);
 	std::unique_ptr<Node> EatIf(Iterator& currentToken);

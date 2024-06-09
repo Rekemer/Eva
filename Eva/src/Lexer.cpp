@@ -60,7 +60,6 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 	case TokenType::LESS_EQUAL:
 	case TokenType::AND:
 	case TokenType::CLASS:
-	case TokenType::FUN:
 	case TokenType::NIL:
 	case TokenType::OR:
 	case TokenType::RETURN:
@@ -70,6 +69,8 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 	case TokenType::END:
 		return false; 
 
+	case TokenType::FUN:
+		return strSize == 3 && String::AreEqual(str, strSize, "fun", 3);
 
 	case TokenType::STRING_TYPE:
 		return strSize == 6 && String::AreEqual(str, strSize, "String", 6);

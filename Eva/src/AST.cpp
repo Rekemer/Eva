@@ -375,6 +375,7 @@ void Print(const Expression* tree, int level) {
 	 auto isOp = (currentToken+1)->type == TokenType::PLUS_EQUAL
 		 || (currentToken + 1)->type == TokenType::STAR_EQUAL
 		 || (currentToken + 1)->type == TokenType::SLASH_EQUAL
+		 || (currentToken + 1)->type == TokenType::EQUAL
 		 || (currentToken + 1)->type == TokenType::MINUS_EQUAL;
 	 if (isOp)
 	 {
@@ -382,17 +383,79 @@ void Print(const Expression* tree, int level) {
 		 
 		 auto parent = std::make_unique<Expression>();
 		 parent->type = operation;
+		 parent->line = currentToken->line;
 		 parent->left = LogicalOr(currentToken);
-		 currentToken ++;
+		 currentToken++;
 		 parent->right = LogicalOr(currentToken);
 		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
 		 //currentToken++;
 		 return parent;
 	 }
-	 return Declaration(currentToken);
+
+	 
+
+	 return LogicalOr(currentToken);
 
  }
  
+ std::unique_ptr<Node> AST::DeclareVariable(Iterator& currentToken)
+ {
+	 auto& table = vm->GetGlobals();
+	 auto& globalsType = vm->GetGlobalsType();
+
+	 auto& str = currentToken->value.As<String&>();
+	 auto declaredType = (currentToken + 2)->type;
+	 auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
+	 auto entry = table.Get(str.GetStringView());
+	 auto [isType, type] = IsVariableType(declaredType);
+	 auto node = std::make_unique<Expression>();
+	 node->type = TokenType::DECLARE;
+	 node->depth = scopeDepth;
+	 if (entry->key == nullptr && scopeDepth == 0)
+	 {
+		 node->line = currentToken->line;
+
+		 // if there are tokens that correspond to declaration
+		 // number :int = 2; number :=2;
+		 if (isType)
+		 {
+			 if (isEqualSign)
+			 {
+				 DeclareGlobal(currentToken, LiteralToType(type), table,
+					 globalsType, node.get(), 3);
+			 }
+
+		 }
+		 else
+		 {
+			 auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
+			 if (isEqualSign)
+			 {
+				 DeclareGlobal(currentToken, ValueType::DEDUCE, table, globalsType, node.get(), 2);
+			 }
+		 }
+		 return node;
+	 }
+	 else
+	 {
+		 // define a local variable
+		 if (scopeDepth > 0)
+		 {
+			 if (isType)
+			 {
+				 if (isEqualSign)
+				 {
+					 DeclareLocal(currentToken, vm, node.get(), LiteralToType(type), 3);
+				 }
+			 }
+			 else
+			 {
+				 DeclareLocal(currentToken, vm, node.get(), ValueType::DEDUCE, 2);
+			 }
+			 return node;
+		 }
+	 }
+ }
  std::unique_ptr<Node> AST::Declaration(Iterator& currentToken)
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
@@ -401,80 +464,11 @@ void Print(const Expression* tree, int level) {
 	 auto varToken = currentToken;
 	 Token* eqToken;
 
-	 
-
-	 if (isDeclaration)
+	 if (isVariable && isDeclaration)
 	 {
-		auto& table = vm->GetGlobals();
-		auto& globalsType = vm->GetGlobalsType();
-		
-		auto& str = currentToken->value.As<String&>();
-		auto declaredType = (currentToken + 2)->type;
-		auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
-		auto entry = table.Get(str.GetStringView());
-		auto [isType,type]= IsVariableType(declaredType);
-		auto node = std::make_unique<Expression>();
-		node->type = TokenType::DECLARE;
-		node->depth = scopeDepth;
-		if (entry->key == nullptr && scopeDepth == 0)
-		{
-			node->line = currentToken->line;
-
-			// if there are tokens that correspond to declaration
-			// number :int = 2; number :=2;
-			if (isType)
-			{
-				if (isEqualSign)
-				{
-					DeclareGlobal(currentToken, LiteralToType(type),table,
-						globalsType,node.get(),3);
-				}
-
-			}
-			else
-			{
-				auto isEqualSign = (currentToken + 2)->type == TokenType::EQUAL;
-				if (isEqualSign)
-				{
-					DeclareGlobal(currentToken, ValueType::DEDUCE, table, globalsType, node.get(), 2);
-				}
-			}
-			return node;
-		}
-		else
-		{
-			// define a local variable
-			if (scopeDepth > 0)
-			{
-				if (isType)
-				{
-					if (isEqualSign)
-					{
-					    DeclareLocal(currentToken,vm,node.get(), LiteralToType(type),3);
-					}
-				}
-				else
-				{
-					DeclareLocal(currentToken, vm, node.get(), ValueType::DEDUCE, 2);
-				}
-				return node;
-			}
-		}
-		 
+		 return DeclareVariable(currentToken);
 	 }
-	 else if (isAssignment)
-	 {
-		 auto node = std::make_unique<Expression>();
-		 node->line = (currentToken+1)->line;
-		 node->type = (currentToken+1)->type;
-		 node->type = TokenType::EQUAL;
-		 node->left = Value(currentToken);
-		 currentToken++;
-		 node->right = LogicalOr(currentToken);
-		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
-		 return node;
-	 }
-	 return LogicalOr(currentToken);
+	 return EqualOp(currentToken);
  }
 
  std::unique_ptr<Node> AST::LogicalOr(Iterator& currentToken)
@@ -712,8 +706,7 @@ void Print(const Expression* tree, int level) {
 		 auto scope = EatBlock(currentToken);
 		 return scope;
 	 }
-	 auto expr = EqualOp(currentToken);
-	 return expr;
+	 return Declaration(currentToken);
  }
  
  void AST::BeginBlock()
