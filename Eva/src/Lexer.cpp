@@ -216,7 +216,7 @@ void Lexer::ParseString(VirtualMachine& vm)
 		if (Peek() =='\"')
 		{
 			auto size = static_cast<size_t>(currentSymbol - startSymbol);
-			auto* obj = vm.AllocateString(startSymbol,size);
+			auto obj = vm.AllocateString(startSymbol,size);
 			tokens.push_back(CreateToken(TokenType::STRING_LITERAL, ValueContainer{ obj }, currentLine));
 			Eat();
 		}

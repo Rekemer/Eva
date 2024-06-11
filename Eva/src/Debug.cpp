@@ -43,7 +43,7 @@ void Debug(VirtualMachine& vm)
             else
             {
                 auto nameOfVariable = constants[indexOfVariableName];
-                auto string = (nameOfVariable.As<String&>()).GetStringView();
+                auto string = *(nameOfVariable.As<String*>());
                 std::cout << "[" << ipIndex - 1 << "] " << string << std::endl;
             }
 

@@ -1,7 +1,20 @@
 
 
+Print (1 % 2 == 1 ) == true; 
 
 
+//g := 0;
+//					a := 0;
+//					while a < 5
+//					{	
+//						a++;
+//						if a % 2 
+//						{
+//							continue;
+//						}
+//						g+=a;
+//					}
+//Print a;
 //a: int = 3;
 //{
 //	b : int = 15;
@@ -18,12 +31,12 @@
 
 
 
-fun foo( a: int, b : int ) : int 
-{ 
-	Print a;
-	Print b;
-	return a;
-}
+//fun foo( a: int, b : int ) : int 
+//{ 
+//	Print a;
+//	Print b;
+//	return a;
+//}
 
 //fun main() : int
 //{

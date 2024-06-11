@@ -32,7 +32,7 @@ public:
 	void Execute();
 	void GenerateBytecode(const std::vector<AST>& trees);
 	const std::vector<ValueContainer>& GetStack() { return vmStack; };
-	Object* AllocateString(const char* ptr, size_t size);
+	String* AllocateString(const char* ptr, size_t size);
 
 	void AddLocal(String& name, int currentScope);
 	// checks if  exists in imitation of runtime stack and returns index

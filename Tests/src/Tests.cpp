@@ -74,7 +74,7 @@ bool AllTrue(bool condition,T... conditions)
 	return condition && AllTrue(conditions...);
 }
 template <typename ExpectedType>
-bool CheckVariable(std::string_view variableName, const ExpectedType& expectedValue, 
+bool CheckVariable(std::string_view variableName, ExpectedType expectedValue,
 	ValueType expectedValueType,VirtualMachine& vm)
 {
 	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
@@ -85,20 +85,18 @@ bool CheckVariable(std::string_view variableName, const ExpectedType& expectedVa
 	auto isPass = AllTrue(isType, isRightValue);
 	return isPass;
 }
-
-
 template <>
-bool CheckVariable<String>(std::string_view variableName, const String& expectedValue, ValueType expectedValueType, VirtualMachine& vm)
+bool CheckVariable<String*>(std::string_view variableName, String* expectedValue,
+	ValueType expectedValueType, VirtualMachine& vm)
 {
 	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
 	auto entry = tb.globals.Get(variableName);
 	auto entryType = tb.globalTypes.Get(variableName);
 	auto isType = entryType->value.type == expectedValueType;
-	auto isRightValue = entry->value.As<String&>() == expectedValue;
+	auto isRightValue = *entry->value.As<String*>() == *expectedValue;
 	auto isPass = AllTrue(isType, isRightValue);
 	return isPass;
 }
-
 TEST_CASE("variable declared and has values")
 {
 	
@@ -130,7 +128,8 @@ TEST_CASE("variable declared and has values")
 		auto str = R"(a : String = "Hello, New Year!";)";
 		auto [res,vm]= Compile(str);
 		//auto str = String("Hello, New Year!");
-		auto isPass = CheckVariable<String>("a", "Hello, New Year!", ValueType::STRING, vm);
+		String checkString = "Hello, New Year!";
+		auto isPass = CheckVariable<String*>("a", &checkString, ValueType::STRING, vm);
 		//Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
 		//auto entry = tb.globals.Get("a");
 		//auto entryType = tb.globalTypes.Get("a");
@@ -249,7 +248,7 @@ TEST_CASE("scope test")
 				}
 					)";
 		auto [res,vm]= Compile(a);
-		auto isPass = CheckVariable<INT>("a", 14, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", 14, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("change global variable via local variable")
@@ -266,7 +265,7 @@ TEST_CASE("scope test")
 
 					)";
 		auto [res,vm]= Compile(a);
-		auto isPass = CheckVariable<INT>("a", 12, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", 12, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("multiple scopes")
@@ -285,7 +284,7 @@ TEST_CASE("scope test")
 
 					)";
 		auto [res,vm]= Compile(a);
-		auto isPass = CheckVariable<INT>("a", -13, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", -13, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("multiple scopes in a row")
@@ -319,7 +318,7 @@ TEST_CASE("scope test")
 
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<FLOAT>("a", -29, ValueType::FLOAT, vm);
+		auto isPass = CheckVariable<float>("a", -29, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
 }
@@ -332,8 +331,8 @@ TEST_CASE("deduction test")
 					b := 2.2 + 2;
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("a", 1, ValueType::INT, vm) && 
-			CheckVariable<FLOAT>("b", 4.2, ValueType::FLOAT, vm);;
+		auto isPass = CheckVariable<int>("a", 1, ValueType::INT, vm) && 
+			CheckVariable<float>("b", 4.2, ValueType::FLOAT, vm);;
 		CHECK(isPass);
 	}
 	SUBCASE("local deduction scopes")
@@ -348,7 +347,7 @@ TEST_CASE("deduction test")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<FLOAT>("g", 5.2, ValueType::FLOAT, vm);
+		auto isPass = CheckVariable<float>("g", 5.2, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
 
@@ -364,7 +363,7 @@ TEST_CASE("while statement")
 					}
 						)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("a", 4, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", 4, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("while loop continue")
@@ -375,7 +374,7 @@ TEST_CASE("while statement")
 					while a < 5
 					{	
 						a++;
-						if a % 2 
+						if (a % 2 == 1) == true
 						{
 							continue;
 						}
@@ -383,7 +382,7 @@ TEST_CASE("while statement")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", (2 + 4), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", (2 + 4), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 
@@ -403,7 +402,7 @@ TEST_CASE("while statement")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", (1 + 2 + 3), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", (1 + 2 + 3), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 }
@@ -419,7 +418,7 @@ TEST_CASE("basic for loop test")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", 45, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", 45, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("basic for loop continue")
@@ -428,7 +427,7 @@ TEST_CASE("basic for loop test")
 					g := 0;
 					for i:=1; i < 5; i++;
 					{	
-						if i % 2 
+						if i % 2 == 1
 						{
 							continue;
 						}
@@ -436,7 +435,7 @@ TEST_CASE("basic for loop test")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", (2 + 4), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", (2 + 4), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 
@@ -454,7 +453,7 @@ TEST_CASE("basic for loop test")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", (1 + 2 + 3), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", (1 + 2 + 3), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 }
@@ -471,7 +470,7 @@ TEST_CASE("folded for loop test")
 				}
 				)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("folded end constant for loop")
@@ -485,7 +484,7 @@ TEST_CASE("folded for loop test")
 				}
 				)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("folded start constant for loop")
@@ -499,7 +498,7 @@ TEST_CASE("folded for loop test")
 				}
 				)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("folded variable for loop")
@@ -514,7 +513,7 @@ TEST_CASE("folded for loop test")
 				}
 				)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", 9, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", 9, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("folded for loop continue")
@@ -523,7 +522,7 @@ TEST_CASE("folded for loop test")
 				g := 0;
 				for i:= 1..5
 				{	
-					if i % 2 
+					if (i % 2 == 1) 
 					{
 						continue;
 					}
@@ -531,7 +530,7 @@ TEST_CASE("folded for loop test")
 				}
 				)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", (2 + 4), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", (2 + 4), ValueType::INT, vm);
 	}
 
 	SUBCASE("folded for loop break")
@@ -548,7 +547,7 @@ TEST_CASE("folded for loop test")
 				}
 				)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("g", (1 + 2 + 3), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("g", (1 + 2 + 3), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 }
@@ -561,7 +560,7 @@ TEST_CASE("loops in loops")
 					a:=0;
 					for i:= 0..5
 					{
-						if i % 2 
+						if i % 2 == 1 
 						{
 							continue;
 						}
@@ -578,7 +577,7 @@ TEST_CASE("loops in loops")
 					)";
 		auto [res, vm] = Compile(a);
 		auto sumJPerI = 1 + 2 + 3;
-		auto isPass = CheckVariable<INT>("a", (sumJPerI*3+2+4), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", (sumJPerI*3+2+4), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("whlie loop in while")
@@ -590,7 +589,7 @@ TEST_CASE("loops in loops")
 					while i < 5
 					{
 						i++;
-						if i % 2 
+						if i % 2 == 1 
 						{
 							continue;
 						}
@@ -604,7 +603,7 @@ TEST_CASE("loops in loops")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("a", (2 * 3 + 6), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", (2 * 3 + 6), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 
@@ -638,7 +637,7 @@ TEST_CASE("if statTment")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("a", 105, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", 105, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 
@@ -658,7 +657,7 @@ TEST_CASE("if statTment")
 					} 
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("a", 115, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", 115, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE(" if elif else")
@@ -681,7 +680,7 @@ TEST_CASE("if statTment")
 					} 
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<INT>("a", 125, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", 125, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 }

@@ -1,5 +1,7 @@
 #pragma once
 #include<memory>
+#include <variant>
+#include <cassert>
 #include<ostream>
 #include"Object.h"
 #include"String.hpp"
@@ -9,29 +11,71 @@ enum class ValueType
 	FLOAT,
 	INT,
 	BOOL,
+
 	STRING,
+	FUNCTION,
+	
 	DEDUCE,
 	NIL
 };
+
+
+template <ValueType N>
+struct ValueToType;
+
+// Specializations
+template <>
+struct ValueToType<ValueType::INT> {
+	using type = int;
+};
+
+template <>
+struct ValueToType<ValueType::FLOAT> {
+	using type = float;
+};
+
+template <>
+struct ValueToType<ValueType::STRING> {
+	using type = String;
+};
+template <>
+struct ValueToType<ValueType::BOOL> {
+	using type = bool;
+};
+
 const char* ValueToStr(ValueType valueType);
 
 
-
-
+struct Func;
 class ValueContainer
 {
 public:
 	ValueType type{ ValueType::NIL };
 	ValueContainer() = default;
-	template<typename T>
-	explicit ValueContainer(const T& v)
-	{
-		type = ValueTypeToEnum<T>::value;
-		ValueTypeToEnum<T>::SetField(as, v);
-	}
 	explicit ValueContainer(ValueType v)
 	{
 		type = v;
+	}
+	template <typename T>
+	ValueContainer(T v)
+	{
+		if constexpr (std::is_same_v<T, int>) {
+			type = ValueType::INT;
+		}
+		else if constexpr (std::is_same_v<T, float>) {
+			type = ValueType::FLOAT;
+		}
+		else if constexpr (std::is_same_v<T, String*>) {
+			type = ValueType::STRING;
+		}
+		else if constexpr (std::is_same_v<T, bool>) {
+			type = ValueType::BOOL;
+		}
+		else {
+			//assert(false);
+			type = ValueType::NIL;
+		}
+		as = v;
 	}
 	ValueContainer(const ValueContainer& v)
 	{
@@ -39,14 +83,14 @@ public:
 		as = v.as;
 		if (v.type == ValueType::STRING)
 		{
-			as.object = new String(*static_cast<String*>(v.as.object));
+			as = new String(*static_cast<String*>(std::get<String*>(v.as)));
 		}
 	};
 
 	ValueContainer& operator = (bool v)
 	{
 		type = ValueType::BOOL;
-		as.boolean = v;
+		as = v;
 		return *this;
 	}
 
@@ -57,10 +101,10 @@ public:
 		if (this == &v) return *this;
 		type = v.type;
 		as = v.as;
-		if (v.type == ValueType::STRING && v.as.object!= nullptr)
+		if (v.type == ValueType::STRING && std::get<String*>(v.as)!= nullptr)
 		{
 			
-			as.object = new String(*dynamic_cast<String*>(v.as.object));
+			as = new String(*dynamic_cast<String*>(std::get<String*>(v.as)));
 		}
 	}
 
@@ -68,96 +112,30 @@ public:
 	{
 		type = v.type;
 		as = std::move(v.as);
-		v.as.object = nullptr;
 	}
 	ValueContainer& operator = (ValueContainer&& v)
 	{
 		if (&v == this) return *this;
 		type = v.type;
 		as = std::move(v.as);
-		v.as.object = nullptr;
 
 	}
-
-
-	
 
 	template <typename T>
-	T As()
+	T As() const 
 	{
-		return *reinterpret_cast<const T*>(&as);
+		return std::get<T>(as);
 	}
-	
-	template <typename T>
-	T& AsRef()
-	{
-		return *reinterpret_cast<T*>(&as);
+	template <typename T, typename U = T&>
+	U AsRef() {
+		return std::get<T>(as);
 	}
-	template <>
-	String& As<String&>()
-	{
-		auto obj = As<Object*>();
-		return *static_cast<String*>(obj);
-	}
+
 private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
 
-	union ValueAs
-	{
-		bool boolean{ false };
-		float numberFloat;
-		int numberInt;
-		Object* object ;
-	}as;
-
-	template <typename T>
-	struct ValueTypeToEnum
-	{
-		static void SetField(ValueAs& as, const T& value);
-	};
-
-	template <>
-	struct ValueTypeToEnum<bool> {
-		static const ValueType value = ValueType::BOOL;
-		
-		static void SetField(ValueAs& as, bool value)
-		{
-			as.boolean = value;
-		}
-	};
-
-	template <>
-	struct ValueTypeToEnum<int> {
-		static const ValueType value = ValueType::INT;
-		static void SetField(ValueAs& as, int value)
-		{
-			as.numberInt = value;
-		}
-	};
-
-	template <>
-	struct ValueTypeToEnum<float> {
-		static const ValueType value = ValueType::FLOAT;
-		static void SetField(ValueAs& as, float value)
-		{
-			as.numberFloat = value;
-		}
-	};
-
-	template <>
-	struct ValueTypeToEnum<Object*> {
-		static const ValueType value = ValueType::STRING;
-		static void SetField(ValueAs& as, Object* value)
-		{
-			as.object = value;
-		}
-	};
-	
-
-
-	
-	
+	std::variant<bool, float, int, String*, Func*>as;
 };
 inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 {
@@ -165,25 +143,25 @@ inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 	{
 		case  ValueType::BOOL:
 		{
-			bool val = v.as.boolean;
+			bool val = std::get<bool>(v.as);
 			os << val;
 			break;
 		}
 		case  ValueType::FLOAT:
 		{
-			float num = v.as.numberFloat;
+			float num = std::get<float>(v.as);
 			os << num;
 			break;
 		}
 		case  ValueType::INT:
 		{
-			int num = v.as.numberInt;
+			int num = std::get<int>(v.as);
 			os << num;
 			break;
 		}
 		case  ValueType::STRING:
 		{
-			auto str = static_cast<String*>(v.as.object);
+			auto str = std::get<String*>(v.as);
 			os << *str;
 			break;
 		}

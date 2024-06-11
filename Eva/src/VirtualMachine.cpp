@@ -8,9 +8,9 @@
 #include <sstream>
 #define BINARY_OP(type,operation)\
 {\
-auto v = vmStack.back().as.type;\
+auto v = vmStack.back().As<type>();\
 vmStack.pop_back();\
-auto v2 = vmStack.back().as.type;\
+auto v2 = vmStack.back().As<type>();\
 vmStack.pop_back();\
 vmStack.push_back(ValueContainer{v2 operation v});\
 }\
@@ -65,6 +65,15 @@ while(false)
 	}\
 }\
 
+#define CAST_BOOL(type)\
+if (type== ValueType::INT)\
+{\
+	opCode.push_back(((uint8_t)InCode::CAST_BOOL_INT));\
+}else if (type== ValueType::FLOAT)\
+{\
+opCode.push_back(((uint8_t)InCode::CAST_BOOL_FLOAT));\
+}\
+
 #define CAST_INT_FLOAT(child,parentType)\
 if (child== ValueType::INT && parentType== ValueType::FLOAT)\
 {\
@@ -74,10 +83,7 @@ else if (child== ValueType::FLOAT && parentType== ValueType::INT)\
 {\
 	opCode.push_back(((uint8_t)InCode::CAST_INT));\
 }\
-else\
-{\
-  /*do nothing*/\
-}
+
 #define CAST_INT(child)\
 if (child== ValueType::FLOAT)\
 {\
@@ -135,16 +141,16 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 	if (expr->depth == 0)
 	{
 		opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
-		constants.emplace_back(expr->value.as.object);
+		auto str = expr->value.As<String*>();
+		constants.emplace_back(str);
 		opCode.push_back(constants.size() - 1);
-		auto str = (String*)expr->value.as.object;
 		auto entry = globalVariablesTypes.Get(str->GetStringView());
 		return entry->value.type;
 	}
 	// local
 	else if (expr->depth > 0)
 	{
-		auto str = (String*)expr->value.as.object;
+		auto str = expr->value.As<String*>();
 		// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
@@ -176,10 +182,10 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression* expression)
 {
 	assert(expression != nullptr);
-	auto str = (String*)expression->value.as.object;
+	auto str = expression->value.As<String*>();;
 	if (expression->depth == 0)
 	{
-		constants.emplace_back(expression->value.as.object);
+		constants.emplace_back(str);
 		opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 		opCode.push_back(constants.size() - 1);
 	}
@@ -321,19 +327,20 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			CAST_INT(left);
 			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT(right);
-			opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT); 
+			opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT);
+			return ValueType::INT;
 		}
 		else if (tree->type == TokenType::INT_LITERAL)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			constants.push_back(ValueContainer{ expr->value.as.numberInt });
+			constants.push_back(ValueContainer{ expr->value });
 			opCode.push_back(constants.size() - 1);
 			return ValueType::INT;
 		}
 		else if (tree->type == TokenType::FLOAT_LITERAL)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			constants.push_back(ValueContainer{ expr->value.as.numberFloat });
+			constants.push_back(ValueContainer{ expr->value });
 			opCode.push_back(constants.size() - 1);
 			return ValueType::FLOAT;
 		}
@@ -341,7 +348,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		{
 			opCode.push_back((uint8_t)InCode::CONST_VALUE);
 			// might copy because vector can reallocate
-			constants.emplace_back(expr->value.as.object );
+			constants.emplace_back(expr->value );
 			opCode.push_back(constants.size() - 1); 
 			return ValueType::STRING;
 		}
@@ -398,7 +405,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			// declaring a variable
 			auto expressionType = Generate(tree->As<Expression>()->right.get());
 			assert(tree->As<Expression>()->left.get() != nullptr);
-			auto str = (String*)exprLeft->value.as.object;
+			auto str = exprLeft->value.As<String*>();
 
 			CAST_INT_FLOAT(expressionType, exprLeft->value.type);
 
@@ -406,7 +413,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			assert(exprLeft != nullptr);
 			if (exprLeft->depth == 0)
 			{
-				constants.emplace_back(exprLeft->value.as.object);
+				constants.emplace_back(exprLeft->value);
 				opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
 				opCode.push_back(constants.size() - 1);
 			}
@@ -630,15 +637,15 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 }
 
-Object* VirtualMachine::AllocateString(const char* ptr, size_t size)
+String* VirtualMachine::AllocateString(const char* ptr, size_t size)
 {
 	if (internalStrings.IsExist(std::string_view{ ptr,size }))
 	{
 		auto str = internalStrings.Get(std::string_view{ ptr,size });
-		return static_cast<Object*>(str->key);
+		return (str->key);
 	}
 	auto* entry = internalStrings.Add(std::string_view{ptr,size}, ValueContainer{});
-	return static_cast<Object*>(entry->key);
+	return (entry->key);
 }
 
 void VirtualMachine::AddLocal(String& name, int currentScope)
@@ -680,20 +687,20 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 {
 	if (a.type == b.type && a.type == ValueType::BOOL)
 	{
-		return a.as.boolean == b.as.boolean;
+		return a.As<bool>() == b.As<bool>();
 	}
 	else if (a.type == b.type && a.type == ValueType::FLOAT)
 	{
-		return fabs(a.as.numberFloat - b.as.numberFloat) < 0.04;
+		return fabs(a.As<float>() - b.As<float>()) < 0.04;
 	}
 	else if (a.type == b.type && a.type == ValueType::INT)
 	{
-		return a.as.numberInt == b.as.numberInt;
+		return a.As<int>() == b.As<int>();
 	}
 	else if (a.type == b.type && a.type == ValueType::STRING)
 	{
-		auto str = static_cast<String*>(a.as.object);
-		auto str2 = static_cast<String*>(b.as.object);	
+		auto str = static_cast<String*>(a.As<String*>());
+		auto str2 = static_cast<String*>(b.As<String*>());
 		return *str == *str2;
 	}
 	return false;
@@ -730,61 +737,79 @@ void VirtualMachine::Execute()
 		}
 		case InCode::ADD_FLOAT:
 		{
-			BINARY_OP(numberFloat, +);
+			BINARY_OP(float, +);
 			break;
 		}
 		case InCode::SUBSTRACT_FLOAT:
 		{
-			BINARY_OP(numberFloat, -);
+			BINARY_OP(float, -);
 			break;
 		}
 		case InCode::MULTIPLY_FLOAT:
 		{
-			BINARY_OP(numberFloat,*);
+			BINARY_OP(float,*);
 			break;
 		}
 		case InCode::DIVIDE_FLOAT:
 		{
-			BINARY_OP(numberFloat ,/ );
+			BINARY_OP(float ,/ );
 			break;
 		}
 		case InCode::ADD_INT:
 		{
-			BINARY_OP(numberInt, +);
+			BINARY_OP(int, +);
 			break;
 		}
 		case InCode::CAST_FLOAT:
 		{
 			auto& value = vmStack.back();
 			value.type = ValueType::FLOAT;
-			value.as.numberFloat = value.as.numberInt;
+			float v = value.As<int>();
+			value.as = v;
 			break;
 		}
 		case InCode::CAST_INT:
 		{
 			auto& value = vmStack.back();
 			value.type = ValueType::INT;
-			value.as.numberInt= value.as.numberFloat;
+			int v = value.As<float>();
+			value.as = v;
+			break;
+		}
+		case InCode::CAST_BOOL_INT:
+		{
+			auto& value = vmStack.back();
+			value.type = ValueType::BOOL;
+			bool v = value.As<int>();
+			value.as = v;
+			break;
+		}
+		case InCode::CAST_BOOL_FLOAT:
+		{
+			auto& value = vmStack.back();
+			value.type = ValueType::BOOL;
+			bool v = value.As<float>();
+			value.as = v;
 			break;
 		}
 		case InCode::SUBSTRACT_INT:
 		{
-			BINARY_OP(numberInt, -);
+			BINARY_OP(int, -);
 			break;
 		}
 		case InCode::MULTIPLY_INT:
 		{
-			BINARY_OP(numberInt, *);
+			BINARY_OP(int, *);
 			break;
 		}
 		case InCode::DIVIDE_INT:
 		{
-			BINARY_OP(numberInt, / );
+			BINARY_OP(int, / );
 			break;
 		}
 		case InCode::DIVIDE_PERCENT:
 		{
-			BINARY_OP(numberInt, % );
+			BINARY_OP(int, % );
 			break;
 		}
 		case InCode::INCREMENT_INT:
@@ -817,11 +842,11 @@ void VirtualMachine::Execute()
 			vmStack.pop_back();
 			if (value.type == ValueType::FLOAT)
 			{
-				vmStack.push_back(ValueContainer{-value.as.numberFloat});
+				vmStack.push_back(ValueContainer{-value.As<float>()});
 			}
 			else if (value.type == ValueType::INT)
 			{
-				vmStack.push_back(ValueContainer{-value.as.numberInt});
+				vmStack.push_back(ValueContainer{-value.As<int>() });
 			}
 			else
 			{
@@ -833,27 +858,27 @@ void VirtualMachine::Execute()
 		{
 			auto value = vmStack.back();
 			vmStack.pop_back();
-			vmStack.push_back(ValueContainer{ !value.as.boolean });
+			vmStack.push_back(ValueContainer{ !value.As<bool>() });
 			break;
 		}
 		case InCode::LESS_FLOAT:
 		{
-			BINARY_OP(numberFloat, < );
+			BINARY_OP(float, < );
 			break;
 		}
 		case InCode::GREATER_FLOAT:
 		{
-			BINARY_OP(numberFloat, > );
+			BINARY_OP(float, > );
 			break;
 		}
 		case InCode::LESS_INT:
 		{
-			BINARY_OP(numberInt, < );
+			BINARY_OP(int, < );
 			break;
 		}
 		case InCode::GREATER_INT:
 		{
-			BINARY_OP(numberInt, > );
+			BINARY_OP(int, > );
 			break;
 		}
 
@@ -868,12 +893,12 @@ void VirtualMachine::Execute()
 		}
 		case InCode::AND:
 		{
-			BINARY_OP(boolean, && );
+			BINARY_OP(bool, && );
 			break;
 		}
 		case InCode::OR:
 		{
-			BINARY_OP(boolean, ||);
+			BINARY_OP(bool, ||);
 			break;
 		}
 		case InCode::RETURN:
@@ -889,7 +914,7 @@ void VirtualMachine::Execute()
 		case InCode::GET_GLOBAL_VAR:
 		{	
 			auto& nameOfVariable = constants[opCode[ipIndex++]];
-			auto string = (nameOfVariable.As<String&>()).GetStringView();
+			auto string = (nameOfVariable.As<String*>())->GetStringView();
 			auto entry = globalVariables.Get(string);
 			vmStack.push_back(entry->value);
 			break;
@@ -898,7 +923,7 @@ void VirtualMachine::Execute()
 		{	
 			auto& value = vmStack.back();
 			auto& nameOfVariable = constants[opCode[ipIndex++]];
-			auto string = (nameOfVariable.As<String&>()).GetStringView();
+			auto string = (nameOfVariable.As<String*>())->GetStringView();
 			auto entry = globalVariables.Get(string);
 			entry->value = value;
 			vmStack.pop_back();
