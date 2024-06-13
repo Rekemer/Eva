@@ -5,6 +5,7 @@
 #include<ostream>
 #include"Object.h"
 #include"String.hpp"
+
 // could be a template?
 enum class ValueType
 {
@@ -20,33 +21,8 @@ enum class ValueType
 };
 
 
-template <ValueType N>
-struct ValueToType;
-
-// Specializations
-template <>
-struct ValueToType<ValueType::INT> {
-	using type = int;
-};
-
-template <>
-struct ValueToType<ValueType::FLOAT> {
-	using type = float;
-};
-
-template <>
-struct ValueToType<ValueType::STRING> {
-	using type = String;
-};
-template <>
-struct ValueToType<ValueType::BOOL> {
-	using type = bool;
-};
-
 const char* ValueToStr(ValueType valueType);
 
-
-struct Func;
 class ValueContainer
 {
 public:
@@ -135,7 +111,7 @@ private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
 
-	std::variant<bool, float, int, String*, Func*>as;
+	std::variant<bool, float, int, String*>as;
 };
 inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 {

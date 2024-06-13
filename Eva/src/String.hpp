@@ -20,7 +20,7 @@ public:
 	{
 		return m_Data;
 	}
-	std::string_view GetStringView()
+	std::string_view GetStringView() const
 	{
 		return { m_Data,static_cast<size_t>(m_Size - 1)};
 	}

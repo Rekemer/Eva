@@ -47,6 +47,8 @@ enum class InCode
 	JUMP,
 	JUMP_BACK,
 	
+	CALL,
+
 	JUMP_IF_FALSE,
 	// used when evaluate if and else statements
 	// to clear up stack from condition

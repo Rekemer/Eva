@@ -5,14 +5,20 @@
 #include <cstdlib>
 #include "Value.h"
 #include "HashTable.h"
-
-using Bytecode = uint8_t;
-
+#include "Bytecode.h"
+  
 struct Local
 {
 	int depth;
 	String name;
 };
+
+//struct CallFrame
+//{
+//	ValueContainer function;
+//	size_t ip;	
+//	std::vector<ValueContainer> constants;
+//};
 class AST;
 struct Node;
 struct Expression;
@@ -55,6 +61,7 @@ private:
 private:
 	friend void Debug(VirtualMachine& vm);
 	std::vector<Bytecode> opCode;
+	//Func currentFunc;
 	std::vector<ValueContainer> constants;
 	std::vector<ValueContainer> vmStack;
 	HashTable internalStrings;

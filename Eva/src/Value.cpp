@@ -1,5 +1,7 @@
 #include"Value.h"
 #include<cassert>
+
+
 const char* ValueToStr(ValueType valueType) {
 switch (valueType)
 {
@@ -13,7 +15,9 @@ switch (valueType)
 		return "STRING";
 	case ValueType::NIL:
 		return "NIL";
+	case ValueType::FUNCTION:
+		return "FUNCTION";
 	default:
-		assert(false);
+		return "Unknown value type";
 	}
 }

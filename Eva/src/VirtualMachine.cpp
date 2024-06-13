@@ -6,6 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <sstream>
+#include"TokenConversion.h"
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.back().As<type>();\
@@ -236,8 +237,33 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		if (!tree) return ValueType::NIL;
 		 auto expr = static_cast<const Expression*>(tree);
 		 auto exprLeft = static_cast<const Expression*>(tree->As<Expression>()->left.get());
-		if (tree->type == TokenType::BLOCK)
-		{
+		 if (tree->type == TokenType::FUN)
+		 {
+			 auto func = static_cast<const FunctionNode*>(tree);
+			 globalVariables.Add(func->name.GetStringView(),LiteralToType(func->type));
+			 currentScopes.push_back(&func->paramScope);
+			 for (auto& arg : func->arguments)
+			 {
+				 Generate(arg.get());
+			 }
+			 Generate(func->body.get());
+			 ClearScope(currentScopes,m_StackPtr,opCode);
+		 }
+		 else if (tree->type == TokenType::LEFT_PAREN)
+		 {
+			 // invoke function
+			 auto call = static_cast<const Call*>(tree);
+			 opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+			 constants.emplace_back(&call->name);
+			 for (auto& arg : call->args)
+			 {
+				 Generate(arg.get());
+			 }
+			 opCode.push_back((uint8_t)InCode::CALL);
+			 opCode.push_back(call->args.size());
+		 }
+		 else if (tree->type == TokenType::BLOCK)
+		 {
 			auto block = static_cast<const Scope*>(tree);
 			// empty block
 			if (block->expressions.size() == 0)
@@ -252,7 +278,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			// once we finish block, we must clear the stack
 			ClearScope(currentScopes, m_StackPtr, opCode);
 
-		}
+		 }
 		else if (tree->type == TokenType::PLUS)
 		{
 			auto left = Generate(tree->As<Expression>()->left.get());

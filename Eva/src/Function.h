@@ -1,9 +1,9 @@
 #pragma once
 #include"Object.h"
-#include "VirtualMachine.h"
 #include <vector>
+#include "Bytecode.h"
 
-struct FunctionContainer final: public Object
+struct Func final: public Object
 {
 	int argCount;
 	std::vector<Bytecode> opCode;

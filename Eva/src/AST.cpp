@@ -1,8 +1,10 @@
-#include"AST.h"
-#include<iostream>
-#include<cassert>
+#include "AST.h"
+#include <iostream>
+#include <cassert>
 #include "VirtualMachine.h"
-
+#include "Value.h"
+#include "Tokens.h"
+#include "TokenConversion.h"
 
 
 Expression::Expression(Expression&& e) : Node(std::move(e))
@@ -40,59 +42,6 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 }
 
 
- ValueType LiteralToType(TokenType literalType)
- {
-	 switch (literalType)
-	 {
-	 case TokenType::INT_LITERAL:
-	 case TokenType::INT_TYPE:
-		 return ValueType::INT;
-		 break;
-	 case TokenType::FLOAT_LITERAL:
-	 case TokenType::FLOAT_TYPE:
-		 return ValueType::FLOAT;
-		 break;
-	 case TokenType::STRING_LITERAL:
-	 case TokenType::STRING_TYPE:
-		 return ValueType::STRING;
-		 break;
-	 case TokenType::FALSE:
-	 case TokenType::TRUE:
-	 case TokenType::BOOL_TYPE:
-		 return ValueType::BOOL;
-		 break;
-		 // += case: identifer has left child as + and right chlid as = which is value to add to the variable 
-	//case TokenType::PLUS:
-	//	 return ValueType::NIL;
-	 default:
-		 assert(false);
-		 break;
-	 }
- }
- TokenType TypeToLiteral(ValueType valueType)
- {
-	 switch (valueType)
-	 {
-	 case ValueType::INT:
-		 return TokenType::INT_LITERAL;
-		 break;
-	 case ValueType::FLOAT:
-		 return TokenType::FLOAT_LITERAL;
-		 break;
-	 case ValueType::STRING:
-		 return TokenType::STRING_LITERAL;
-		 break;
-	 case ValueType::BOOL:
-		 return TokenType::BOOL_TYPE;
-		 break;
-	 case ValueType::DEDUCE:
-		 return TokenType::DEDUCE;
-		 break;
-	 default:
-		 assert(false);
-		 break;
-	 }
- }
 
  void AST::BindValue(Iterator& currentToken, Node* variable)
  {
@@ -212,20 +161,55 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		auto& globalTable = vm->GetGlobals();
 		auto entry = globalTable.Get(str.GetStringView());
 		auto isGlobal = entry->key != nullptr;
-		// if local scope then read global or local
-		if (scopeDepth > 0)
-		{	
 
-			auto [isLocalDeclared, index] = vm->IsLocalExist(str, scopeDepth);
-			if (isLocalDeclared)
+		if ((currentToken + 1)->type == TokenType::LEFT_PAREN)
+		{
+			// call a function
+			auto call = std::make_unique<Call>();
+			call->name = str;
+			call->type = TokenType::LEFT_PAREN;
+			currentToken+2;
+			while (currentToken->type != TokenType::RIGHT_PAREN)
 			{
-				// should check whether it is declared variable
-
-				auto& variableName = *currentToken->value.As<String*>();
-				node->value = ValueContainer((String*)&variableName);
-				node->depth = scopeDepth;
+				auto arg = LogicalOr(currentToken);
+				call->args.push_back(std::move(arg));
+				if (currentToken->type != TokenType::RIGHT_PAREN)
+				{
+					Error(TokenType::COMMA, currentToken, "Arguments must be separated with comma");
+				}
 			}
-			else if (isGlobal)
+			return call;
+		}
+		else
+		{
+			// if local scope then read global or local
+			if (scopeDepth > 0)
+			{
+
+				auto [isLocalDeclared, index] = vm->IsLocalExist(str, scopeDepth);
+				if (isLocalDeclared)
+				{
+					// should check whether it is declared variable
+
+					auto& variableName = *currentToken->value.As<String*>();
+					node->value = ValueContainer((String*)&variableName);
+					node->depth = scopeDepth;
+				}
+				else if (isGlobal)
+				{
+					auto variableName = entry->key;
+					node->value = ValueContainer((String*)variableName);
+					node->depth = 0;
+				}
+				else
+				{
+					m_Panic = true;
+					std::cout << "ERROR[" << (currentToken)->line << "]: " <<
+						"The name " << str << " is used but not declared " << std::endl;
+				}
+			}
+			// if scope == 0 then can read only global
+			else if (isGlobal && scopeDepth == 0)
 			{
 				auto variableName = entry->key;
 				node->value = ValueContainer((String*)variableName);
@@ -237,28 +221,15 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 				std::cout << "ERROR[" << (currentToken)->line << "]: " <<
 					"The name " << str << " is used but not declared " << std::endl;
 			}
+
 		}
-		// if scope == 0 then can read only global
-		else if (isGlobal && scopeDepth == 0)
-		{
-			auto variableName = entry->key;
-			node->value = ValueContainer((String*)variableName);
-			node->depth = 0;
-		}
-		else
-		{
-			m_Panic = true;
-			std::cout << "ERROR[" << (currentToken)->line << "]: " <<
-				"The name " << str << " is used but not declared " << std::endl;
-		}
-		
 	}
 	else if (currentToken->type == TokenType::LEFT_PAREN)
 	{
-		currentToken += 1;
-		auto node = ParseExpression(currentToken);
-		Error(TokenType::RIGHT_PAREN,currentToken,"Expected )");
-		return node;
+			currentToken += 1;
+			auto node = ParseExpression(currentToken);
+			Error(TokenType::RIGHT_PAREN,currentToken,"Expected )");
+			return node;
 	}
 	currentToken += 1;
 	return node;
@@ -408,7 +379,7 @@ void Print(const Expression* tree, int level) {
 	 auto& name = *currentToken->value.As<String*>();
 	 currentToken++;
 	 Error(TokenType::LEFT_PAREN,currentToken,"Function argument list must start with (");
-	 auto function = std::make_unique<Function>();
+	 auto function = std::make_unique<FunctionNode>();
 	 function->name = std::move(name);
 	 currentScope = &function->paramScope;
 	 BeginBlock();

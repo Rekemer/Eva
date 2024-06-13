@@ -119,6 +119,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Bytecode.h" />
     <ClInclude Include="src\AST.h" />
     <ClInclude Include="src\Compile.h" />
     <ClInclude Include="src\Debug.h" />
@@ -126,6 +127,7 @@
     <ClInclude Include="src\Incode.h" />
     <ClInclude Include="src\Lexer.h" />
     <ClInclude Include="src\Object.h" />
+    <ClInclude Include="src\TokenConversion.h" />
     <ClInclude Include="src\Tokens.h" />
     <ClInclude Include="src\Value.h" />
     <ClInclude Include="src\VirtualMachine.h" />

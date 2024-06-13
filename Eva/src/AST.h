@@ -75,14 +75,18 @@ struct For : public Node
 	std::unique_ptr<Node> action = nullptr;
 	std::unique_ptr<Node> body = nullptr;
 };
-struct Function : public Node
+struct FunctionNode : public Node
 {
 	Scope paramScope;
 	std::unique_ptr<Node> body;
 	String name;
 	std::vector<std::unique_ptr<Node>> arguments;
 };
-
+struct Call : public Node
+{
+	String name;
+	std::vector<std::unique_ptr<Node>> args;
+};
 // Token*  const currentToken = can change the contents but not the pointer
 //const Token * currentToken = can change a pointer but not the contents
 using Iterator = std::vector<Token>::iterator;
