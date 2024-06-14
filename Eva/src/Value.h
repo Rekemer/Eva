@@ -3,8 +3,9 @@
 #include <variant>
 #include <cassert>
 #include<ostream>
-#include"Object.h"
-#include"String.hpp"
+//#include"Object.h"
+//#include"String.hpp"
+//#include"Function.h"
 
 // could be a template?
 enum class ValueType
@@ -20,18 +21,17 @@ enum class ValueType
 	NIL
 };
 
-
+class Object;
+class String;
+struct Func;
 const char* ValueToStr(ValueType valueType);
-
 class ValueContainer
 {
 public:
 	ValueType type{ ValueType::NIL };
 	ValueContainer() = default;
-	explicit ValueContainer(ValueType v)
-	{
-		type = v;
-	}
+	explicit ValueContainer(ValueType v);
+	
 	template <typename T>
 	ValueContainer(T v)
 	{
@@ -53,15 +53,8 @@ public:
 		}
 		as = v;
 	}
-	ValueContainer(const ValueContainer& v)
-	{
-		type = v.type;
-		as = v.as;
-		if (v.type == ValueType::STRING)
-		{
-			as = new String(*static_cast<String*>(std::get<String*>(v.as)));
-		}
-	};
+	ValueContainer(const ValueContainer& v);
+	
 
 	ValueContainer& operator = (bool v)
 	{
@@ -72,17 +65,8 @@ public:
 
 	
 
-	ValueContainer& operator = (const ValueContainer& v)
-	{
-		if (this == &v) return *this;
-		type = v.type;
-		as = v.as;
-		if (v.type == ValueType::STRING && std::get<String*>(v.as)!= nullptr)
-		{
-			
-			as = new String(*dynamic_cast<String*>(std::get<String*>(v.as)));
-		}
-	}
+	ValueContainer& operator = (const ValueContainer& v);
+	
 
 	explicit ValueContainer(ValueContainer&& v)
 	{
@@ -111,39 +95,5 @@ private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
 
-	std::variant<bool, float, int, String*>as;
+	std::variant<bool, float, int, String*,Func*>as;
 };
-inline std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
-{
-	switch (v.type)
-	{
-		case  ValueType::BOOL:
-		{
-			bool val = std::get<bool>(v.as);
-			os << val;
-			break;
-		}
-		case  ValueType::FLOAT:
-		{
-			float num = std::get<float>(v.as);
-			os << num;
-			break;
-		}
-		case  ValueType::INT:
-		{
-			int num = std::get<int>(v.as);
-			os << num;
-			break;
-		}
-		case  ValueType::STRING:
-		{
-			auto str = std::get<String*>(v.as);
-			os << *str;
-			break;
-		}
-		default:
-			break;
-	}
-	return os;
-	
-}

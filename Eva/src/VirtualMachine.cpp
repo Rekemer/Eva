@@ -31,12 +31,12 @@ while(false)
 {\
 	if (type == ValueType::INT)\
 	{\
-	opCode.push_back((uint8_t)InCode::OP##_INT); \
+	currentFunc->opCode.push_back((uint8_t)InCode::OP##_INT); \
 	return ValueType::INT; \
 	}\
 	else\
 	{\
-	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
+	currentFunc->opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	return ValueType::FLOAT; \
 	}\
 }\
@@ -45,11 +45,11 @@ while(false)
 {\
 	if (type == ValueType::INT)\
 	{\
-	opCode.push_back((uint8_t)InCode::OP##_INT); \
+	currentFunc->opCode.push_back((uint8_t)InCode::OP##_INT); \
 	}\
 	else if (type == ValueType::FLOAT)\
 	{\
-	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
+	currentFunc->opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	}\
 	else{assert(false && "unknown type of operation");}\
 }\
@@ -58,37 +58,37 @@ while(false)
 {\
 	if (left == ValueType::INT && right == ValueType::INT)\
 	{\
-	opCode.push_back((uint8_t)InCode::OP##_INT); \
+	currentFunc->opCode.push_back((uint8_t)InCode::OP##_INT); \
 	}\
 	else\
 	{\
-	opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
+	currentFunc->opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	}\
 }\
 
 #define CAST_BOOL(type)\
 if (type== ValueType::INT)\
 {\
-	opCode.push_back(((uint8_t)InCode::CAST_BOOL_INT));\
+	currentFunc->opCode.push_back(((uint8_t)InCode::CAST_BOOL_INT));\
 }else if (type== ValueType::FLOAT)\
 {\
-opCode.push_back(((uint8_t)InCode::CAST_BOOL_FLOAT));\
+currentFunc->opCode.push_back(((uint8_t)InCode::CAST_BOOL_FLOAT));\
 }\
 
 #define CAST_INT_FLOAT(child,parentType)\
 if (child== ValueType::INT && parentType== ValueType::FLOAT)\
 {\
-	opCode.push_back(((uint8_t)InCode::CAST_FLOAT));\
+	currentFunc->opCode.push_back(((uint8_t)InCode::CAST_FLOAT));\
 }\
 else if (child== ValueType::FLOAT && parentType== ValueType::INT)\
 {\
-	opCode.push_back(((uint8_t)InCode::CAST_INT));\
+	currentFunc->opCode.push_back(((uint8_t)InCode::CAST_INT));\
 }\
 
 #define CAST_INT(child)\
 if (child== ValueType::FLOAT)\
 {\
-	opCode.push_back(((uint8_t)InCode::CAST_INT));\
+	currentFunc->opCode.push_back(((uint8_t)InCode::CAST_INT));\
 }\
 
 // returns the index for backpatching
@@ -141,10 +141,10 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 	// global
 	if (expr->depth == 0)
 	{
-		opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+		currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
 		auto str = expr->value.As<String*>();
-		constants.emplace_back(str);
-		opCode.push_back(constants.size() - 1);
+		currentFunc->constants.emplace_back(str);
+		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 		auto entry = globalVariablesTypes.Get(str->GetStringView());
 		return entry->value.type;
 	}
@@ -157,8 +157,8 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		// compilcated since we don't know in indexing how much scopes we have passed
 		auto [isDeclared,index] = IsLocalExist(*str, expr->depth);
 	
-		opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
-		opCode.push_back(index);
+		currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
+		currentFunc->opCode.push_back(index);
 
 		Entry* entry = nullptr;
 		for (auto& scope : currentScopes)
@@ -186,22 +186,22 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	auto str = expression->value.As<String*>();;
 	if (expression->depth == 0)
 	{
-		constants.emplace_back(str);
-		opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-		opCode.push_back(constants.size() - 1);
+		currentFunc->constants.emplace_back(str);
+		currentFunc->opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
+		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 	}
 	else
 	{
 		auto [isDeclared, index] = IsLocalExist(*str, expression->depth);
-		opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
-		opCode.push_back(index);
+		currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
+		currentFunc->opCode.push_back(index);
 	}
 }
 int VirtualMachine::GenerateLoopCondition(const Node* node)
 {
 	Generate(node);
-	auto indexJumpFalse = JumpIfFalse(opCode);
-	opCode.push_back((uint8_t)InCode::POP);
+	auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+	currentFunc->opCode.push_back((uint8_t)InCode::POP);
 	return indexJumpFalse;
 }
 
@@ -227,40 +227,46 @@ void VirtualMachine::PatchBreak(int prevSizeBreak)
 		// 1 to get to the future instruction
 		// 1 to skip pop opeation
 		auto index = m_BreakIndexes.top();
-		opCode[index] =
-			CalculateJumpIndex(opCode, index) + 2;
+		currentFunc->opCode[index] =
+			CalculateJumpIndex(currentFunc->opCode, index) + 2;
 		m_BreakIndexes.pop();
 	}
 }
 ValueType VirtualMachine::Generate(const Node * tree)
 {
-		if (!tree) return ValueType::NIL;
+		 if (!tree) return ValueType::NIL;
 		 auto expr = static_cast<const Expression*>(tree);
 		 auto exprLeft = static_cast<const Expression*>(tree->As<Expression>()->left.get());
 		 if (tree->type == TokenType::FUN)
 		 {
 			 auto func = static_cast<const FunctionNode*>(tree);
-			 globalVariables.Add(func->name.GetStringView(),LiteralToType(func->type));
+			 auto funcValue = globalVariables.Add(func->name.GetStringView(),LiteralToType(func->type));
+
+			 if (func->name == "main")
+			 {
+				 mainFunc = funcValue->value.As<Func*>();
+			 }
+			 currentFunc = funcValue->value.As<Func*>();
 			 currentScopes.push_back(&func->paramScope);
 			 for (auto& arg : func->arguments)
 			 {
 				 Generate(arg.get());
 			 }
 			 Generate(func->body.get());
-			 ClearScope(currentScopes,m_StackPtr,opCode);
+			 ClearScope(currentScopes,m_StackPtr, currentFunc->opCode);
 		 }
 		 else if (tree->type == TokenType::LEFT_PAREN)
 		 {
 			 // invoke function
 			 auto call = static_cast<const Call*>(tree);
-			 opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
-			 constants.emplace_back(&call->name);
+			 currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+			 currentFunc->constants.emplace_back(&call->name);
 			 for (auto& arg : call->args)
 			 {
 				 Generate(arg.get());
 			 }
-			 opCode.push_back((uint8_t)InCode::CALL);
-			 opCode.push_back(call->args.size());
+			 currentFunc->opCode.push_back((uint8_t)InCode::CALL);
+			 currentFunc->opCode.push_back(call->args.size());
 		 }
 		 else if (tree->type == TokenType::BLOCK)
 		 {
@@ -276,7 +282,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				Generate(expression.get());
 			}
 			// once we finish block, we must clear the stack
-			ClearScope(currentScopes, m_StackPtr, opCode);
+			ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
 
 		 }
 		else if (tree->type == TokenType::PLUS)
@@ -296,7 +302,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 			DETERMINE_OP_TYPE(left, INCREMENT);
 
-			SetVariable(opCode, exprLeft);
+			SetVariable(currentFunc->opCode, exprLeft);
 			return expr->value.type;
 
 		}
@@ -309,7 +315,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			DETERMINE_OP_TYPE(left, DECREMENT);
 
 
-			SetVariable(opCode, exprLeft);
+			SetVariable(currentFunc->opCode, exprLeft);
 			return expr->value.type;
 
 		}
@@ -334,7 +340,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			}
 			else
 			{
-				opCode.push_back((uint8_t)InCode::NEGATE);
+				currentFunc->opCode.push_back((uint8_t)InCode::NEGATE);
 				return left;
 			}
 
@@ -353,43 +359,43 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			CAST_INT(left);
 			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT(right);
-			opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT);
+			currentFunc->opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT);
 			return ValueType::INT;
 		}
 		else if (tree->type == TokenType::INT_LITERAL)
 		{
-			opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			constants.push_back(ValueContainer{ expr->value });
-			opCode.push_back(constants.size() - 1);
+			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			currentFunc->constants.push_back(ValueContainer{ expr->value });
+			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 			return ValueType::INT;
 		}
 		else if (tree->type == TokenType::FLOAT_LITERAL)
 		{
-			opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			constants.push_back(ValueContainer{ expr->value });
-			opCode.push_back(constants.size() - 1);
+			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			currentFunc->constants.push_back(ValueContainer{ expr->value });
+			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 			return ValueType::FLOAT;
 		}
 		else if (tree->type == TokenType::STRING_LITERAL)
 		{
-			opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
 			// might copy because vector can reallocate
-			constants.emplace_back(expr->value );
-			opCode.push_back(constants.size() - 1); 
+			currentFunc->constants.emplace_back(expr->value );
+			currentFunc->opCode.push_back(currentFunc->constants.size() - 1); 
 			return ValueType::STRING;
 		}
 		else if (tree->type == TokenType::IDENTIFIER)
 		{
-			return GetVariable(opCode, expr);
+			return GetVariable(currentFunc->opCode, expr);
 		}
 		else if (tree->type == TokenType::TRUE)
 		{
-			opCode.push_back((uint8_t)InCode::TRUE);
+			currentFunc->opCode.push_back((uint8_t)InCode::TRUE);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::FALSE)
 		{
-			opCode.push_back((uint8_t)InCode::FALSE);
+			currentFunc->opCode.push_back((uint8_t)InCode::FALSE);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::GREATER)
@@ -408,22 +414,22 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_BOOL(left, right, LESS);
-			opCode.push_back((uint8_t)InCode::NOT);
+			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::EQUAL_EQUAL)
 		{
 			auto left = Generate(tree->As<Expression>()->left.get());
 			auto right = Generate(tree->As<Expression>()->right.get());
-			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
+			currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::BANG_EQUAL)
 		{
 			auto left = Generate(tree->As<Expression>()->left.get());
 			auto right = Generate(tree->As<Expression>()->right.get());
-			opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
-			opCode.push_back((uint8_t)InCode::NOT);
+			currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
+			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::DECLARE)
@@ -439,11 +445,10 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			assert(exprLeft != nullptr);
 			if (exprLeft->depth == 0)
 			{
-				constants.emplace_back(exprLeft->value);
-				opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-				opCode.push_back(constants.size() - 1);
+				currentFunc->constants.emplace_back(exprLeft->value);
+				currentFunc->opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
+				currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 			}
-
 		}
 		else if (tree->type == TokenType::EQUAL)
 		{
@@ -452,7 +457,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			assert(tree->As<Expression>()->left.get()!= nullptr);
 
 			CAST_INT_FLOAT(expressionType, exprLeft->value.type);
-			SetVariable(opCode, exprLeft);
+			SetVariable(currentFunc->opCode, exprLeft);
 
 		}
 		else if (tree->type == TokenType::PLUS_EQUAL)
@@ -465,7 +470,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 			DETERMINE_OP_TYPE(left, ADD);
 
-			SetVariable(opCode, exprLeft);
+			SetVariable(currentFunc->opCode, exprLeft);
 			return exprLeft->value.type;
 		}
 		else if (tree->type == TokenType::STAR_EQUAL)
@@ -479,7 +484,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 			DETERMINE_OP_TYPE(left, MULTIPLY);
 
-			SetVariable(opCode, exprLeft);
+			SetVariable(currentFunc->opCode, exprLeft);
 
 			return exprLeft->value.type;
 			}
@@ -495,7 +500,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			DETERMINE_OP_TYPE(left, DIVIDE);
 
 
-			SetVariable(opCode, exprLeft);
+			SetVariable(currentFunc->opCode, exprLeft);
 			return exprLeft->value.type;
 		}
 		else if (tree->type == TokenType::MINUS_EQUAL)
@@ -510,7 +515,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			DETERMINE_OP_TYPE(left, SUBSTRACT);
 
 
-			SetVariable(opCode, exprLeft);
+			SetVariable(currentFunc->opCode, exprLeft);
 			return exprLeft->value.type;
 			}
 		else if (tree->type == TokenType::LESS_EQUAL)
@@ -520,7 +525,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto right = Generate(tree->As<Expression>()->right.get());
 			CAST_INT_FLOAT(right, expr->value.type);
 			DETERMINE_BOOL(left, right, GREATER);
-			opCode.push_back((uint8_t)InCode::NOT);
+			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::LESS)
@@ -537,62 +542,62 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			Generate(tree->As<Expression>()->left.get());
 			// check if it is false then we just ignore second operand
 			// and leave the value on stack
-			auto indexFalse = JumpIfFalse(opCode);
+			auto indexFalse = JumpIfFalse(currentFunc->opCode);
 			// remove the value because we didn't jump
 			// the whole and is dependent on second operand
-			opCode.push_back((uint8_t)InCode::POP);
+			currentFunc->opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->As<Expression>()->right.get());
-			opCode[indexFalse] = CalculateJumpIndex(opCode, indexFalse) + 1;
+			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::OR)
 		{
 			Generate(tree->As<Expression>()->left.get());
-			auto indexFalse = JumpIfFalse(opCode);
+			auto indexFalse = JumpIfFalse(currentFunc->opCode);
 			// if it is true we get to jump
-			auto jump = Jump(opCode);
+			auto jump = Jump(currentFunc->opCode);
 			
-			opCode[indexFalse] = CalculateJumpIndex(opCode, indexFalse)+1;
+			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse)+1;
 
 			Generate(tree->As<Expression>()->right.get());
 			// the first is true- just skip second operand
-			opCode.push_back((uint8_t)InCode::OR);
-			opCode[jump] = CalculateJumpIndex(opCode, jump)+1;
+			currentFunc->opCode.push_back((uint8_t)InCode::OR);
+			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, jump)+1;
 			return ValueType::BOOL;
 		}
 		
 		else if (tree->type == TokenType::BANG)
 		{
 			Generate(tree->As<Expression>()->left.get());
-			opCode.push_back((uint8_t)InCode::NOT);
+			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
 			return ValueType::BOOL;
 		}
 		else if (tree->type == TokenType::PRINT)
 		{
 			Generate(tree->As<Expression>()->left.get());
-			opCode.push_back((uint8_t)InCode::PRINT);
+			currentFunc->opCode.push_back((uint8_t)InCode::PRINT);
 			return ValueType::NIL;
 		}
 		else if (tree->type == TokenType::IF)
 		{
 			Generate(tree->As<Expression>()->left.get());
-			auto indexJumpFalse = JumpIfFalse(opCode);
+			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
 
-			opCode.push_back((uint8_t)InCode::POP);
+			currentFunc->opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
-			auto indexJump = Jump(opCode);
-			opCode[indexJumpFalse] = (indexJump+1) - indexJumpFalse;
+			auto indexJump = Jump(currentFunc->opCode);
+			currentFunc->opCode[indexJumpFalse] = (indexJump+1) - indexJumpFalse;
 			// else branch
-			opCode.push_back((uint8_t)InCode::POP);
+			currentFunc->opCode.push_back((uint8_t)InCode::POP);
 			Generate(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
 			// once we execute then branch we need to skip else bytecode
 			// without -1 because we need index of next bytecode, not previous one
-			opCode[indexJump] = opCode.size()   - indexJump;
+			currentFunc->opCode[indexJump] = currentFunc->opCode.size()   - indexJump;
 
 		}
 		else if (tree->type == TokenType::WHILE)
 		{
-			auto startIndex = opCode.size();
+			auto startIndex = currentFunc->opCode.size();
 			auto condition = tree->As<Expression>()->left.get();
 			auto indexJumpFalse = GenerateLoopCondition(condition);
 			
@@ -602,16 +607,16 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto body = tree->As<Expression>()->right.get();
 			Generate(body);
 			
-			auto jump = JumpBack(opCode);
+			auto jump = JumpBack(currentFunc->opCode);
 			// jumping backwards
-			opCode[jump] = CalculateJumpIndex(opCode, startIndex);
+			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
 			
 			EndContinue();
 			PatchBreak(prevSizeBreak);
 			
 			// clean the check condition 
-			opCode.push_back((uint8_t)InCode::POP);
-			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
+			currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
 
 		}
 		else if (tree->type== TokenType::FOR)
@@ -619,40 +624,40 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto forNode = tree->As<For>();
 			currentScopes.push_back(&forNode->initScope);
 			Generate(forNode->init.get());
-			auto firstIteration = Jump(opCode);
-			auto startLoopIndex = opCode.size();
+			auto firstIteration = Jump(currentFunc->opCode);
+			auto startLoopIndex = currentFunc->opCode.size();
 
 			BeginContinue(startLoopIndex);
 			auto prevSizeBreak = BeginBreak();
 
 			Generate(forNode->action.get());
 			auto indexJumpFalse = GenerateLoopCondition(forNode->condition.get());
-			opCode[firstIteration] = CalculateJumpIndex(opCode, firstIteration) + 1;
+			currentFunc->opCode[firstIteration] = CalculateJumpIndex(currentFunc->opCode, firstIteration) + 1;
 			Generate(forNode->body.get());
 			
 			EndContinue();
 			
-			auto jump = JumpBack(opCode);
-			opCode[jump] = CalculateJumpIndex(opCode, startLoopIndex);
+			auto jump = JumpBack(currentFunc->opCode);
+			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startLoopIndex);
 			
 			PatchBreak(prevSizeBreak);
 			
 
 			// clean the check condition once we go finish the loop
-			opCode.push_back((uint8_t)InCode::POP);
-			opCode[indexJumpFalse] = CalculateJumpIndex(opCode, indexJumpFalse);
+			currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
 			// because for loop has declared iterator variable
-			ClearScope(currentScopes, m_StackPtr, opCode);
+			ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
 		}
 		else if (tree->type == TokenType::CONTINUE)
 		{
-			int index = JumpBack(opCode);
+			int index = JumpBack(currentFunc->opCode);
 			assert(m_StartLoopIndexes.size() > 0);
-			opCode[index] = CalculateJumpIndex(opCode, m_StartLoopIndexes.top());
+			currentFunc->opCode[index] = CalculateJumpIndex(currentFunc->opCode, m_StartLoopIndexes.top());
 		}
 		else if (tree->type == TokenType::BREAK)
 		{
-			m_BreakIndexes.push(Jump(opCode));
+			m_BreakIndexes.push(Jump(currentFunc->opCode));
 		}
 		else
 		{
@@ -733,22 +738,30 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 }
 void VirtualMachine::Execute()
 {
-	int ipIndex = 0;
 	if (m_Panic)return;
-	opCode.push_back((uint8_t)InCode::RETURN);
+	globalFunc->opCode.push_back((uint8_t)InCode::RETURN);
 	#if DEBUG
-	Debug(*this);
+	Debug(globalFunc->opCode,globalFunc->constants,globalVariables);
 	#endif
+	if (mainFunc)
+	{
+		callFrames[currentCallFrame].function = mainFunc;
+	}
+	else
+	{
+		callFrames[currentCallFrame].function = globalFunc.get();
+	}
 
+	auto frame = &callFrames[currentCallFrame];
 	while (true)
 	{
-		auto inst = opCode[ipIndex++];
+		auto inst = frame->function->opCode[frame->ip++];
 
 		switch (static_cast<InCode>(inst))
 		{
 		case InCode::CONST_VALUE:
 		{
-			vmStack.push_back(constants[opCode[ipIndex++]]);
+			vmStack.push_back(frame->function->constants[frame->function->opCode[frame->ip++]]);
 			break;
 		}
 		case InCode::TRUE:
@@ -939,7 +952,7 @@ void VirtualMachine::Execute()
 		}
 		case InCode::GET_GLOBAL_VAR:
 		{	
-			auto& nameOfVariable = constants[opCode[ipIndex++]];
+			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
 			auto string = (nameOfVariable.As<String*>())->GetStringView();
 			auto entry = globalVariables.Get(string);
 			vmStack.push_back(entry->value);
@@ -948,7 +961,7 @@ void VirtualMachine::Execute()
 		case InCode::SET_GLOBAL_VAR:
 		{	
 			auto& value = vmStack.back();
-			auto& nameOfVariable = constants[opCode[ipIndex++]];
+			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
 			auto string = (nameOfVariable.As<String*>())->GetStringView();
 			auto entry = globalVariables.Get(string);
 			entry->value = value;
@@ -958,13 +971,13 @@ void VirtualMachine::Execute()
 
 		case InCode::GET_LOCAL_VAR:
 		{
-			auto index = opCode[ipIndex++];
+			auto index = frame->function->opCode[frame->ip++];
 			vmStack.push_back(vmStack[index]);
 			break;
 		}
 		case InCode::SET_LOCAL_VAR:
 		{
-			auto index = opCode[ipIndex++];
+			auto index = frame->function->opCode[frame->ip++];
 			auto value = vmStack.back();
 			vmStack[index] = value;
 			vmStack.pop_back();
@@ -974,21 +987,21 @@ void VirtualMachine::Execute()
 		case InCode::JUMP_IF_FALSE:
 		{
 			// if it is not false, then we should get to then block
-			auto offset = opCode[ipIndex++];
+			auto offset = frame->function->opCode[frame->ip++];
 			auto condition = vmStack.back().As<bool>();
-			if (!condition) ipIndex = (ipIndex-1) + (offset);
+			if (!condition) frame->ip = (frame->ip-1) + (offset);
 			break;
 		}
 		case InCode::JUMP:
 		{
-			auto offset = opCode[ipIndex];
-			ipIndex += offset;
+			auto offset = frame->function->opCode[frame->ip];
+			frame->ip += offset;
 			break;
 		}
 		case InCode::JUMP_BACK:
 		{
-			auto offset = opCode[ipIndex];
-			ipIndex -= offset;
+			auto offset = frame->function->opCode[frame->ip];
+			frame->ip -= offset;
 			break;
 		}
 		case InCode::POP:
@@ -1001,15 +1014,12 @@ void VirtualMachine::Execute()
 	}
 }
 
-void VirtualMachine::GenerateBytecode(const std::vector<AST>& trees)
+void VirtualMachine::GenerateBytecode(const Node const* node)
 {
+	currentFunc = globalFunc.get();
 	try
 	{
-		for (auto& tree : trees)
-		{
-			Generate(tree.GetTree());
-		}
-		opCode.push_back((uint8_t)InCode::RETURN);
+		Generate(node);
 	}
 	catch (const std::exception& e)
 	{

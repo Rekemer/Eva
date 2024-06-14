@@ -1,6 +1,8 @@
 #pragma once
 #include"Incode.h"
 #include "Value.h"
-#include "VirtualMachine.h"
+#include "Bytecode.h"
 #include <vector>
-void Debug(VirtualMachine& vm);
+class HashTable;
+void Debug(std::vector<Bytecode>& bytecode,
+    std::vector<ValueContainer>& constants, HashTable& globalVariables);

@@ -1,8 +1,8 @@
 
 
-Print (1 % 2 == 1 ) == true; 
+//Print (1 % 2 == 1 ) == true; 
 
-
+Print "Helo" == "Hello";
 //g := 0;
 //					a := 0;
 //					while a < 5

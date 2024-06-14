@@ -37,7 +37,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 			continue;
 		}
 		tree.TypeCheck(vm);
-		vm.Generate(tree.GetTree());
+		vm.GenerateBytecode(tree.GetTree());
 		trees.push_back(std::move( tree));
 
 	}

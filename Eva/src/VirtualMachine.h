@@ -4,6 +4,7 @@
 #include <array>
 #include <cstdlib>
 #include "Value.h"
+#include "Function.h"
 #include "HashTable.h"
 #include "Bytecode.h"
   
@@ -13,12 +14,11 @@ struct Local
 	String name;
 };
 
-//struct CallFrame
-//{
-//	ValueContainer function;
-//	size_t ip;	
-//	std::vector<ValueContainer> constants;
-//};
+struct CallFrame
+{
+	Func* function;
+	size_t ip = 0;	
+};
 class AST;
 struct Node;
 struct Expression;
@@ -36,7 +36,7 @@ public:
 
 	}
 	void Execute();
-	void GenerateBytecode(const std::vector<AST>& trees);
+	void GenerateBytecode(const Node const* node);
 	const std::vector<ValueContainer>& GetStack() { return vmStack; };
 	String* AllocateString(const char* ptr, size_t size);
 
@@ -59,10 +59,13 @@ private:
 	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 private:
-	friend void Debug(VirtualMachine& vm);
-	std::vector<Bytecode> opCode;
-	//Func currentFunc;
-	std::vector<ValueContainer> constants;
+	// function we build or execute
+	Func* currentFunc = nullptr;
+	// entry point
+	Func* mainFunc = nullptr;
+	// to execute global code
+	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
+	
 	std::vector<ValueContainer> vmStack;
 	HashTable internalStrings;
 	HashTable globalVariables;
@@ -70,6 +73,8 @@ private:
 	// so we can access previous scopes too
 	std::vector<const Scope*> currentScopes;
 	std::array<Local, 256> locals;
+	std::array<CallFrame, 64> callFrames;
+	int currentCallFrame = 0;
 	// track the declared locals
 	int m_StackPtr = 0;
 	bool m_Panic = false;

@@ -1,14 +1,13 @@
 #include "Debug.h"
 #include <iostream>
+#include "String.hpp"
 
 const char* debugEnum(InCode code);
 
 
-void Debug(VirtualMachine& vm)
+void Debug(std::vector<Bytecode>& bytecode,
+    std::vector<ValueContainer>& constants, HashTable& globalVariables)
 {
-    auto& bytecode = vm.opCode;
-    auto& constants = vm.constants;
-    auto& globalVariables = vm.globalVariables;
     int ipIndex = 0;
     std::cout << "-------------Debug-----------\n";
     while (ipIndex < bytecode.size())
@@ -98,6 +97,7 @@ const char* debugEnum(InCode code) {
     case InCode::POP: return "POP";
     case InCode::RETURN: return "RETURN";
     case InCode::JUMP_BACK: return "JUMP_BACK";
+    case InCode::CALL: return "CALL";
     default: return "UNKNOWN";
     }
 }
