@@ -240,13 +240,14 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 if (tree->type == TokenType::FUN)
 		 {
 			 auto func = static_cast<const FunctionNode*>(tree);
-			 auto funcValue = globalVariables.Add(func->name.GetStringView(),LiteralToType(func->type));
-
+			 auto funcValue = globalVariables.Add(func->name.GetStringView(),LiteralToType(TokenType::FUN))->
+				 value.As<Func*>();
+			 funcValue->name = func->name;
 			 if (func->name == "main")
 			 {
-				 mainFunc = funcValue->value.As<Func*>();
+				 mainFunc = funcValue;
 			 }
-			 currentFunc = funcValue->value.As<Func*>();
+			 currentFunc = funcValue;
 			 currentScopes.push_back(&func->paramScope);
 			 for (auto& arg : func->arguments)
 			 {
@@ -255,12 +256,18 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 Generate(func->body.get());
 			 ClearScope(currentScopes,m_StackPtr, currentFunc->opCode);
 		 }
+		 else if (tree->type == TokenType::RETURN)
+		 {
+			 currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
+		 }
 		 else if (tree->type == TokenType::LEFT_PAREN)
 		 {
 			 // invoke function
+			 
 			 auto call = static_cast<const Call*>(tree);
 			 currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
-			 currentFunc->constants.emplace_back(&call->name);
+			 currentFunc->constants.emplace_back(const_cast<String*>(&call->name));
+			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 			 for (auto& arg : call->args)
 			 {
 				 Generate(arg.get());
@@ -740,9 +747,15 @@ void VirtualMachine::Execute()
 {
 	if (m_Panic)return;
 	globalFunc->opCode.push_back((uint8_t)InCode::RETURN);
+#if 1
+	auto foo = globalVariables.Get("foo");
+	auto fooFunc = foo->value.As<Func*>();
 	#if DEBUG
-	Debug(globalFunc->opCode,globalFunc->constants,globalVariables);
+	Debug(mainFunc->opCode, mainFunc->constants,globalVariables);
+	Debug(fooFunc->opCode, fooFunc->constants,globalVariables);
 	#endif
+#endif // 0
+
 	if (mainFunc)
 	{
 		callFrames[currentCallFrame].function = mainFunc;

@@ -84,6 +84,12 @@ std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 		os << *str;
 		break;
 	}
+	case  ValueType::FUNCTION:
+	{
+		auto name = std::get<Func*>(v.as)->name;
+		os << name;
+		break;
+	}
 	default:
 		break;
 	}

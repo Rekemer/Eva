@@ -81,6 +81,7 @@ struct FunctionNode : public Node
 	std::unique_ptr<Node> body;
 	String name;
 	std::vector<std::unique_ptr<Node>> arguments;
+	TokenType returnType;
 };
 struct Call : public Node
 {

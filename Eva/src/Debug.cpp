@@ -1,6 +1,7 @@
 #include "Debug.h"
 #include <iostream>
 #include "String.hpp"
+#include "Function.h"
 
 const char* debugEnum(InCode code);
 
@@ -42,8 +43,7 @@ void Debug(std::vector<Bytecode>& bytecode,
             else
             {
                 auto nameOfVariable = constants[indexOfVariableName];
-                auto string = *(nameOfVariable.As<String*>());
-                std::cout << "[" << ipIndex - 1 << "] " << string << std::endl;
+                std::cout << "[" << ipIndex - 1 << "] " << constants[indexOfVariableName] << std::endl;
             }
 
         }

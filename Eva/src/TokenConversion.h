@@ -48,6 +48,8 @@ inline ValueType LiteralToType(TokenType literalType)
 	case TokenType::BOOL_TYPE:
 		return ValueType::BOOL;
 		break;
+	case TokenType::FUN:
+		return ValueType::FUNCTION;
 		// += case: identifer has left child as + and right chlid as = which is value to add to the variable 
    //case TokenType::PLUS:
    //	 return ValueType::NIL;

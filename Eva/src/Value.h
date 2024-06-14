@@ -41,7 +41,7 @@ public:
 		else if constexpr (std::is_same_v<T, float>) {
 			type = ValueType::FLOAT;
 		}
-		else if constexpr (std::is_same_v<T, String*>) {
+		else if constexpr (std::is_same_v<T, String*> || std::is_same_v<T, String const*>) {
 			type = ValueType::STRING;
 		}
 		else if constexpr (std::is_same_v<T, bool>) {

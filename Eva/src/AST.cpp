@@ -168,7 +168,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			auto call = std::make_unique<Call>();
 			call->name = str;
 			call->type = TokenType::LEFT_PAREN;
-			currentToken+2;
+			currentToken+=2;
 			while (currentToken->type != TokenType::RIGHT_PAREN)
 			{
 				auto arg = LogicalOr(currentToken);
@@ -178,6 +178,9 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 					Error(TokenType::COMMA, currentToken, "Arguments must be separated with comma");
 				}
 			}
+
+			Error(TokenType::RIGHT_PAREN, currentToken, "Arguments list must end with ) ");
+			Error(TokenType::SEMICOLON, currentToken, "Function call must end with ;");
 			return call;
 		}
 		else
@@ -381,6 +384,7 @@ void Print(const Expression* tree, int level) {
 	 Error(TokenType::LEFT_PAREN,currentToken,"Function argument list must start with (");
 	 auto function = std::make_unique<FunctionNode>();
 	 function->name = std::move(name);
+	 function->type = TokenType::FUN;
 	 currentScope = &function->paramScope;
 	 BeginBlock();
 	 while (currentToken->type != TokenType::RIGHT_PAREN)
@@ -394,7 +398,7 @@ void Print(const Expression* tree, int level) {
 	 }
 	 Error(TokenType::RIGHT_PAREN,currentToken,"Function argument list must end with )");
 	 Error(TokenType::COLON,currentToken,"Function must declare return type");
-	 function->type = currentToken->type;
+	 function->returnType = currentToken->type;
 	 currentToken++;
 	 function->body = EatBlock(currentToken);
 	 EndBlock();
