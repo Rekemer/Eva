@@ -29,6 +29,13 @@ void Debug(std::vector<Bytecode>& bytecode,
             auto jumpIndexOffset = bytecode[ipIndex++];
             std::cout << "[" << ipIndex - 1 << "] " << static_cast<int>(jumpIndexOffset)<< std::endl;
         }
+        else if (instr == InCode::CALL)
+        {
+            std::cout << "[" << ipIndex - 1 << "] " << str << std::endl;
+            auto argumentCount = bytecode[ipIndex++];
+            std::cout << "[" << ipIndex - 1 << "] " << static_cast<int>(argumentCount)<< std::endl;
+
+        }
         else if (instr == InCode::SET_GLOBAL_VAR || instr == InCode::GET_GLOBAL_VAR ||
             isLocal)
         {

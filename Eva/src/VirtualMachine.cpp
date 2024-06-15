@@ -240,6 +240,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 if (tree->type == TokenType::FUN)
 		 {
 			 auto func = static_cast<const FunctionNode*>(tree);
+			 functionNames.push_back(func->name);
 			 auto funcValue = globalVariables.Add(func->name.GetStringView(),LiteralToType(TokenType::FUN))->
 				 value.As<Func*>();
 			 funcValue->name = func->name;
@@ -254,11 +255,14 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				 Generate(arg.get());
 			 }
 			 Generate(func->body.get());
-			 ClearScope(currentScopes,m_StackPtr, currentFunc->opCode);
+			 //ClearScope(currentScopes,m_StackPtr, currentFunc->opCode);
 		 }
 		 else if (tree->type == TokenType::RETURN)
 		 {
+
+			 auto value = Generate(exprLeft);
 			 currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
+
 		 }
 		 else if (tree->type == TokenType::LEFT_PAREN)
 		 {
@@ -613,7 +617,6 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			
 			auto body = tree->As<Expression>()->right.get();
 			Generate(body);
-			
 			auto jump = JumpBack(currentFunc->opCode);
 			// jumping backwards
 			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
@@ -641,7 +644,6 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto indexJumpFalse = GenerateLoopCondition(forNode->condition.get());
 			currentFunc->opCode[firstIteration] = CalculateJumpIndex(currentFunc->opCode, firstIteration) + 1;
 			Generate(forNode->body.get());
-			
 			EndContinue();
 			
 			auto jump = JumpBack(currentFunc->opCode);
@@ -747,25 +749,28 @@ void VirtualMachine::Execute()
 {
 	if (m_Panic)return;
 	globalFunc->opCode.push_back((uint8_t)InCode::RETURN);
-#if 1
-	auto foo = globalVariables.Get("foo");
-	auto fooFunc = foo->value.As<Func*>();
 	#if DEBUG
-	Debug(mainFunc->opCode, mainFunc->constants,globalVariables);
-	Debug(fooFunc->opCode, fooFunc->constants,globalVariables);
+	std::cout << "FUNCTION: global" << std::endl;
+	Debug(globalFunc->opCode, globalFunc->constants,globalVariables);
+	for (auto& name : functionNames)
+	{
+		std::cout << "FUNCTION: " << name << std::endl;
+		auto func= globalVariables.Get(name.GetStringView())->value.As<Func*>();
+		Debug(func->opCode, func->constants,globalVariables);
+	}
 	#endif
-#endif // 0
+	//return;
 
 	if (mainFunc)
 	{
-		callFrames[currentCallFrame].function = mainFunc;
+		callFrames[nextToCurrentCallFrame].function = mainFunc;
 	}
 	else
 	{
-		callFrames[currentCallFrame].function = globalFunc.get();
+		callFrames[nextToCurrentCallFrame].function = globalFunc.get();
 	}
 
-	auto frame = &callFrames[currentCallFrame];
+	auto frame = &callFrames[nextToCurrentCallFrame++];
 	while (true)
 	{
 		auto inst = frame->function->opCode[frame->ip++];
@@ -955,7 +960,23 @@ void VirtualMachine::Execute()
 		}
 		case InCode::RETURN:
 		{
-			return;
+
+			if (globalFunc.get() == callFrames[nextToCurrentCallFrame - 1].function)
+			{
+				return;
+			}
+			auto prevCallFrameIndex = nextToCurrentCallFrame - 2;
+			auto res = vmStack.back();
+			if (prevCallFrameIndex <= 0)
+			{
+				vmStack.push_back(res);
+				return;
+			}
+			vmStack.resize(callFrames[prevCallFrameIndex].stackIndex );
+			vmStack.push_back(res);
+			nextToCurrentCallFrame--;
+			frame = &callFrames[prevCallFrameIndex];
+			break;
 		}
 		case InCode::PRINT:
 		{	auto& v = vmStack.back();
@@ -985,7 +1006,7 @@ void VirtualMachine::Execute()
 		case InCode::GET_LOCAL_VAR:
 		{
 			auto index = frame->function->opCode[frame->ip++];
-			vmStack.push_back(vmStack[index]);
+			vmStack.push_back(vmStack[frame->stackIndex+index]);
 			break;
 		}
 		case InCode::SET_LOCAL_VAR:
@@ -1017,9 +1038,21 @@ void VirtualMachine::Execute()
 			frame->ip -= offset;
 			break;
 		}
+		case InCode::CALL:
+		{
+			// up to this point arguments and function are on stack
+			auto argumentCount = frame->function->opCode[frame->ip++];
+			auto funcIndex = vmStack.size()  - 1 - argumentCount;
+			auto func = vmStack[funcIndex].As<Func*>();
+			auto newIndexFrame = CallFunction(func, argumentCount,funcIndex+1);
+			// update our call frame 
+			frame = &callFrames[newIndexFrame];
+			break;
+		}
 		case InCode::POP:
 		{
 			vmStack.pop_back();
+			break;
 		}
 		default:
 			break;
@@ -1027,6 +1060,15 @@ void VirtualMachine::Execute()
 	}
 }
 
+size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t baseIndex)
+{
+	auto& frame = callFrames[nextToCurrentCallFrame++];
+	frame.function = func;
+	frame.ip = 0;
+	frame.stackIndex = baseIndex;
+	return nextToCurrentCallFrame - 1;
+
+}
 void VirtualMachine::GenerateBytecode(const Node const* node)
 {
 	currentFunc = globalFunc.get();

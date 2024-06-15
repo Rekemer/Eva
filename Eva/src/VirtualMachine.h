@@ -18,6 +18,10 @@ struct CallFrame
 {
 	Func* function;
 	size_t ip = 0;	
+	// base pointer to stack
+	// which is start of counting
+	// for the function 
+	size_t stackIndex = 0;
 };
 class AST;
 struct Node;
@@ -51,6 +55,7 @@ private:
 	void BeginContinue(int startLoopIndex);
 	int BeginBreak();
 	void EndContinue();
+	size_t CallFunction(Func* func, size_t argumentCount, size_t baseIndex);
 	void PatchBreak(int prevSizeBreak);
 	void SetVariable(std::vector<Bytecode>& opCode,
 		const Expression* expression);
@@ -67,6 +72,7 @@ private:
 	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
 	
 	std::vector<ValueContainer> vmStack;
+	std::vector<String> functionNames;
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
@@ -74,7 +80,7 @@ private:
 	std::vector<const Scope*> currentScopes;
 	std::array<Local, 256> locals;
 	std::array<CallFrame, 64> callFrames;
-	int currentCallFrame = 0;
+	int nextToCurrentCallFrame = 0;
 	// track the declared locals
 	int m_StackPtr = 0;
 	bool m_Panic = false;

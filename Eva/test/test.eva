@@ -1,14 +1,31 @@
 
+//fun fib(n : int) : int
+//{
+//	if n < 2 
+//	{
+//		return n;
+//	}
+//	return fib(n - 2) + fib(n - 1);
+//}
 
-fun foo( a: int, b : int ) : int 
-{ 
-	Print a;
-	Print b;
-	return a;
-}
-
-fun main() : int
 {
-	foo(2,3);
-	return 0;
+	a:=2;
+	Print a;
 }
+
+
+//fun foo( a: int, b : int ) : int 
+//{ 
+//	Print a;
+//	Print b;
+//	ret := 25;
+//	return ret;
+//}
+//
+//fun main() : int
+//{
+//	a:=foo(2,3);
+//	//n:= fib(10);
+//	Print a;
+//	return 0;
+//}

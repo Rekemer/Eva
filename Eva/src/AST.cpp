@@ -180,7 +180,8 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			}
 
 			Error(TokenType::RIGHT_PAREN, currentToken, "Arguments list must end with ) ");
-			Error(TokenType::SEMICOLON, currentToken, "Function call must end with ;");
+			//if (currentToken->type == TokenType::SEMICOLON)
+			//Error(TokenType::SEMICOLON, currentToken, "Function call must end with ;");
 			return call;
 		}
 		else
@@ -751,7 +752,15 @@ void Print(const Expression* tree, int level) {
 		 auto scope = EatBlock(currentToken);
 		 return scope;
 	 }
-	 return Declaration(currentToken);
+	 else
+	 {
+		auto node = Declaration(currentToken);
+		if (currentToken->type == TokenType::SEMICOLON)
+		{
+			currentToken++;
+		}
+		return node;
+	 }
  }
  
  void AST::BeginBlock()
