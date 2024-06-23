@@ -21,6 +21,9 @@ inline TokenType TypeToLiteral(ValueType valueType)
 	case ValueType::DEDUCE:
 		return TokenType::DEDUCE;
 		break;
+	case ValueType::NIL:
+		return TokenType::NIL;
+		break;
 	default:
 		assert(false);
 		break;

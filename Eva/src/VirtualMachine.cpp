@@ -248,6 +248,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 functionNames.push_back(func->name);
 			 auto funcValue = globalVariables.Get(func->name.GetStringView())->
 				 value.As<Func*>();
+
 			 funcValue->name = func->name;
 			 if (func->name == "main")
 			 {
@@ -260,6 +261,14 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				 Generate(arg.get());
 			 }
 			 Generate(func->body.get());
+			 auto type = globalVariablesTypes.Get(func->name.GetStringView())->value.type;
+			 if (type == ValueType::NIL)
+			 {
+				 currentFunc->opCode.push_back((uint8_t)InCode::NIL);
+				 currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
+				 return ValueType::NIL;
+			 }
+			 else return type;
 			 //ClearScope(currentScopes,m_StackPtr, currentFunc->opCode);
 		 }
 		 else if (tree->type == TokenType::RETURN)
@@ -283,6 +292,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 			 currentFunc->opCode.push_back((uint8_t)InCode::CALL);
 			 currentFunc->opCode.push_back(call->args.size());
+			 auto type = globalVariablesTypes.Get((const_cast<String*>(&call->name)->GetStringView()))->value.type;
+			 if (type == ValueType::NIL)
+			 {
+				currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 }
 		 }
 		 else if (tree->type == TokenType::BLOCK)
 		 {

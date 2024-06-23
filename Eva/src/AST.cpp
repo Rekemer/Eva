@@ -402,9 +402,16 @@ void Print(const Expression* tree, int level) {
 		 }
 	 }
 	 Error(TokenType::RIGHT_PAREN,currentToken,"Function argument list must end with )");
-	 Error(TokenType::COLON,currentToken,"Function must declare return type");
-	 globalTypes.Add(function->name.GetStringView(), LiteralToType(currentToken->type));
-	 currentToken++;
+	 if (currentToken->type != TokenType::COLON)
+	 {
+		globalTypes.Add(function->name.GetStringView(), ValueType::NIL);
+	 }
+	 else
+	 {
+		Error(TokenType::COLON,currentToken,"Function must declare return type");
+		globalTypes.Add(function->name.GetStringView(), LiteralToType(currentToken->type));
+		currentToken++;
+	 }
 	 function->body = EatBlock(currentToken);
 	 auto body = function->body->AsMut<Scope>();
 	 
@@ -838,9 +845,13 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		auto entry = vm.GetGlobalsType().Get(fun->name.GetStringView());
 		auto actualType = TypeCheck(fun->body.get(), vm);
 		assert(entry->key != nullptr);
-		auto declaredType = TypeToLiteral(entry->value.type);
-		assert(declaredType == actualType);
-		return declaredType;
+		if (entry->value.type != ValueType::NIL)
+		{
+			auto declaredType = TypeToLiteral(entry->value.type);
+			assert(declaredType == actualType);
+			return declaredType;
+		}
+		return TokenType::NIL;
 	}
 	if (node->type == TokenType::CONTINUE || node->type == TokenType::BREAK)
 	{
