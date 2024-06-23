@@ -818,6 +818,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 {
 	TokenType childType = TokenType::END;
 	TokenType childType1 = TokenType::END;
+	if (node->type == TokenType::IF) return TokenType::END;
 	if (node->type == TokenType::LEFT_PAREN)
 	{
 		auto call = static_cast<Call*>(node);
@@ -928,24 +929,21 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		{
 			if (expr->depth > 0)
 			{
-				leftChild->value.type = LiteralToType(childType1);
 				auto str = leftChild->value.As<String*>();
-				Entry* entry;
+				Entry* entry = nullptr;
 				for (auto scope : currentScopes)
 				{
 					if (!scope->types.IsExist(str->GetStringView())) continue;
 					entry = scope->types.Get(str->GetStringView());
 				}
-				entry->value.type = leftChild->value.type;
+				assert(entry != nullptr);
+				entry->value.type = LiteralToType(childType1);
 			}
 			else
 			{
-				leftChild->value.type = LiteralToType(childType1);
 				auto str = leftChild->value.As<String*>();
 				auto entry = globalsType.Get(str->GetStringView());
-				entry->value.type = leftChild->value.type;
-				entry = globals.Get(str->GetStringView());
-				entry->value.type = leftChild->value.type;
+				entry->value.type = LiteralToType(childType1);
 			}
 
 		}

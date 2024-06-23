@@ -27,3 +27,7 @@ clean up type stuff, where exactly do we keep our types in value or hash table f
 have identifier in different node for code reuse
 
 deal with token type to value type conversion on type check stage
+
+catch
+g := 0;
+g := 0;
