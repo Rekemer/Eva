@@ -262,6 +262,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 			 Generate(func->body.get());
 			 auto type = globalVariablesTypes.Get(func->name.GetStringView())->value.type;
+			 ClearLocal();
 			 if (type == ValueType::NIL)
 			 {
 				 currentFunc->opCode.push_back((uint8_t)InCode::NIL);

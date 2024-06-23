@@ -684,3 +684,42 @@ TEST_CASE("if statTment")
 		CHECK(isPass);
 	}
 }
+TEST_CASE("functions")
+{
+	SUBCASE("call getting global resuls")
+	{
+		auto a = R"(	
+					a := 5+2;
+					fun main() : int
+					{
+						a++;
+						return 0;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 8, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("main calling functions")
+	{
+		auto a = R"(
+					fun mult (a : int, b: int) : int
+					{
+						return a*b;
+					}
+					fun foo( a: int, b : int ) : int 
+					{ 
+						return mult(a,b) + 2;
+					}
+					a := 0;
+					fun main() : int
+					{
+						a = foo(2,2);
+						return 0;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 6, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+}

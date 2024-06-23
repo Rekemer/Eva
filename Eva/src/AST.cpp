@@ -379,7 +379,6 @@ void Print(const Expression* tree, int level) {
  // fun foo() : int {}
  std::unique_ptr<Node> AST::DeclareFunction(Iterator& currentToken)
  {
-	 vm->ClearLocal();
 	 currentToken++;
 	 auto& name = *currentToken->value.As<String*>();
 	 currentToken++;
@@ -421,7 +420,6 @@ void Print(const Expression* tree, int level) {
 		 body->types.Add(expr->value.As<String*>()->GetStringView(), expr->value.type);
 	 }
 	 EndBlock();
-	 vm->ClearLocal();
 	 return function;
  }
  std::unique_ptr<Node> AST::DeclareVariable(Iterator& currentToken)
