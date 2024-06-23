@@ -379,11 +379,15 @@ void Print(const Expression* tree, int level) {
  // fun foo() : int {}
  std::unique_ptr<Node> AST::DeclareFunction(Iterator& currentToken)
  {
+	 vm->ClearLocal();
 	 currentToken++;
 	 auto& name = *currentToken->value.As<String*>();
 	 currentToken++;
 	 Error(TokenType::LEFT_PAREN,currentToken,"Function argument list must start with (");
 	 auto function = std::make_unique<FunctionNode>();
+	 auto& globalVariables = vm->GetGlobals();
+	 auto& globalTypes = vm->GetGlobalsType();
+	 globalVariables.Add(name.GetStringView(), LiteralToType(TokenType::FUN));
 	 function->name = std::move(name);
 	 function->type = TokenType::FUN;
 	 currentScope = &function->paramScope;
@@ -399,9 +403,16 @@ void Print(const Expression* tree, int level) {
 	 }
 	 Error(TokenType::RIGHT_PAREN,currentToken,"Function argument list must end with )");
 	 Error(TokenType::COLON,currentToken,"Function must declare return type");
-	 function->returnType = currentToken->type;
+	 globalTypes.Add(function->name.GetStringView(), LiteralToType(currentToken->type));
 	 currentToken++;
 	 function->body = EatBlock(currentToken);
+	 auto body = function->body->AsMut<Scope>();
+	 
+	 for (auto& arg : function->arguments)
+	 {
+		 auto expr = arg->As<Expression>()->left->As<Expression>();
+		 body->types.Add(expr->value.As<String*>()->GetStringView(), expr->value.type);
+	 }
 	 EndBlock();
 	 return function;
  }
@@ -807,6 +818,29 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 {
 	TokenType childType = TokenType::END;
 	TokenType childType1 = TokenType::END;
+	if (node->type == TokenType::LEFT_PAREN)
+	{
+		auto call = static_cast<Call*>(node);
+		auto entry = vm.GetGlobalsType().Get(call->name.GetStringView());
+		assert(entry->key != nullptr);
+		return TypeToLiteral(entry->value.type);
+	}
+	if (node->type == TokenType::RETURN)
+	{
+
+		auto ret = TypeCheck(static_cast<Expression*>(node)->left.get(), vm);
+		return ret;
+	}
+	if (node->type == TokenType::FUN)
+	{
+		auto fun = static_cast<FunctionNode*>(node);
+		auto entry = vm.GetGlobalsType().Get(fun->name.GetStringView());
+		auto actualType = TypeCheck(fun->body.get(), vm);
+		assert(entry->key != nullptr);
+		auto declaredType = TypeToLiteral(entry->value.type);
+		assert(declaredType == actualType);
+		return declaredType;
+	}
 	if (node->type == TokenType::CONTINUE || node->type == TokenType::BREAK)
 	{
 		return node->type;
@@ -816,13 +850,18 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		auto block = static_cast<Scope*>(node);
 		currentScopes.push_back(block);
 		BeginBlock();
+		auto ret = TokenType::BLOCK;
 		for (auto& e : block->expressions)
 		{
-			TypeCheck(e.get(), vm);
+			auto type = TypeCheck(e.get(), vm);
+			if (e->type == TokenType::RETURN)
+			{
+				ret = type;
+			}
 		}
 		EndBlock();
 		currentScopes.pop_back();
-		return TokenType::BLOCK;
+		return ret;
 	}
 	if (node->type == TokenType::FOR)
 	{

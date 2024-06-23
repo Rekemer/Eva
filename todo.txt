@@ -25,3 +25,5 @@ fix stack getting bloated by unneccesaty set local command during init of local 
 clean up type stuff, where exactly do we keep our types in value or hash table for types?
 
 have identifier in different node for code reuse
+
+deal with token type to value type conversion on type check stage

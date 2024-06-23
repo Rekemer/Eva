@@ -62,7 +62,6 @@ public:
 	}
 	void Add(const Entry& entry);
 	bool IsExist(std::string_view key);
-
 	template<class... Arg>
 	Entry* Add(std::string_view key, Arg... value)
 	{

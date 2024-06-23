@@ -34,10 +34,15 @@ while(false)
 	currentFunc->opCode.push_back((uint8_t)InCode::OP##_INT); \
 	return ValueType::INT; \
 	}\
-	else\
+	else if (type == ValueType::FLOAT)\
 	{\
 	currentFunc->opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
 	return ValueType::FLOAT; \
+	}\
+	else\
+	{\
+	assert(false&& "type checking didn't work"); \
+	return ValueType::NIL; \
 	}\
 }\
 // deterni
@@ -241,7 +246,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 {
 			 auto func = static_cast<const FunctionNode*>(tree);
 			 functionNames.push_back(func->name);
-			 auto funcValue = globalVariables.Add(func->name.GetStringView(),LiteralToType(TokenType::FUN))->
+			 auto funcValue = globalVariables.Get(func->name.GetStringView())->
 				 value.As<Func*>();
 			 funcValue->name = func->name;
 			 if (func->name == "main")
@@ -718,6 +723,11 @@ std::tuple<bool, int> VirtualMachine::IsLocalExist(String& name, size_t scope)
 	return { false ,-1 };
 }
 
+void VirtualMachine::ClearLocal()
+{
+	m_StackPtr = 0;
+}
+
 VirtualMachine::~VirtualMachine()
 {
 }
@@ -967,7 +977,7 @@ void VirtualMachine::Execute()
 			}
 			auto prevCallFrameIndex = nextToCurrentCallFrame - 2;
 			auto res = vmStack.back();
-			if (prevCallFrameIndex <= 0)
+			if (prevCallFrameIndex < 0)
 			{
 				vmStack.push_back(res);
 				return;

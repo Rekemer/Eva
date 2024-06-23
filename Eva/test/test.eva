@@ -8,24 +8,26 @@
 //	return fib(n - 2) + fib(n - 1);
 //}
 
-{
-	a:=2;
-	Print a;
-}
-
-
-//fun foo( a: int, b : int ) : int 
-//{ 
-//	Print a;
-//	Print b;
-//	ret := 25;
-//	return ret;
-//}
-//
-//fun main() : int
 //{
-//	a:=foo(2,3);
-//	//n:= fib(10);
+//	a:=2;
 //	Print a;
-//	return 0;
 //}
+
+
+fun foo( a: int, b : int ) : int 
+{ 
+	//Print a;
+	//Print b;
+	//ret := 25;
+	//a:= 25;
+	//b:= 25;
+	return a+b;
+}
+fun main() : int
+{
+	//ch := 2;
+	a := foo(2,3);
+	Print a;
+	//n:= fib(10);
+	return 0;
+}

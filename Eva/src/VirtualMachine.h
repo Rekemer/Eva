@@ -47,6 +47,7 @@ public:
 	void AddLocal(String& name, int currentScope);
 	// checks if  exists in imitation of runtime stack and returns index
 	std::tuple<bool, int> IsLocalExist(String& name, size_t scope);
+	void ClearLocal();
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();

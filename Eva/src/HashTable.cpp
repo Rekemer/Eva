@@ -57,7 +57,6 @@ void HashTable::MakeTombstone(Entry* entry)
 	entry->value = true;
 }
 
-
 bool HashTable::IsExist(std::string_view key)
 {
 	auto entry = Get(key);
