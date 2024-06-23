@@ -772,6 +772,7 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 void VirtualMachine::Execute()
 {
 	if (m_Panic)return;
+	globalFunc->opCode.push_back((uint8_t)InCode::NIL);
 	globalFunc->opCode.push_back((uint8_t)InCode::RETURN);
 	#if DEBUG
 	std::cout << "FUNCTION: global" << std::endl;
@@ -787,14 +788,11 @@ void VirtualMachine::Execute()
 
 	if (mainFunc)
 	{
-		callFrames[nextToCurrentCallFrame].function = mainFunc;
+		mainFunc->opCode.insert(mainFunc->opCode.begin(), (uint8_t)InCode::POP);
+		callFrames[nextToCurrentCallFrame++].function = mainFunc;
 	}
-	else
-	{
-		callFrames[nextToCurrentCallFrame].function = globalFunc.get();
-	}
-
-	auto frame = &callFrames[nextToCurrentCallFrame++];
+	callFrames[nextToCurrentCallFrame++].function = globalFunc.get();
+	auto frame = &callFrames[nextToCurrentCallFrame-1];
 	while (true)
 	{
 		auto inst = frame->function->opCode[frame->ip++];
@@ -809,6 +807,10 @@ void VirtualMachine::Execute()
 		case InCode::TRUE:
 		{
 			vmStack.push_back(ValueContainer{ true });
+			break;
+		}case InCode::NIL:
+		{
+			vmStack.push_back(ValueContainer{ -1});
 			break;
 		}
 		case InCode::FALSE:
@@ -985,15 +987,14 @@ void VirtualMachine::Execute()
 		case InCode::RETURN:
 		{
 
-			if (globalFunc.get() == callFrames[nextToCurrentCallFrame - 1].function)
-			{
-				return;
-			}
+			//if (globalFunc.get() == callFrames[nextToCurrentCallFrame - 1].function)
+			//{
+			//	return;
+			//}
 			auto prevCallFrameIndex = nextToCurrentCallFrame - 2;
 			auto res = vmStack.back();
 			if (prevCallFrameIndex < 0)
 			{
-				vmStack.push_back(res);
 				return;
 			}
 			vmStack.resize(callFrames[prevCallFrameIndex].stackIndex );

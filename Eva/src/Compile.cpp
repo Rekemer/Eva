@@ -54,9 +54,10 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	}
 	
 	vm.Execute();
-	if (vm.GetStack().size() > 0)
+	if (vm.GetStack().size() > 1)
 	{
-		auto res = vm.GetStack().back();
+		auto& stack = vm.GetStack();
+		auto res = stack[stack.size()-2];
 		return { res,vm };
 	}
 	return { {},vm };

@@ -13,16 +13,34 @@
 //	Print a;
 //}
 
-fun foo( a: int, b : int ) 
+//fun mult (a : int, b: int) : int
+//{
+//	return a*b;
+//}
+fun foo( a: int, b : int ) : int 
 { 
-	Print a;
-	Print b;
+	//Print a;
+	//Print b;
+	//ret := 25;
+	//a:= 25;
+	//b:= 25;
+	//return mult(2,2) + mult(2,2) ;
+	//return mult(2,2) +2 ;
+	return 2*2 +2 ;
 }
 
-
-
+g := 2+2;
+a := 5+2;
+Print g;
+while a  >= 2 
+{
+	a--;
+}
 fun main() : int
-{	
-	foo(2,2);
+{
+	//a := foo(2,2);
+	//f := fib(5);
+	Print a;
+	//Print f;
 	return 0;
 }

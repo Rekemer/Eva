@@ -421,6 +421,7 @@ void Print(const Expression* tree, int level) {
 		 body->types.Add(expr->value.As<String*>()->GetStringView(), expr->value.type);
 	 }
 	 EndBlock();
+	 vm->ClearLocal();
 	 return function;
  }
  std::unique_ptr<Node> AST::DeclareVariable(Iterator& currentToken)

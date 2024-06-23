@@ -31,3 +31,36 @@ deal with token type to value type conversion on type check stage
 catch
 g := 0;
 g := 0;
+
+
+compiler thinks a is local in global while (leaking from functions)
+fun mult (a : int, b: int) : int
+{
+	return a*b;
+}
+fun foo( a: int, b : int ) : int 
+{ 
+	//Print a;
+	//Print b;
+	//ret := 25;
+	//a:= 25;
+	//b:= 25;
+	//return mult(2,2) + mult(2,2) ;
+	return mult(2,2) +2 ;
+}
+
+g := 2+2;
+a := 5+2;
+Print g;
+while a  >= 5 
+{
+	a--;
+}
+//fun main() : int
+//{
+//	//a := foo(2,2);
+//	//f := fib(5);
+//	Print g;
+//	//Print f;
+//	return 0;
+//}
