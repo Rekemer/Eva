@@ -65,8 +65,6 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 // it will initialize node with the name of a variable
 	 node->left = LogicalOr(currentToken);
 
-	 auto leftExpression = static_cast<Expression*>(node->left.get());
-	 leftExpression->value.type = type;
 	 node->depth = 0;
 	 currentToken += offset;
  }
@@ -77,10 +75,8 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 scopeDeclarations.top()++;
 	 vm->AddLocal(str, scopeDepth);
 	 node->left = LogicalOr(currentToken);
-	 auto leftExpression = static_cast<Expression*>(node->left.get());
 
 	 currentScope->types.Add(str.GetStringView(), type);
-	 leftExpression->value.type =type;
 	 currentToken += offset;
  }
  std::unique_ptr<Node> AST::UnaryOpPrefix( Iterator&  currentToken)
@@ -417,7 +413,9 @@ void Print(const Expression* tree, int level) {
 	 for (auto& arg : function->arguments)
 	 {
 		 auto expr = arg->As<Expression>()->left->As<Expression>();
-		 body->types.Add(expr->value.As<String*>()->GetStringView(), expr->value.type);
+		 auto name = expr->value.As<String*>()->GetStringView();
+		 auto entry = function->paramScope.types.Get(name);
+		 body->types.Add(name, entry->value.type);
 	 }
 	 EndBlock();
 	 return function;
@@ -860,6 +858,8 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	{
 		auto block = static_cast<Scope*>(node);
 		currentScopes.push_back(block);
+		auto entry = block->types.Get("a");
+
 		BeginBlock();
 		auto ret = TokenType::BLOCK;
 		for (auto& e : block->expressions)

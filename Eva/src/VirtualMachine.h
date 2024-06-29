@@ -21,7 +21,7 @@ struct CallFrame
 	// base pointer to stack
 	// which is start of counting
 	// for the function 
-	size_t stackIndex = 0;
+	int stackIndex = 0;
 };
 class AST;
 struct Node;
@@ -61,6 +61,7 @@ private:
 	void SetVariable(std::vector<Bytecode>& opCode,
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
+	ValueType GetVariableType(String* name, int depthOfDeclaration);
 	// returns index to be patchd for a jump if loop is finished
 	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);

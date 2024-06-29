@@ -6,6 +6,49 @@
 #include "HashTable.h"
 
 #define EXPR 1
+#define LOOPS 1
+#define FUNC 1
+#define VAR 1
+
+
+struct Tables
+{
+	HashTable globals;
+	HashTable globalTypes;
+};
+bool AllTrue(bool condition) {
+	return condition;
+}
+
+template<typename... T>
+bool AllTrue(bool condition, T... conditions)
+{
+	return condition && AllTrue(conditions...);
+}
+template <typename ExpectedType>
+bool CheckVariable(std::string_view variableName, ExpectedType expectedValue,
+	ValueType expectedValueType, VirtualMachine& vm)
+{
+	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
+	auto entry = tb.globals.Get(variableName);
+	auto entryType = tb.globalTypes.Get(variableName);
+	auto isType = entryType->value.type == expectedValueType;
+	auto isRightValue = entry->value.As<ExpectedType>() == expectedValue;
+	auto isPass = AllTrue(isType, isRightValue);
+	return isPass;
+}
+template <>
+bool CheckVariable<String*>(std::string_view variableName, String* expectedValue,
+	ValueType expectedValueType, VirtualMachine& vm)
+{
+	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
+	auto entry = tb.globals.Get(variableName);
+	auto entryType = tb.globalTypes.Get(variableName);
+	auto isType = entryType->value.type == expectedValueType;
+	auto isRightValue = *entry->value.As<String*>() == *expectedValue;
+	auto isPass = AllTrue(isType, isRightValue);
+	return isPass;
+}
 
 #if EXPR
 	TEST_CASE("testing bool expressions")
@@ -59,74 +102,38 @@ TEST_CASE("testing hash table ")
 	CHECK(table.IsExist("hi") == false);
 
 }
-struct Tables
-{
-	HashTable globals;
-	HashTable globalTypes;
-};
-bool AllTrue(bool condition) {
-	return condition;
-}
 
-template<typename... T>
-bool AllTrue(bool condition,T... conditions)
-{
-	return condition && AllTrue(conditions...);
-}
-template <typename ExpectedType>
-bool CheckVariable(std::string_view variableName, ExpectedType expectedValue,
-	ValueType expectedValueType,VirtualMachine& vm)
-{
-	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-	auto entry = tb.globals.Get(variableName);
-	auto entryType = tb.globalTypes.Get(variableName);
-	auto isType = entryType->value.type == expectedValueType;
-	auto isRightValue = entry->value.As<ExpectedType>() == expectedValue;
-	auto isPass = AllTrue(isType, isRightValue);
-	return isPass;
-}
-template <>
-bool CheckVariable<String*>(std::string_view variableName, String* expectedValue,
-	ValueType expectedValueType, VirtualMachine& vm)
-{
-	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-	auto entry = tb.globals.Get(variableName);
-	auto entryType = tb.globalTypes.Get(variableName);
-	auto isType = entryType->value.type == expectedValueType;
-	auto isRightValue = *entry->value.As<String*>() == *expectedValue;
-	auto isPass = AllTrue(isType, isRightValue);
-	return isPass;
-}
+#if VAR
 TEST_CASE("variable declared and has values")
 {
-	
+
 
 	SUBCASE("declare int")
 	{
 		auto str = R"(a : int = 2;)";
-		auto [res,vm]= Compile(str);
+		auto [res, vm] = Compile(str);
 		Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		auto isPass = CheckVariable<int>("a", 2, ValueType::INT,vm);
+		auto isPass = CheckVariable<int>("a", 2, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare float")
 	{
 		auto str = R"(a : float = 45.00;)";
-		auto [res,vm]= Compile(str);
-		auto isPass = CheckVariable<float>("a", 45.00, ValueType::FLOAT,  vm);
+		auto [res, vm] = Compile(str);
+		auto isPass = CheckVariable<float>("a", 45.00, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare bool")
 	{
 		auto str = R"(a : bool = true;)";
-		auto [res,vm]= Compile(str);
+		auto [res, vm] = Compile(str);
 		auto isPass = CheckVariable<bool>("a", true, ValueType::BOOL, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("declare String")
 	{
 		auto str = R"(a : String = "Hello, New Year!";)";
-		auto [res,vm]= Compile(str);
+		auto [res, vm] = Compile(str);
 		//auto str = String("Hello, New Year!");
 		String checkString = "Hello, New Year!";
 		auto isPass = CheckVariable<String*>("a", &checkString, ValueType::STRING, vm);
@@ -148,18 +155,18 @@ TEST_CASE("variable declared and cast value to type")
 	{
 		auto floatToInt = R"(intValue : int = 2.0;)";
 		auto [res, vm] = Compile(floatToInt);
-		auto isPass = CheckVariable<int>("intValue",2, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("intValue", 2, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("cast int to float ")
 	{
 		auto intToFloat = R"(floatValue : float = 2;)";
 		auto [res, vm] = Compile(intToFloat);
-		auto isPass = CheckVariable<float>("floatValue",2.0, ValueType::FLOAT, vm);
+		auto isPass = CheckVariable<float>("floatValue", 2.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 
 	}
-	
+
 
 }
 TEST_CASE("equal operations on variables")
@@ -168,7 +175,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 2;
 					a+=2;)";
-		auto [res,vm]= Compile(a);
+		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<float>("a", 4.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 
@@ -177,7 +184,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a-=2;)";
-		auto [res,vm]= Compile(a);
+		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<float>("a", 98.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -185,7 +192,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a /=2;)";
-		auto [res,vm]= Compile(a);
+		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<float>("a", 50.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -193,7 +200,7 @@ TEST_CASE("equal operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a *=2;)";
-		auto [res,vm]= Compile(a);
+		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<float>("a", 200.0, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -204,16 +211,16 @@ TEST_CASE("unary double operations on variables")
 	{
 		auto a = R"(a: float = 100;
 					a++;)";
-		auto [res,vm]= Compile(a);
+		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<float>("a", 101, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
-	
+
 	SUBCASE("--")
 	{
 		auto a = R"(a: float = 100;
 					a--;)";
-		auto [res,vm]= Compile(a);
+		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<float>("a", 99, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
@@ -236,6 +243,8 @@ TEST_CASE("unary double operations on variables")
 	}
 	*/
 }
+#endif
+
 
 
 TEST_CASE("scope test")
@@ -352,6 +361,7 @@ TEST_CASE("deduction test")
 	}
 
 }
+#if LOOPS
 TEST_CASE("while statement")
 {
 	SUBCASE("basic while")
@@ -577,7 +587,7 @@ TEST_CASE("loops in loops")
 					)";
 		auto [res, vm] = Compile(a);
 		auto sumJPerI = 1 + 2 + 3;
-		auto isPass = CheckVariable<int>("a", (sumJPerI*3+2+4), ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", (sumJPerI * 3 + 2 + 4), ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("whlie loop in while")
@@ -608,6 +618,8 @@ TEST_CASE("loops in loops")
 	}
 
 }
+
+#endif
 
 TEST_CASE("if statTment")
 {
@@ -684,6 +696,7 @@ TEST_CASE("if statTment")
 		CHECK(isPass);
 	}
 }
+#if FUNC
 TEST_CASE("functions")
 {
 	SUBCASE("call getting global resuls")
@@ -723,3 +736,4 @@ TEST_CASE("functions")
 		CHECK(isPass);
 	}
 }
+#endif

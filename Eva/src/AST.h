@@ -52,7 +52,8 @@ struct Expression : public Node
 
 };
 
-;
+
+
 struct Scope : public Node
 {
 	std::vector<std::unique_ptr<Node>> expressions;

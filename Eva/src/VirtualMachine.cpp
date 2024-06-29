@@ -237,6 +237,20 @@ void VirtualMachine::PatchBreak(int prevSizeBreak)
 		m_BreakIndexes.pop();
 	}
 }
+ValueType VirtualMachine::GetVariableType(String* name, int depthOfDeclaration)
+{
+	if (depthOfDeclaration > 0)
+	{
+		Entry* entry = nullptr;
+		entry = currentScopes[depthOfDeclaration-1]->types.Get(name->GetStringView());
+		if (entry->key != nullptr) return entry->value.type;
+		assert(false);
+	}
+	else
+	{
+		return globalVariablesTypes.Get(name->GetStringView())->value.type;
+	}
+}
 ValueType VirtualMachine::Generate(const Node * tree)
 {
 		 if (!tree) return ValueType::NIL;
@@ -469,8 +483,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			auto expressionType = Generate(tree->As<Expression>()->right.get());
 			assert(tree->As<Expression>()->left.get() != nullptr);
 			auto str = exprLeft->value.As<String*>();
-
-			CAST_INT_FLOAT(expressionType, exprLeft->value.type);
+			auto declType = GetVariableType(str, exprLeft->depth);
+			CAST_INT_FLOAT(expressionType, declType);
 
 
 			assert(exprLeft != nullptr);
@@ -484,10 +498,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		else if (tree->type == TokenType::EQUAL)
 		{
 			// declaring a variable
-			auto expressionType = Generate(tree->As<Expression>()->right.get());
 			assert(tree->As<Expression>()->left.get()!= nullptr);
+			auto declType = Generate(tree->As<Expression>()->left.get());
+			auto expressionType = Generate(tree->As<Expression>()->right.get());
 
-			CAST_INT_FLOAT(expressionType, exprLeft->value.type);
+			CAST_INT_FLOAT(expressionType, declType);
 			SetVariable(currentFunc->opCode, exprLeft);
 
 		}
@@ -792,7 +807,9 @@ void VirtualMachine::Execute()
 		mainFunc->opCode.insert(mainFunc->opCode.begin(), (uint8_t)InCode::POP);
 		callFrames[nextToCurrentCallFrame++].function = mainFunc;
 	}
-	callFrames[nextToCurrentCallFrame++].function = globalFunc.get();
+	callFrames[nextToCurrentCallFrame].function = globalFunc.get();
+	callFrames[nextToCurrentCallFrame].stackIndex = -1;
+	nextToCurrentCallFrame++;
 	auto frame = &callFrames[nextToCurrentCallFrame-1];
 	while (true)
 	{
@@ -998,7 +1015,11 @@ void VirtualMachine::Execute()
 			{
 				return;
 			}
-			vmStack.resize(callFrames[prevCallFrameIndex].stackIndex );
+			if (callFrames[nextToCurrentCallFrame - 1].function == globalFunc.get())
+			{
+				vmStack.resize(0);
+			}else
+			vmStack.resize(callFrames[nextToCurrentCallFrame-1].stackIndex);
 			vmStack.push_back(res);
 			nextToCurrentCallFrame--;
 			frame = &callFrames[prevCallFrameIndex];
@@ -1031,7 +1052,7 @@ void VirtualMachine::Execute()
 
 		case InCode::GET_LOCAL_VAR:
 		{
-			auto index = frame->function->opCode[frame->ip++];
+			auto index = frame->function->opCode[frame->ip++] + 1 ;
 			vmStack.push_back(vmStack[frame->stackIndex+index]);
 			break;
 		}
@@ -1070,7 +1091,7 @@ void VirtualMachine::Execute()
 			auto argumentCount = frame->function->opCode[frame->ip++];
 			auto funcIndex = vmStack.size()  - 1 - argumentCount;
 			auto func = vmStack[funcIndex].As<Func*>();
-			auto newIndexFrame = CallFunction(func, argumentCount,funcIndex+1);
+			auto newIndexFrame = CallFunction(func, argumentCount,funcIndex);
 			// update our call frame 
 			frame = &callFrames[newIndexFrame];
 			break;
@@ -1098,6 +1119,7 @@ size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t base
 void VirtualMachine::GenerateBytecode(const Node const* node)
 {
 	currentFunc = globalFunc.get();
+
 	try
 	{
 		Generate(node);

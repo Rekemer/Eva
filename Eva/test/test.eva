@@ -13,17 +13,29 @@
 //	Print a;
 //}
 
-fun mult (a : int, b: int) : int
-{
-	return a*b;
-}
-fun foo( a: int, b : int ) : int 
-{ 
-	return mult(a,b) + mult(a,b);
-}
-a := 0;
-fun main() : int
-{
-	a = foo(2,2);
-	return 0;
-}
+//fun mult (a : int, b: int) : int
+//{
+//	return a*b;
+//}
+//fun foo( a: int, b : int ) : int 
+//{ 
+//	return mult(a,b)+mult(a,b);
+//}
+a: int = 3;
+		{
+			b : int = 15;
+			b+=2;
+			b-=2;
+			b/=5;
+			b*=4.0;
+			a = b;
+		}
+//fun main() : int
+//{
+//   a = 2.0;
+//Print a;
+////	a = foo(2,2);
+////	Print a;
+//	return 0;
+//}
+
