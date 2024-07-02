@@ -8,10 +8,6 @@
 //	return fib(n - 2) + fib(n - 1);
 //}
 
-//{
-//	a:=2;
-//	Print a;
-//}
 
 //fun mult (a : int, b: int) : int
 //{
@@ -21,21 +17,15 @@
 //{ 
 //	return mult(a,b)+mult(a,b);
 //}
-a: int = 3;
-		{
-			b : int = 15;
-			b+=2;
-			b-=2;
-			b/=5;
-			b*=4.0;
-			a = b;
-		}
-//fun main() : int
-//{
-//   a = 2.0;
-//Print a;
-////	a = foo(2,2);
-////	Print a;
-//	return 0;
-//}
+		
+fun num() : int
+{
+   return 2;
+}
+fun main() : int
+{
+	a := num;
+	Print a;
+	return 0;
+}
 

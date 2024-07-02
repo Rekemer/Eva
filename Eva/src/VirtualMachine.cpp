@@ -256,7 +256,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 if (!tree) return ValueType::NIL;
 		 auto expr = static_cast<const Expression*>(tree);
 		 auto exprLeft = static_cast<const Expression*>(tree->As<Expression>()->left.get());
-		 if (tree->type == TokenType::FUN)
+
+
+		 switch (tree->type)
+		 {
+		 case TokenType::FUN:
 		 {
 			 auto func = static_cast<const FunctionNode*>(tree);
 			 functionNames.push_back(func->name);
@@ -284,19 +288,19 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				 return ValueType::NIL;
 			 }
 			 else return type;
+			 break;
 			 //ClearScope(currentScopes,m_StackPtr, currentFunc->opCode);
 		 }
-		 else if (tree->type == TokenType::RETURN)
+		 case TokenType::RETURN:
 		 {
-
 			 auto value = Generate(exprLeft);
 			 currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
-
+			 break;
 		 }
-		 else if (tree->type == TokenType::LEFT_PAREN)
+		 case TokenType::LEFT_PAREN:
 		 {
 			 // invoke function
-			 
+
 			 auto call = static_cast<const Call*>(tree);
 			 currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
 			 currentFunc->constants.emplace_back(const_cast<String*>(&call->name));
@@ -310,405 +314,409 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 auto type = globalVariablesTypes.Get((const_cast<String*>(&call->name)->GetStringView()))->value.type;
 			 if (type == ValueType::NIL)
 			 {
-				currentFunc->opCode.push_back((uint8_t)InCode::POP);
+				 currentFunc->opCode.push_back((uint8_t)InCode::POP);
 			 }
+			 break;
 		 }
-		 else if (tree->type == TokenType::BLOCK)
+		 case TokenType::BLOCK:
 		 {
-			auto block = static_cast<const Scope*>(tree);
-			// empty block
-			if (block->expressions.size() == 0)
-			{
-				return{};
-			}
-			currentScopes.push_back(block);
-			for (auto& expression : block->expressions)
-			{
-				Generate(expression.get());
-			}
-			// once we finish block, we must clear the stack
-			ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
-
+			 auto block = static_cast<const Scope*>(tree);
+			 // empty block
+			 if (block->expressions.size() == 0)
+			 {
+				 return{};
+			 }
+			 currentScopes.push_back(block);
+			 for (auto& expression : block->expressions)
+			 {
+				 Generate(expression.get());
+			 }
+			 // once we finish block, we must clear the stack
+			 ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
+			 break;
 		 }
-		else if (tree->type == TokenType::PLUS)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT_FLOAT(right, expr->value.type);
+		 case TokenType::PLUS:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
 
-			DETERMINE_OP_TYPE_RET(expr->value.type ,ADD);
+			 DETERMINE_OP_TYPE_RET(expr->value.type, ADD);
+			 break;
+		 }
+		 case TokenType::PLUS_PLUS:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 DETERMINE_OP_TYPE(left, INCREMENT);
+			 SetVariable(currentFunc->opCode, exprLeft);
+			 return expr->value.type;
+			 break;
+		 }
+		 case TokenType::MINUS_MINUS:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 DETERMINE_OP_TYPE(left, DECREMENT);
+			 SetVariable(currentFunc->opCode, exprLeft);
+			 return expr->value.type;
+			 break;
+		 }
+		 case TokenType::STAR:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
+			 DETERMINE_OP_TYPE_RET(expr->value.type, MULTIPLY);
+			 break;
+		 }
+		 case TokenType::MINUS:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 if (tree->As<Expression>()->right.get())
+			 {
+				 CAST_INT_FLOAT(left, expr->value.type);
+				 auto right = Generate(tree->As<Expression>()->right.get());
+				 CAST_INT_FLOAT(right, expr->value.type);
+				 DETERMINE_OP_TYPE_RET(expr->value.type, SUBSTRACT);
+			 }
+			 else
+			 {
+				 currentFunc->opCode.push_back((uint8_t)InCode::NEGATE);
+				 return left;
+			 }
+			 break;
+		 
+		 }
+		 case TokenType::SLASH:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
+			 DETERMINE_OP_TYPE_RET(expr->value.type, DIVIDE);
+			 break;
+		 }
+		 case TokenType::PERCENT:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT(left);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT(right);
+			 currentFunc->opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT);
+			 return ValueType::INT;
+			 break;
+		 }
+		 case TokenType::INT_LITERAL:
+		 {
+			 currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			 currentFunc->constants.push_back(ValueContainer{ expr->value });
+			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+			 return ValueType::INT;
+		 }
+		 case TokenType::FLOAT_LITERAL:
+		 {
+			 currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			 currentFunc->constants.push_back(ValueContainer{ expr->value });
+			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+			 return ValueType::FLOAT;
+		 }
+		 case TokenType::STRING_LITERAL:
+		 {
+			 currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			 // might copy because vector can reallocate
+			 currentFunc->constants.emplace_back(expr->value);
+			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+			 return ValueType::STRING;
+		 }
+		 case TokenType::IDENTIFIER:
+		 {
+			 return GetVariable(currentFunc->opCode, expr);
+		 }
+		 case TokenType::TRUE:
+		 {
+			 currentFunc->opCode.push_back((uint8_t)InCode::TRUE);
+			 return ValueType::BOOL;
+			 }
+		 case TokenType::FALSE:
+		 {
+			 currentFunc->opCode.push_back((uint8_t)InCode::FALSE);
+			 return ValueType::BOOL;
+		 }
+		 case TokenType::GREATER:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
+			 DETERMINE_BOOL(left, right, GREATER);
+			 return ValueType::BOOL;
+			 }
+		 case TokenType::GREATER_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
+			 DETERMINE_BOOL(left, right, LESS);
+			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 return ValueType::BOOL;
 		}
-		else if (tree->type == TokenType::PLUS_PLUS)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-
-
-
-			DETERMINE_OP_TYPE(left, INCREMENT);
-
-			SetVariable(currentFunc->opCode, exprLeft);
-			return expr->value.type;
-
+		 case TokenType::EQUAL_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
+			 return ValueType::BOOL;
 		}
-		else if (tree->type == TokenType::MINUS_MINUS)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-
-
-
-			DETERMINE_OP_TYPE(left, DECREMENT);
-
-
-			SetVariable(currentFunc->opCode, exprLeft);
-			return expr->value.type;
-
+		 case TokenType::BANG_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
+			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 return ValueType::BOOL;
 		}
-		else if (tree->type == TokenType::STAR)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT_FLOAT(right, expr->value.type);
-			DETERMINE_OP_TYPE_RET(expr->value.type, MULTIPLY);
-		}
-		else if (tree->type == TokenType::MINUS)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
+		 case TokenType::DECLARE:
+		 {
+			 // declaring a variable
+			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 assert(tree->As<Expression>()->left.get() != nullptr);
+			 auto str = exprLeft->value.As<String*>();
+			 auto declType = GetVariableType(str, exprLeft->depth);
+			 CAST_INT_FLOAT(expressionType, declType);
 
-			if (tree->As<Expression>()->right.get())
-			{	
-				CAST_INT_FLOAT(left, expr->value.type);
-				auto right = Generate(tree->As<Expression>()->right.get());
-				CAST_INT_FLOAT(right, expr->value.type);
-				DETERMINE_OP_TYPE_RET(expr->value.type, SUBSTRACT);
+
+			 assert(exprLeft != nullptr);
+			 if (exprLeft->depth == 0)
+			 {
+				 currentFunc->constants.emplace_back(exprLeft->value);
+				 currentFunc->opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
+				 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+			 }
+			 break;
 			}
-			else
-			{
-				currentFunc->opCode.push_back((uint8_t)InCode::NEGATE);
-				return left;
-			}
+		 case TokenType::EQUAL:
+		 {
+			 // declaring a variable
+			 assert(tree->As<Expression>()->left.get() != nullptr);
+			 auto declType = Generate(tree->As<Expression>()->left.get());
+			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
-		}
-		else if (tree->type == TokenType::SLASH)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT_FLOAT(right, expr->value.type);
-			DETERMINE_OP_TYPE_RET(expr->value.type ,DIVIDE);
-		}
-		else if (tree->type == TokenType::PERCENT)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT(left);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT(right);
-			currentFunc->opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT);
-			return ValueType::INT;
-		}
-		else if (tree->type == TokenType::INT_LITERAL)
-		{
-			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			currentFunc->constants.push_back(ValueContainer{ expr->value });
-			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			return ValueType::INT;
-		}
-		else if (tree->type == TokenType::FLOAT_LITERAL)
-		{
-			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			currentFunc->constants.push_back(ValueContainer{ expr->value });
-			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			return ValueType::FLOAT;
-		}
-		else if (tree->type == TokenType::STRING_LITERAL)
-		{
-			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			// might copy because vector can reallocate
-			currentFunc->constants.emplace_back(expr->value );
-			currentFunc->opCode.push_back(currentFunc->constants.size() - 1); 
-			return ValueType::STRING;
-		}
-		else if (tree->type == TokenType::IDENTIFIER)
-		{
-			return GetVariable(currentFunc->opCode, expr);
-		}
-		else if (tree->type == TokenType::TRUE)
-		{
-			currentFunc->opCode.push_back((uint8_t)InCode::TRUE);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::FALSE)
-		{
-			currentFunc->opCode.push_back((uint8_t)InCode::FALSE);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::GREATER)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT_FLOAT(right, expr->value.type);
-			DETERMINE_BOOL(left,right, GREATER);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::GREATER_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT_FLOAT(right, expr->value.type);
-			DETERMINE_BOOL(left, right, LESS);
-			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::EQUAL_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			auto right = Generate(tree->As<Expression>()->right.get());
-			currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::BANG_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			auto right = Generate(tree->As<Expression>()->right.get());
-			currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
-			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::DECLARE)
-		{
-			// declaring a variable
-			auto expressionType = Generate(tree->As<Expression>()->right.get());
-			assert(tree->As<Expression>()->left.get() != nullptr);
-			auto str = exprLeft->value.As<String*>();
-			auto declType = GetVariableType(str, exprLeft->depth);
-			CAST_INT_FLOAT(expressionType, declType);
+			 CAST_INT_FLOAT(expressionType, declType);
+			 SetVariable(currentFunc->opCode, exprLeft);
+			 break;
+			 }
+		 case TokenType::PLUS_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+
+			 CAST_INT_FLOAT(expressionType, left);
 
 
-			assert(exprLeft != nullptr);
-			if (exprLeft->depth == 0)
-			{
-				currentFunc->constants.emplace_back(exprLeft->value);
-				currentFunc->opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-				currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			}
-		}
-		else if (tree->type == TokenType::EQUAL)
-		{
-			// declaring a variable
-			assert(tree->As<Expression>()->left.get()!= nullptr);
-			auto declType = Generate(tree->As<Expression>()->left.get());
-			auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 DETERMINE_OP_TYPE(left, ADD);
 
-			CAST_INT_FLOAT(expressionType, declType);
-			SetVariable(currentFunc->opCode, exprLeft);
-
-		}
-		else if (tree->type == TokenType::PLUS_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			auto expressionType = Generate(tree->As<Expression>()->right.get());
-
-			CAST_INT_FLOAT(expressionType, left);
+			 SetVariable(currentFunc->opCode, exprLeft);
+			 return exprLeft->value.type;
+			 }
+		 case TokenType::STAR_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
-			DETERMINE_OP_TYPE(left, ADD);
-
-			SetVariable(currentFunc->opCode, exprLeft);
-			return exprLeft->value.type;
-		}
-		else if (tree->type == TokenType::STAR_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(expressionType, left);
 
 
-			CAST_INT_FLOAT(expressionType, left);
+			 DETERMINE_OP_TYPE(left, MULTIPLY);
+
+			 SetVariable(currentFunc->opCode, exprLeft);
+
+			 return exprLeft->value.type;
+			 }
+		 case TokenType::SLASH_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
-			DETERMINE_OP_TYPE(left, MULTIPLY);
-
-			SetVariable(currentFunc->opCode, exprLeft);
-
-			return exprLeft->value.type;
-			}
-		else if (tree->type == TokenType::SLASH_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(expressionType, left);
 
 
-			CAST_INT_FLOAT(expressionType, left);
+			 DETERMINE_OP_TYPE(left, DIVIDE);
 
 
-			DETERMINE_OP_TYPE(left, DIVIDE);
+			 SetVariable(currentFunc->opCode, exprLeft);
+			 return exprLeft->value.type;
+			 }
+		 case TokenType::MINUS_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
-			SetVariable(currentFunc->opCode, exprLeft);
-			return exprLeft->value.type;
-		}
-		else if (tree->type == TokenType::MINUS_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(expressionType, left);
 
 
-			CAST_INT_FLOAT(expressionType, left);
+			 DETERMINE_OP_TYPE(left, SUBSTRACT);
 
 
-			DETERMINE_OP_TYPE(left, SUBSTRACT);
+			 SetVariable(currentFunc->opCode, exprLeft);
+			 return exprLeft->value.type;
+			 }
+		 case TokenType::LESS_EQUAL:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
+			 DETERMINE_BOOL(left, right, GREATER);
+			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 return ValueType::BOOL;
+			 }
+		 case TokenType::LESS:
+		 {
+			 auto left = Generate(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
+			 auto right = Generate(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
+			 DETERMINE_BOOL(left, right, LESS);
+			 return ValueType::BOOL;
+			 }
+		 case TokenType::AND:
+		 {
+			 Generate(tree->As<Expression>()->left.get());
+			 // check if it is false then we just ignore second operand
+			 // and leave the value on stack
+			 auto indexFalse = JumpIfFalse(currentFunc->opCode);
+			 // remove the value because we didn't jump
+			 // the whole and is dependent on second operand
+			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 Generate(tree->As<Expression>()->right.get());
+			 currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+			 return ValueType::BOOL;
+			 }
+		 case TokenType::OR:
+		 {
+			 Generate(tree->As<Expression>()->left.get());
+			 auto indexFalse = JumpIfFalse(currentFunc->opCode);
+			 // if it is true we get to jump
+			 auto jump = Jump(currentFunc->opCode);
+
+			 currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+
+			 Generate(tree->As<Expression>()->right.get());
+			 // the first is true- just skip second operand
+			 currentFunc->opCode.push_back((uint8_t)InCode::OR);
+			 currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, jump) + 1;
+			 return ValueType::BOOL;
+			 }
+
+		 case TokenType::BANG:
+		 {
+			 Generate(tree->As<Expression>()->left.get());
+			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 return ValueType::BOOL;
+			 }
+		 case TokenType::PRINT:
+		 {
+			 Generate(tree->As<Expression>()->left.get());
+			 currentFunc->opCode.push_back((uint8_t)InCode::PRINT);
+			 return ValueType::NIL;
+			 }
+		 case TokenType::IF:
+		 {
+			 Generate(tree->As<Expression>()->left.get());
+			 auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+
+			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 Generate(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
+			 auto indexJump = Jump(currentFunc->opCode);
+			 currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
+			 // else branch
+			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 Generate(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
+			 // once we execute then branch we need to skip else bytecode
+			 // without -1 because we need index of next bytecode, not previous one
+			 currentFunc->opCode[indexJump] = currentFunc->opCode.size() - indexJump;
+
+			 break;
+			 }
+		 case TokenType::WHILE:
+		 {
+			 auto startIndex = currentFunc->opCode.size();
+			 auto condition = tree->As<Expression>()->left.get();
+			 auto indexJumpFalse = GenerateLoopCondition(condition);
+
+			 BeginContinue(startIndex);
+			 auto prevSizeBreak = BeginBreak();
+
+			 auto body = tree->As<Expression>()->right.get();
+			 Generate(body);
+			 auto jump = JumpBack(currentFunc->opCode);
+			 // jumping backwards
+			 currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
+
+			 EndContinue();
+			 PatchBreak(prevSizeBreak);
+
+			 // clean the check condition 
+			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
+			 break;
+			 }
+		 case TokenType::FOR:
+		 {
+			 auto forNode = tree->As<For>();
+			 currentScopes.push_back(&forNode->initScope);
+			 Generate(forNode->init.get());
+			 auto firstIteration = Jump(currentFunc->opCode);
+			 auto startLoopIndex = currentFunc->opCode.size();
+
+			 BeginContinue(startLoopIndex);
+			 auto prevSizeBreak = BeginBreak();
+
+			 Generate(forNode->action.get());
+			 auto indexJumpFalse = GenerateLoopCondition(forNode->condition.get());
+			 currentFunc->opCode[firstIteration] = CalculateJumpIndex(currentFunc->opCode, firstIteration) + 1;
+			 Generate(forNode->body.get());
+			 EndContinue();
+
+			 auto jump = JumpBack(currentFunc->opCode);
+			 currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startLoopIndex);
+
+			 PatchBreak(prevSizeBreak);
 
 
-			SetVariable(currentFunc->opCode, exprLeft);
-			return exprLeft->value.type;
-			}
-		else if (tree->type == TokenType::LESS_EQUAL)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT_FLOAT(right, expr->value.type);
-			DETERMINE_BOOL(left, right, GREATER);
-			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::LESS)
-		{
-			auto left = Generate(tree->As<Expression>()->left.get());
-			CAST_INT_FLOAT(left, expr->value.type);
-			auto right = Generate(tree->As<Expression>()->right.get());
-			CAST_INT_FLOAT(right, expr->value.type);
-			DETERMINE_BOOL(left, right, LESS);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::AND)
-		{
-			Generate(tree->As<Expression>()->left.get());
-			// check if it is false then we just ignore second operand
-			// and leave the value on stack
-			auto indexFalse = JumpIfFalse(currentFunc->opCode);
-			// remove the value because we didn't jump
-			// the whole and is dependent on second operand
-			currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right.get());
-			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::OR)
-		{
-			Generate(tree->As<Expression>()->left.get());
-			auto indexFalse = JumpIfFalse(currentFunc->opCode);
-			// if it is true we get to jump
-			auto jump = Jump(currentFunc->opCode);
-			
-			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse)+1;
+			 // clean the check condition once we go finish the loop
+			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
+			 // because for loop has declared iterator variable
+			 ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
+			 break;
+		 }
+		 case TokenType::CONTINUE:
+		 {
+			 int index = JumpBack(currentFunc->opCode);
+			 assert(m_StartLoopIndexes.size() > 0);
+			 currentFunc->opCode[index] = CalculateJumpIndex(currentFunc->opCode, m_StartLoopIndexes.top());
+			 break;
+		 }
+		 case TokenType::BREAK:
+		 {
+			 m_BreakIndexes.push(Jump(currentFunc->opCode));
+			 break;
 
-			Generate(tree->As<Expression>()->right.get());
-			// the first is true- just skip second operand
-			currentFunc->opCode.push_back((uint8_t)InCode::OR);
-			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, jump)+1;
-			return ValueType::BOOL;
-		}
+		  }
+		 default:
+			 // should say what type it is
+			 std::cout << "ERROR Code generation: weird type " << tokenToString(tree->type) << std::endl;
+			 assert(false);
+			 break;
+		 }
+		 
 		
-		else if (tree->type == TokenType::BANG)
-		{
-			Generate(tree->As<Expression>()->left.get());
-			currentFunc->opCode.push_back((uint8_t)InCode::NOT);
-			return ValueType::BOOL;
-		}
-		else if (tree->type == TokenType::PRINT)
-		{
-			Generate(tree->As<Expression>()->left.get());
-			currentFunc->opCode.push_back((uint8_t)InCode::PRINT);
-			return ValueType::NIL;
-		}
-		else if (tree->type == TokenType::IF)
-		{
-			Generate(tree->As<Expression>()->left.get());
-			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
-
-			currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
-			auto indexJump = Jump(currentFunc->opCode);
-			currentFunc->opCode[indexJumpFalse] = (indexJump+1) - indexJumpFalse;
-			// else branch
-			currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			Generate(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
-			// once we execute then branch we need to skip else bytecode
-			// without -1 because we need index of next bytecode, not previous one
-			currentFunc->opCode[indexJump] = currentFunc->opCode.size()   - indexJump;
-
-		}
-		else if (tree->type == TokenType::WHILE)
-		{
-			auto startIndex = currentFunc->opCode.size();
-			auto condition = tree->As<Expression>()->left.get();
-			auto indexJumpFalse = GenerateLoopCondition(condition);
-			
-			BeginContinue(startIndex);
-			auto prevSizeBreak = BeginBreak();
-			
-			auto body = tree->As<Expression>()->right.get();
-			Generate(body);
-			auto jump = JumpBack(currentFunc->opCode);
-			// jumping backwards
-			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
-			
-			EndContinue();
-			PatchBreak(prevSizeBreak);
-			
-			// clean the check condition 
-			currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
-
-		}
-		else if (tree->type== TokenType::FOR)
-		{
-			auto forNode = tree->As<For>();
-			currentScopes.push_back(&forNode->initScope);
-			Generate(forNode->init.get());
-			auto firstIteration = Jump(currentFunc->opCode);
-			auto startLoopIndex = currentFunc->opCode.size();
-
-			BeginContinue(startLoopIndex);
-			auto prevSizeBreak = BeginBreak();
-
-			Generate(forNode->action.get());
-			auto indexJumpFalse = GenerateLoopCondition(forNode->condition.get());
-			currentFunc->opCode[firstIteration] = CalculateJumpIndex(currentFunc->opCode, firstIteration) + 1;
-			Generate(forNode->body.get());
-			EndContinue();
-			
-			auto jump = JumpBack(currentFunc->opCode);
-			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startLoopIndex);
-			
-			PatchBreak(prevSizeBreak);
-			
-
-			// clean the check condition once we go finish the loop
-			currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
-			// because for loop has declared iterator variable
-			ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
-		}
-		else if (tree->type == TokenType::CONTINUE)
-		{
-			int index = JumpBack(currentFunc->opCode);
-			assert(m_StartLoopIndexes.size() > 0);
-			currentFunc->opCode[index] = CalculateJumpIndex(currentFunc->opCode, m_StartLoopIndexes.top());
-		}
-		else if (tree->type == TokenType::BREAK)
-		{
-			m_BreakIndexes.push(Jump(currentFunc->opCode));
-		}
-		else
-		{
-			// should say what type it is
-			std::cout << "ERROR Code generation: weird type " << tokenToString(tree->type) << std::endl;
-			assert(false);
-		}
 
 }
 

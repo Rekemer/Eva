@@ -150,7 +150,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	{
 		node->value = std::move(currentToken->value);
 	}
-	// only creates node, prior to that in equal declared
+	// only creates node, it must be already declared
 	else if (currentToken->type == TokenType::IDENTIFIER)
 	{	
 		auto& str = *currentToken->value.As<String*>();

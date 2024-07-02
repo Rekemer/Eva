@@ -722,7 +722,7 @@ TEST_CASE("functions")
 					}
 					fun foo( a: int, b : int ) : int 
 					{ 
-						return mult(a,b) + 2;
+						return mult(a,b) + mult(a,b);
 					}
 					a := 0;
 					fun main() : int
@@ -732,7 +732,7 @@ TEST_CASE("functions")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<int>("a", 6, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("a", 8, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 }
