@@ -491,12 +491,32 @@ void Print(const Expression* tree, int level) {
 	 bool isAssignment = (currentToken+1)->type == TokenType::EQUAL;
 	 auto varToken = currentToken;
 	 Token* eqToken;
-	 if (isVariable && isDeclaration)
+	 
+	 auto isDeclarared = [&](auto name)
 	 {
+		auto isDeclared = vm->GetGlobals().IsExist(name);
+		 if (isDeclared)
+		 {
+			 std::stringstream ss;
+			 ss << "The name " << name.data() << " is already declared ";
+			 Error(currentToken, ss);
+			 return true;
+		 }
+		 return false;
+	 };
+	 
+	 if (isVariable && isDeclaration)
+	 {	
+		 auto name = currentToken->value.As<String*>()->GetStringView();
+		 auto check = isDeclarared(name);
+		 if (check) return {};
 		 return DeclareVariable(currentToken);
 	 }
 	 else if (isFunc)
-	 {
+	 {	
+		 auto name = (currentToken+1)->value.As<String*>()->GetStringView();
+		 auto check = isDeclarared(name);
+		 if (check) return {};
 		 return DeclareFunction(currentToken);
 	 }
 	 return Assignment(currentToken);
@@ -581,10 +601,26 @@ void Print(const Expression* tree, int level) {
 	 expr->right = std::move(then);
 	 return ifnode;
  }
-
- void AST::Error(const Iterator& currentToken, const char* msg)
+ void AST::TravelSemicolon(Iterator& currentToken)
  {
+	 while (currentToken->type != TokenType::SEMICOLON)
+	 {
+		 currentToken++;
+	 }
+	 currentToken++;
+ }
+ void AST::Error(Iterator& currentToken, std::stringstream& ss)
+ {
+	 m_Panic = true;
+	 std::cout << "ERROR[" << (currentToken)->line << "]:" << ss.str() << std::endl;
+	 TravelSemicolon(currentToken);
+ }
+
+ void AST::Error(Iterator& currentToken, const char* msg)
+ {
+	 m_Panic = true;
 	 std::cout << "ERROR[" << (currentToken)->line << "]:" << msg << std::endl;
+	 TravelSemicolon(currentToken);
  }
  void AST::Error(TokenType expectedType, Iterator& currentToken, const char* msg)
  {
@@ -830,7 +866,9 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		{
 			auto type = TypeCheck(arg.get(), vm);
 		}
-		auto entry = vm.GetGlobalsType().Get(call->name.GetStringView());
+		auto name = call->name.GetStringView();
+		auto entry = vm.GetGlobalsType().Get(name);
+		std::stringstream ss;
 		assert(entry->key != nullptr);
 		return TypeToLiteral(entry->value.type);
 	}

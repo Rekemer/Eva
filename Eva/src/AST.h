@@ -5,6 +5,7 @@
 #include  <memory>
 #include  <stack>
 #include  <vector>
+#include  <sstream>	
 
 
 
@@ -123,8 +124,11 @@ private:
 			currentToken++;
 		}
 	}
+
+	void TravelSemicolon(Iterator& currentToken);
 	void Error(TokenType expectedType, Iterator& currentToken, const char* msg);
-	void Error(const Iterator& currentToken, const char* msg);
+	void Error( Iterator& currentToken, const char* msg);
+	void Error( Iterator& currentToken, std::stringstream& ss);
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Iterator& currentToken);
 	std::unique_ptr<Node> UnaryOpPostfix(Iterator& currentToken);
