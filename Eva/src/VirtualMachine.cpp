@@ -242,7 +242,7 @@ ValueType VirtualMachine::GetVariableType(String* name, int depthOfDeclaration)
 	if (depthOfDeclaration > 0)
 	{
 		Entry* entry = nullptr;
-		entry = currentScopes[depthOfDeclaration-1]->types.Get(name->GetStringView());
+		entry = currentScopes[depthOfDeclaration - 1]->types.Get(name->GetStringView());
 		if (entry->key != nullptr) return entry->value.type;
 		assert(false);
 	}
@@ -281,6 +281,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 Generate(func->body.get());
 			 auto type = globalVariablesTypes.Get(func->name.GetStringView())->value.type;
 			 ClearLocal();
+			 currentScopes.pop_back();
 			 if (type == ValueType::NIL)
 			 {
 				 currentFunc->opCode.push_back((uint8_t)InCode::NIL);
@@ -1060,7 +1061,7 @@ void VirtualMachine::Execute()
 
 		case InCode::GET_LOCAL_VAR:
 		{
-			auto index = frame->function->opCode[frame->ip++] + 1 ;
+			auto index = frame->function->opCode[frame->ip++] + 1;
 			vmStack.push_back(vmStack[frame->stackIndex+index]);
 			break;
 		}

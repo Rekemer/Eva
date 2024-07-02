@@ -826,6 +826,10 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::LEFT_PAREN)
 	{
 		auto call = static_cast<Call*>(node);
+		for (auto& arg : call->args)
+		{
+			auto type = TypeCheck(arg.get(), vm);
+		}
 		auto entry = vm.GetGlobalsType().Get(call->name.GetStringView());
 		assert(entry->key != nullptr);
 		return TypeToLiteral(entry->value.type);

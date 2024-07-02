@@ -735,5 +735,47 @@ TEST_CASE("functions")
 		auto isPass = CheckVariable<int>("a", 8, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+	SUBCASE("initialize variable via function ")
+	{
+		auto a = R"(
+					fun num() : int
+					{
+					   return 2;
+					}
+					g: int = 0;
+					fun main() : int
+					{
+						a := num();
+						g = a;
+						return 0;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("g", 2, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("fibbonaci")
+	{
+		auto a = R"(
+					fun fib(n : int) : int
+					{
+						if n < 2 
+						{
+							return n;
+						}
+						return fib(n - 2) + fib(n - 1);
+					}
+					g: int = 0;
+					fun main() : int
+					{
+						a := fib(10);
+						g = a;
+						return 0;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("g", 55, ValueType::INT, vm);
+		CHECK(isPass);
+	}
 }
 #endif

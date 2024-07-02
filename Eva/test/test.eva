@@ -1,12 +1,12 @@
 
-//fun fib(n : int) : int
-//{
-//	if n < 2 
-//	{
-//		return n;
-//	}
-//	return fib(n - 2) + fib(n - 1);
-//}
+fun fib(n : int) : int
+{
+	if n < 2 
+	{
+		return n;
+	}
+	return fib(n - 2) + fib(n - 1);
+}
 
 
 //fun mult (a : int, b: int) : int
@@ -17,15 +17,34 @@
 //{ 
 //	return mult(a,b)+mult(a,b);
 //}
-		
-fun num() : int
+	
+
+//a: int = 3;
+//		{
+//			b : int = 15;
+//			b+=2;
+//			{
+//				c : float = -1;
+//				b*= c;
+//				a -=c;
+//			}
+//			a+=b;
+//		}
+	
+fun num(a : int) : int
 {
-   return 2;
+	if a > 6
+	{
+		return a;
+	}
+   return num(a- 1);
 }
+
 fun main() : int
 {
-	a := num;
+	a := fib(10);
 	Print a;
 	return 0;
 }
+
 

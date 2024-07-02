@@ -21,7 +21,7 @@ struct CallFrame
 	// base pointer to stack
 	// which is start of counting
 	// for the function 
-	int stackIndex = 0;
+	int stackIndex = -1;
 };
 class AST;
 struct Node;
