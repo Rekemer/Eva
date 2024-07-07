@@ -160,6 +160,14 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 
 		if ((currentToken + 1)->type == TokenType::LEFT_PAREN)
 		{
+			if (!isGlobal)
+			{
+				std::stringstream ss;
+				ss << "There is no function " << str << " to call";
+				Error(currentToken,ss);
+				return{};
+			}
+
 			// call a function
 			auto call = std::make_unique<Call>();
 			call->name = str;
