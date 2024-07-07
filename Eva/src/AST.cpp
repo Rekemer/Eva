@@ -516,8 +516,6 @@ void Print(const Expression* tree, int level) {
 		{
 			 isLocalDeclared = currentScope->types.IsExist(name);
 		}
-		
-		
 		if ((isLocalDeclared  || (isGlobalDeclared && scopeDepth == 0)))
 		{
 			std::stringstream ss;
@@ -632,10 +630,15 @@ void Print(const Expression* tree, int level) {
 	 }
 	 currentToken++;
  }
- void AST::ErrorTypeCheck(std::stringstream& ss)
+ void AST::ErrorTypeCheck(int line, const char* str)
  {
 	 m_Panic = true;
-	 std::cout << ss.str() << std::endl;
+	 std::cout << "ERROR[" << line << "] " << str << std::endl;
+ }
+ void AST::ErrorTypeCheck(int line, std::stringstream& ss)
+ {
+	 m_Panic = true;
+	 std::cout << "ERROR[" << line << "] " << ss.str() << std::endl;
  }
  void AST::Error(Iterator& currentToken, std::stringstream& ss)
  {
@@ -907,7 +910,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 				std::stringstream ss;
 				ss << "The " << i << " declared argument's type is " << ValueToStr(declType) <<
 					", but the passed type is " << ValueToStr(LiteralToType(type));
-				ErrorTypeCheck(ss);
+				ErrorTypeCheck(call->line,ss);
 				return TokenType::NIL;
 			}
 
@@ -1004,6 +1007,11 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		{
 			expr->value = ValueContainer{ ValueType::INT };
 			return TokenType::INT_LITERAL;
+		}
+		else if (childType1 == TokenType::STRING_LITERAL || childType == TokenType::STRING_LITERAL)
+		{
+			ErrorTypeCheck(expr->line,"Strings cannot participate in binary operations yet ");
+			return TokenType::NIL;
 		}
 		expr->value = ValueContainer{ ValueType::FLOAT };
 		return TokenType::FLOAT_LITERAL;

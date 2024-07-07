@@ -133,7 +133,8 @@ private:
 	void Error( Iterator& currentToken, const char* msg);
 	void Error( Iterator& currentToken, std::stringstream& ss);
 
-	void ErrorTypeCheck(std::stringstream& ss);
+	void ErrorTypeCheck(int line, std::stringstream& ss);
+	void ErrorTypeCheck(int line, const char* str);
 
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Iterator& currentToken);

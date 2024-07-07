@@ -57,7 +57,7 @@ inline ValueType LiteralToType(TokenType literalType)
    //case TokenType::PLUS:
    //	 return ValueType::NIL;
 	default:
-		assert(false);
+		return ValueType::NIL;
 		break;
 	}
 }
