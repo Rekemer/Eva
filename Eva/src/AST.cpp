@@ -928,6 +928,10 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	{
 
 		auto ret = TypeCheck(static_cast<Expression*>(node)->left.get(), vm);
+		if (ret == TokenType::NIL)
+		{
+			ErrorTypeCheck(node->line, "Cannot return NIL value");
+		}
 		return ret;
 	}
 	if (node->type == TokenType::FUN)
@@ -1003,6 +1007,12 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		expr->type == TokenType::STAR_EQUAL ;
 	if(areChildren&& isTermOp)
 	{
+
+		if (childType1 == TokenType::NIL || childType == TokenType::NIL)
+		{
+			ErrorTypeCheck(expr->line,"NIL operand in binary operation");
+			return TokenType::NIL;
+		}
 		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
 		{
 			expr->value = ValueContainer{ ValueType::INT };
@@ -1016,9 +1026,23 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		expr->value = ValueContainer{ ValueType::FLOAT };
 		return TokenType::FLOAT_LITERAL;
 	}
-	else if (childType != TokenType::END && isTermOpEqual)
+	else if (childType1 != TokenType::END && isTermOpEqual)
 	{
-		if (childType == TokenType::INT_LITERAL)
+		auto type = LiteralToType(childType);
+		auto type1 = LiteralToType(childType1);
+		if (!IsCastable(type, type1))
+		{
+			std::stringstream ss;
+			ss << "cannot cast " << ValueToStr(type1) << " to " << ValueToStr(type);
+			ErrorTypeCheck(node->line, ss);
+			return TokenType::NIL;
+		}
+		if (childType1 == TokenType::NIL)
+		{
+			ErrorTypeCheck(expr->line, "cannot use NIL value");
+			return TokenType::NIL;
+		}
+		if (childType1 == TokenType::INT_LITERAL)
 		{
 			expr->value = ValueContainer{ ValueType::INT };
 			return TokenType::INT_LITERAL;
@@ -1033,6 +1057,11 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (expr->type == TokenType::DECLARE)
 	{
 		auto leftChild = expr->left->AsMut<Expression>();
+		if (childType1 == TokenType::NIL)
+		{
+			ErrorTypeCheck(expr->line, "cannot assign NIL value");
+			return TokenType::NIL;
+		}
 		if (childType == TokenType::DEDUCE)
 		{
 			if (expr->depth > 0)

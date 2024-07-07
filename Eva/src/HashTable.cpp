@@ -73,8 +73,11 @@ Entry* HashTable::Get(std::string_view key) const
 Entry* HashTable::FindEntry(Entry* data, std::string_view key, int amountOfData)  const
 {
 	auto hash = HashString(key.data(), key.size());
-	auto index = hash % amountOfData;
-	
+	auto index = hash % (amountOfData );
+	if (key == "main")
+	{
+		int a = 2;
+	}
 	Entry* tombstone = nullptr;
 
 	while (true)

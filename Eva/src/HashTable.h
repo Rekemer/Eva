@@ -25,7 +25,7 @@ inline bool IsTombstone(Entry* entry)
 }
 inline bool IsSet(Entry* entry)
 {
-	return entry->key != nullptr;
+	return entry != nullptr && entry->key != nullptr;
 }
 inline bool IsNotSet(Entry* entry)
 {
@@ -65,7 +65,7 @@ public:
 	template<class... Arg>
 	Entry* Add(std::string_view key, Arg... value)
 	{
-		auto loadFactor = m_EntriesAmount / m_Size;
+		auto loadFactor = static_cast<float>(m_EntriesAmount) / m_Size;
 		// resize array
 		if (loadFactor > TABLE_MAX_LOAD)
 		{
@@ -80,11 +80,11 @@ public:
 			// and tombstones are no longer relevant
 			m_EntriesAmount = 0;
 
-			for (int i = 0; i < m_Size; i++)
+			for (int i = 0; i < m_Size/2; i++)
 			{
-				if (oldData[i].key)
+				if (oldData[i].key != nullptr)
 				{
-					auto retrievedEntry = FindEntry(m_Data, oldData[i].key->GetRaw(), m_Size);
+					auto retrievedEntry = FindEntry(m_Data, oldData[i].key->GetRaw(), m_Size/2);
 					retrievedEntry->key = oldData[i].key;
 					retrievedEntry->value = oldData[i].value;
 					m_EntriesAmount++;

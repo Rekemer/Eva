@@ -41,3 +41,4 @@ invoke a function that is not defined
 
 we generate code when we want to get type of variable?
 
+add support of single argument for

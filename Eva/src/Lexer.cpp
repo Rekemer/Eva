@@ -556,7 +556,7 @@ void Lexer::ParseDeclaration(VirtualMachine& vm)
 				return;
 			}
 		}
-		auto* variableName = vm.AllocateString(startSymbol,size);
+		auto variableName = vm.AllocateString(startSymbol,size);
 		tokens.push_back(CreateToken(TokenType::IDENTIFIER, ValueContainer{ variableName }, currentLine));
 	}
 	startSymbol = currentSymbol;
@@ -584,6 +584,11 @@ bool Lexer::Parse(const char* source, VirtualMachine& vm)
 		EatWhiteSpace();
 		
 		startSymbol = currentSymbol;
+		if (currentSymbol[0] ==  'm')
+		{
+			std::cout << 's';
+		}
+
 		ParseDeclaration(vm);
 		
  		//ParseStatement();
@@ -591,6 +596,7 @@ bool Lexer::Parse(const char* source, VirtualMachine& vm)
 		ParseBool();
 		ParseNumber();
 		ParseOperator();
+	
 		if (panic)
 		{
 			std::cout << "---------------------------------------\n";

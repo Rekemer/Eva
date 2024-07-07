@@ -1,19 +1,28 @@
 
+g:= 2;
 
-
-fun print( a : float, b: float) : int
+fun print( a : float, b: String)
 {
+	Print g;
 	c :int = b + a;
-	Print c;
-	Print b;
 	return c;
 }
+g1 := "HI";
 
+fun lol()
+{
+	Print "lol";
+}
 
+fun a () : int 
+{	
+	return 2;
+}
 fun main() : int
 {
-	a := 5.2;
-	Print print (a,a);
+	Print g1;
+	a := 2.0;
+	print(1,a());
 	return 0;
 }
 
