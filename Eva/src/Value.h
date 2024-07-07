@@ -15,7 +15,7 @@ enum class ValueType
 	BOOL,
 
 	STRING,
-	FUNCTION,
+	FUNCTION ,
 	
 	DEDUCE,
 	NIL

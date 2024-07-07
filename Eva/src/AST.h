@@ -89,6 +89,9 @@ struct Call : public Node
 	String name;
 	std::vector<std::unique_ptr<Node>> args;
 };
+
+
+
 // Token*  const currentToken = can change the contents but not the pointer
 //const Token * currentToken = can change a pointer but not the contents
 using Iterator = std::vector<Token>::iterator;
@@ -129,6 +132,9 @@ private:
 	void Error(TokenType expectedType, Iterator& currentToken, const char* msg);
 	void Error( Iterator& currentToken, const char* msg);
 	void Error( Iterator& currentToken, std::stringstream& ss);
+
+	void ErrorTypeCheck(std::stringstream& ss);
+
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Iterator& currentToken);
 	std::unique_ptr<Node> UnaryOpPostfix(Iterator& currentToken);
@@ -175,7 +181,7 @@ private:
 	// once block ends
 	std::stack<int> scopeDeclarations;
 	// to populate types of local variables
-	Scope* currentScope;
+	Scope* currentScope = nullptr;
 	std::vector<Scope*> currentScopes;
 
 };

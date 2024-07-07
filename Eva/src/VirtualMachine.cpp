@@ -731,7 +731,10 @@ String* VirtualMachine::AllocateString(const char* ptr, size_t size)
 	auto* entry = internalStrings.Add(std::string_view{ptr,size}, ValueContainer{});
 	return (entry->key);
 }
-
+std::string_view VirtualMachine::LastLocal()
+{
+	return locals[m_StackPtr - 1].name.GetStringView();
+}
 void VirtualMachine::AddLocal(String& name, int currentScope)
 {
 	auto endIterator = locals.begin() + m_StackPtr;

@@ -45,6 +45,7 @@ public:
 	String* AllocateString(const char* ptr, size_t size);
 
 	void AddLocal(String& name, int currentScope);
+	std::string_view LastLocal();
 	// checks if  exists in imitation of runtime stack and returns index
 	std::tuple<bool, int> IsLocalExist(String& name, size_t scope);
 	void ClearLocal();

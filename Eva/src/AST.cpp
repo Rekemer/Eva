@@ -390,7 +390,8 @@ void Print(const Expression* tree, int level) {
 	 auto function = std::make_unique<FunctionNode>();
 	 auto& globalVariables = vm->GetGlobals();
 	 auto& globalTypes = vm->GetGlobalsType();
-	 globalVariables.Add(name.GetStringView(), LiteralToType(TokenType::FUN));
+	 auto funcValue = globalVariables.Add(name.GetStringView(), LiteralToType(TokenType::FUN))
+		 ->value.As<Func*>();
 	 function->name = std::move(name);
 	 function->type = TokenType::FUN;
 	 currentScope = &function->paramScope;
@@ -398,6 +399,11 @@ void Print(const Expression* tree, int level) {
 	 while (currentToken->type != TokenType::RIGHT_PAREN)
 	 {
 		 auto arg = Declaration(currentToken);
+		 auto name = vm->LastLocal();
+		 auto declaredType = currentScope->types.Get(name)->value.type;
+		 funcValue->argTypes.push_back(declaredType);
+		 //auto type = currentScope->
+
 		 function->arguments.push_back(std::move(arg));
 		 if (currentToken->type != TokenType::RIGHT_PAREN)
 		 {
@@ -407,6 +413,7 @@ void Print(const Expression* tree, int level) {
 	 Error(TokenType::RIGHT_PAREN,currentToken,"Function argument list must end with )");
 	 if (currentToken->type != TokenType::COLON)
 	 {
+		// void function
 		globalTypes.Add(function->name.GetStringView(), ValueType::NIL);
 	 }
 	 else
@@ -502,14 +509,22 @@ void Print(const Expression* tree, int level) {
 	 
 	 auto isDeclarared = [&](auto name)
 	 {
-		auto isDeclared = vm->GetGlobals().IsExist(name);
-		 if (isDeclared)
-		 {
-			 std::stringstream ss;
-			 ss << "The name " << name.data() << " is already declared ";
-			 Error(currentToken, ss);
-			 return true;
-		 }
+		auto isGlobalDeclared = vm->GetGlobals().IsExist(name);
+		
+		bool isLocalDeclared = false;
+		if (currentScope != nullptr)
+		{
+			 isLocalDeclared = currentScope->types.IsExist(name);
+		}
+		
+		
+		if ((isLocalDeclared  || (isGlobalDeclared && scopeDepth == 0)))
+		{
+			std::stringstream ss;
+			ss << "The name " << name.data() << " is already declared ";
+			Error(currentToken, ss);
+			return true;
+		}
 		 return false;
 	 };
 	 
@@ -616,6 +631,11 @@ void Print(const Expression* tree, int level) {
 		 currentToken++;
 	 }
 	 currentToken++;
+ }
+ void AST::ErrorTypeCheck(std::stringstream& ss)
+ {
+	 m_Panic = true;
+	 std::cout << ss.str() << std::endl;
  }
  void AST::Error(Iterator& currentToken, std::stringstream& ss)
  {
@@ -870,9 +890,30 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::LEFT_PAREN)
 	{
 		auto call = static_cast<Call*>(node);
-		for (auto& arg : call->args)
+
+		auto& globals = vm.GetGlobals();
+		auto funcValue = globals.Get(call->name.GetStringView())
+			->value.As<Func*>();
+
+		for ( auto i = 0; i < call->args.size(); i++)
 		{
+			auto& arg = call->args[i];
 			auto type = TypeCheck(arg.get(), vm);
+			auto declType = funcValue->argTypes[i];
+			// check declared type and real passed type
+			auto sameType =  declType == LiteralToType(type);
+			if (!sameType)
+			{
+				std::stringstream ss;
+				ss << "The " << i << " declared argument's type is " << ValueToStr(declType) <<
+					", but the passed type is " << ValueToStr(LiteralToType(type));
+				ErrorTypeCheck(ss);
+				return TokenType::NIL;
+			}
+
+			// we need to compare type of arguments 
+			// with the the type of parameters
+			
 		}
 		auto name = call->name.GetStringView();
 		auto entry = vm.GetGlobalsType().Get(name);
@@ -908,7 +949,6 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	{
 		auto block = static_cast<Scope*>(node);
 		currentScopes.push_back(block);
-		auto entry = block->types.Get("a");
 
 		BeginBlock();
 		auto ret = TokenType::BLOCK;

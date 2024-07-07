@@ -11,8 +11,7 @@ fun main() : int
 {
 	a := 2;
 	hi := "Hello, Ilia!";
-	Print hi;
-	print (a);
+	print (hi);
 	return 0;
 }
 
