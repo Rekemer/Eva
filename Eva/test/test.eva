@@ -1,20 +1,19 @@
 
 
 
-fun print( a : int )
+fun print( a : float, b: float) : int
 {
-	Print a;
+	c :int = b + a;
+	Print c;
+	Print b;
+	return c;
 }
 
 
 fun main() : int
 {
-	a := 2;
-	hi := "Hello, Ilia!";
-	
-
-	Print hi + hi1;
-	print (hi);
+	a := 5.2;
+	Print print (a,a);
 	return 0;
 }
 

@@ -901,15 +901,15 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		for ( auto i = 0; i < call->args.size(); i++)
 		{
 			auto& arg = call->args[i];
-			auto type = TypeCheck(arg.get(), vm);
+			auto type = LiteralToType(TypeCheck(arg.get(), vm));
 			auto declType = funcValue->argTypes[i];
 			// check declared type and real passed type
-			auto sameType =  declType == LiteralToType(type);
-			if (!sameType)
+			auto castable = IsCastable(declType, type);
+			if (!castable)
 			{
 				std::stringstream ss;
 				ss << "The " << i << " declared argument's type is " << ValueToStr(declType) <<
-					", but the passed type is " << ValueToStr(LiteralToType(type));
+					", but the passed type is " << ValueToStr(type);
 				ErrorTypeCheck(call->line,ss);
 				return TokenType::NIL;
 			}

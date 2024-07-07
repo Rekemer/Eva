@@ -306,9 +306,14 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
 			 currentFunc->constants.emplace_back(const_cast<String*>(&call->name));
 			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			 for (auto& arg : call->args)
+			 auto funcValue = globalVariables.Get(call->name.GetStringView())->value.As<Func*>();
+			 for (auto i = 0; i < call->args.size(); i++)
 			 {
-				 Generate(arg.get());
+				 auto& arg = call->args[i];
+				 auto argType = Generate(arg.get());
+				 auto declType = funcValue->argTypes[i];
+				 CAST_INT_FLOAT(argType,declType);
+
 			 }
 			 currentFunc->opCode.push_back((uint8_t)InCode::CALL);
 			 currentFunc->opCode.push_back(call->args.size());
@@ -432,7 +437,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::IDENTIFIER:
 		 {
-			 return GetVariable(currentFunc->opCode, expr);
+			 auto type = GetVariable(currentFunc->opCode, expr);
+			 return type;
 		 }
 		 case TokenType::TRUE:
 		 {
