@@ -1,7 +1,7 @@
 
 g:= 2;
 
-fun print( a : float, b: String)
+fun print( a : float, b: int)
 {
 	Print g;
 	c :int = b + a;
@@ -20,9 +20,11 @@ fun a () : int
 }
 fun main() : int
 {
+	s := "asd";
+	sa := "asd";
+	a : String = "Hello, New Year!";
+	//Print a == a;
 	Print g1;
-	a := 2.0;
-	print(1,a());
 	return 0;
 }
 

@@ -18,11 +18,11 @@ public:
 	static bool AreEqual(const char* str,size_t size, const char* str2, size_t size2);
 	const char* GetRaw() const
 	{
-		return m_Data;
+		return m_Data.get();
 	}
 	std::string_view GetStringView() const
 	{
-		return { m_Data,static_cast<size_t>(m_Size - 1)};
+		return { m_Data.get(),static_cast<size_t>(m_Size - 1)};
 	}
 	int GetSize() const
 	{
@@ -35,7 +35,7 @@ private:
 	friend std::ostream& operator<<(std::ostream& os, String& string);
 	// inlcudes zero at end
 	int m_Size;
-	char* m_Data;
+	std::unique_ptr<char[]> m_Data = nullptr;
 };
 inline std::ostream& operator<<(std::ostream& os, String& string)
 {
@@ -43,16 +43,3 @@ inline std::ostream& operator<<(std::ostream& os, String& string)
 	return os;
 }
 
-template<typename ...Args>
-inline String::String(const char* arg1, Args ...args)
-{
-	size_t totalLength = strlen(arg1) + (strlen(args) + ...);
-	// Allocate memory for the concatenated string
-	m_Size = totalLength + 1;
-	m_Data = new char[m_Size];
-	// Copy the first argument into the buffer
-	strcpy(m_Data, arg1);
-
-	// Concatenate the rest of the arguments
-	(strcat(m_Data, args), ...);
-}

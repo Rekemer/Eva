@@ -147,7 +147,7 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 	if (expr->depth == 0)
 	{
 		currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
-		auto str = expr->value.As<String*>();
+		auto str = expr->value.AsString();
 		currentFunc->constants.emplace_back(str);
 		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 		auto entry = globalVariablesTypes.Get(str->GetStringView());
@@ -156,7 +156,7 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 	// local
 	else if (expr->depth > 0)
 	{
-		auto str = expr->value.As<String*>();
+		auto str = expr->value.AsString();
 		// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
@@ -188,7 +188,7 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression* expression)
 {
 	assert(expression != nullptr);
-	auto str = expression->value.As<String*>();;
+	auto str = expression->value.AsString();;
 	if (expression->depth == 0)
 	{
 		currentFunc->constants.emplace_back(str);
@@ -237,7 +237,7 @@ void VirtualMachine::PatchBreak(int prevSizeBreak)
 		m_BreakIndexes.pop();
 	}
 }
-ValueType VirtualMachine::GetVariableType(String* name, int depthOfDeclaration)
+ValueType VirtualMachine::GetVariableType(const String* name, int depthOfDeclaration)
 {
 	if (depthOfDeclaration > 0)
 	{
@@ -264,22 +264,22 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 {
 			 auto func = static_cast<const FunctionNode*>(tree);
 			 functionNames.push_back(func->name);
-			 auto funcValue = globalVariables.Get(func->name.GetStringView())->
-				 value.As<Func*>();
+			 auto funcValue = globalVariables.Get(func->name->GetStringView())->
+				 value.AsFunc();
 
 			 funcValue->name = func->name;
-			 if (func->name == "main")
+			 if (*func->name == "main")
 			 {
-				 mainFunc = funcValue;
+				 mainFunc = funcValue.get();
 			 }
-			 currentFunc = funcValue;
+			 currentFunc = funcValue.get();
 			 currentScopes.push_back(&func->paramScope);
 			 for (auto& arg : func->arguments)
 			 {
 				 Generate(arg.get());
 			 }
 			 Generate(func->body.get());
-			 auto type = globalVariablesTypes.Get(func->name.GetStringView())->value.type;
+			 auto type = globalVariablesTypes.Get(func->name->GetStringView())->value.type;
 			 ClearLocal();
 			 currentScopes.pop_back();
 			 if (type == ValueType::NIL)
@@ -304,9 +304,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 			 auto call = static_cast<const Call*>(tree);
 			 currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
-			 currentFunc->constants.emplace_back(const_cast<String*>(&call->name));
+			 currentFunc->constants.emplace_back((call->name));
 			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			 auto funcValue = globalVariables.Get(call->name.GetStringView())->value.As<Func*>();
+			 auto funcValue = globalVariables.Get(call->name->GetStringView())->value.AsFunc();
 			 for (auto i = 0; i < call->args.size(); i++)
 			 {
 				 auto& arg = call->args[i];
@@ -317,7 +317,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 			 currentFunc->opCode.push_back((uint8_t)InCode::CALL);
 			 currentFunc->opCode.push_back(call->args.size());
-			 auto type = globalVariablesTypes.Get((const_cast<String*>(&call->name)->GetStringView()))->value.type;
+			 auto type = globalVariablesTypes.Get(call->name->GetStringView())->value.type;
 			 if (type == ValueType::NIL)
 			 {
 				 currentFunc->opCode.push_back((uint8_t)InCode::POP);
@@ -489,8 +489,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 // declaring a variable
 			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 			 assert(tree->As<Expression>()->left.get() != nullptr);
-			 auto str = exprLeft->value.As<String*>();
-			 auto declType = GetVariableType(str, exprLeft->depth);
+			 auto str = exprLeft->value.AsString();
+			 auto declType = GetVariableType(str.get(), exprLeft->depth);
 			 CAST_INT_FLOAT(expressionType, declType);
 
 
@@ -727,7 +727,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 }
 
-String* VirtualMachine::AllocateString(const char* ptr, size_t size)
+std::shared_ptr<String> VirtualMachine::AllocateString(const char* ptr, size_t size)
 {
 	if (internalStrings.IsExist(std::string_view{ ptr,size }))
 	{
@@ -797,8 +797,8 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	}
 	else if (a.type == b.type && a.type == ValueType::STRING)
 	{
-		auto str = static_cast<String*>(a.As<String*>());
-		auto str2 = static_cast<String*>(b.As<String*>());
+		auto str = a.AsString();
+		auto str2 = b.AsString();
 		return *str == *str2;
 	}
 	return false;
@@ -813,8 +813,8 @@ void VirtualMachine::Execute()
 	Debug(globalFunc->opCode, globalFunc->constants,globalVariables);
 	for (auto& name : functionNames)
 	{
-		std::cout << "FUNCTION: " << name << std::endl;
-		auto func= globalVariables.Get(name.GetStringView())->value.As<Func*>();
+		std::cout << "FUNCTION: " << *name << std::endl;
+		auto func= globalVariables.Get(name->GetStringView())->value.AsFunc();
 		Debug(func->opCode, func->constants,globalVariables);
 	}
 	#endif
@@ -1003,9 +1003,9 @@ void VirtualMachine::Execute()
 
 		case InCode::EQUAL_EQUAL:
 		{
-			auto&  v2 = vmStack.back();
+			auto  v2 = vmStack.back();
 			vmStack.pop_back();
-			auto&  v1 = vmStack.back();
+			auto  v1 = vmStack.back();
 			vmStack.pop_back();
 			vmStack.push_back(ValueContainer{ AreEqual(v1,v2) });
 			break;
@@ -1052,7 +1052,7 @@ void VirtualMachine::Execute()
 		case InCode::GET_GLOBAL_VAR:
 		{	
 			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
-			auto string = (nameOfVariable.As<String*>())->GetStringView();
+			auto string = (nameOfVariable.AsString())->GetStringView();
 			auto entry = globalVariables.Get(string);
 			vmStack.push_back(entry->value);
 			break;
@@ -1061,7 +1061,7 @@ void VirtualMachine::Execute()
 		{	
 			auto& value = vmStack.back();
 			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
-			auto string = (nameOfVariable.As<String*>())->GetStringView();
+			auto string = (nameOfVariable.AsString())->GetStringView();
 			auto entry = globalVariables.Get(string);
 			entry->value = value;
 			vmStack.pop_back();
@@ -1108,8 +1108,8 @@ void VirtualMachine::Execute()
 			// up to this point arguments and function are on stack
 			auto argumentCount = frame->function->opCode[frame->ip++];
 			auto funcIndex = vmStack.size()  - 1 - argumentCount;
-			auto func = vmStack[funcIndex].As<Func*>();
-			auto newIndexFrame = CallFunction(func, argumentCount,funcIndex);
+			auto func = vmStack[funcIndex].AsFunc();
+			auto newIndexFrame = CallFunction(func.get(), argumentCount, funcIndex);
 			// update our call frame 
 			frame = &callFrames[newIndexFrame];
 			break;

@@ -31,7 +31,6 @@ public:
 	ValueType type{ ValueType::NIL };
 	ValueContainer() = default;
 	explicit ValueContainer(ValueType v);
-	
 	template <typename T>
 	ValueContainer(T v)
 	{
@@ -41,7 +40,8 @@ public:
 		else if constexpr (std::is_same_v<T, float>) {
 			type = ValueType::FLOAT;
 		}
-		else if constexpr (std::is_same_v<T, String*> || std::is_same_v<T, String const*>) {
+		else if constexpr (std::is_same_v<T, std::shared_ptr<String>> ||
+			std::is_same_v<T, std::shared_ptr<const String>>) {
 			type = ValueType::STRING;
 		}
 		else if constexpr (std::is_same_v<T, bool>) {
@@ -63,7 +63,7 @@ public:
 		return *this;
 	}
 
-	
+	void UpdateType(ValueType type);
 
 	ValueContainer& operator = (const ValueContainer& v);
 	
@@ -90,10 +90,17 @@ public:
 	U AsRef() {
 		return std::get<T>(as);
 	}
-
+	std::shared_ptr<String> AsString() const
+	{
+		return std::get<std::shared_ptr<String>>(as);
+	}
+	std::shared_ptr<Func> AsFunc() const
+	{
+		return std::get<std::shared_ptr<Func>>(as);
+	}
 private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
 
-	std::variant<bool, float, int, String*,Func*>as;
+	std::variant<bool, float, int, std::shared_ptr<String>,std::shared_ptr<Func>>as;
 };

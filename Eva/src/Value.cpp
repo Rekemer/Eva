@@ -27,32 +27,45 @@ switch (valueType)
 ValueContainer::ValueContainer(const ValueContainer& v)
 {
 	type = v.type;
-	as = v.as;
 	if (v.type == ValueType::STRING)
 	{
-		as = new String(*static_cast<String*>(std::get<String*>(v.as)));
+		as = std::make_shared<String>(*v.AsString());
 	}
+	else as = v.as;
 };
 
+void ValueContainer::UpdateType(ValueType type)
+{
+	if (type == ValueType::STRING)
+	{
+		as = std::make_shared<String>();
+	}
+	this->type = type;
+	
+}
 
 ValueContainer::ValueContainer(ValueType v)
 {
 	type = v;
 	if (v == ValueType::FUNCTION)
 	{
-		as = new Func();
+		as = std::make_shared<Func>();
+	}
+	else if (v == ValueType::STRING)
+	{
+		as = std::make_shared<String>();
 	}
 }
 ValueContainer& ValueContainer::operator= (const ValueContainer& v)
 {
 	if (this == &v) return *this;
 	type = v.type;
-	as = v.as;
-	if (v.type == ValueType::STRING && std::get<String*>(v.as) != nullptr)
+	if (v.type == ValueType::STRING )
 	{
 
-		as = new String(*static_cast<String*>(std::get<String*>(v.as)));
+		as = std::make_shared<String>(*v.AsString());
 	}
+	else as = v.as;
 }
 
 
@@ -80,14 +93,14 @@ std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 	}
 	case  ValueType::STRING:
 	{
-		auto str = std::get<String*>(v.as);
+		auto str = v.AsString();
 		os << *str;
 		break;
 	}
 	case  ValueType::FUNCTION:
 	{
-		auto name = std::get<Func*>(v.as)->name;
-		os << name;
+		auto name =v.AsFunc()->name;
+		os << *name;
 		break;
 	}
 	default:

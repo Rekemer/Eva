@@ -81,12 +81,12 @@ struct FunctionNode : public Node
 {
 	Scope paramScope;
 	std::unique_ptr<Node> body;
-	String name;
+	std::shared_ptr<String> name;
 	std::vector<std::unique_ptr<Node>> arguments;
 };
 struct Call : public Node
 {
-	String name;
+	std::shared_ptr<String> name;
 	std::vector<std::unique_ptr<Node>> args;
 };
 

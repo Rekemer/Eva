@@ -15,7 +15,7 @@ static uint32_t HashString(const char* key, int length) {
 
 struct Entry
 {
-	String* key = nullptr;
+	std::shared_ptr<String> key = nullptr;
 	ValueContainer value;
 };
 
@@ -37,28 +37,23 @@ class HashTable
 public:
 	HashTable()
 	{
-		m_Data = new Entry[m_Size];
+		m_Data = std::make_unique<Entry[]>(m_Size);
 	}
 	HashTable(const HashTable& table)
 	{
-		m_Data = new Entry[table.m_Size];
+		m_Data = std::make_unique<Entry[]>(table.m_Size);
 		m_Size = table.m_Size;
 		m_EntriesAmount = table.m_EntriesAmount;
-		memcpy(m_Data,table.m_Data, table.m_Size * sizeof(Entry));
-
-
+		std::copy(table.m_Data.get(), table.m_Data.get() + table.m_Size, m_Data.get()); 
 	}
 	HashTable& operator = (const HashTable& table)
 	{
 		if (&table == this) return *this;
-		m_Data = new Entry[table.m_Size];
+		m_Data.reset();
+		m_Data = std::make_unique<Entry[]>(table.m_Size);
 		m_Size = table.m_Size;
 		m_EntriesAmount = table.m_EntriesAmount;
-		memcpy(m_Data, table.m_Data, table.m_Size * sizeof(Entry));
-	}
-	~HashTable()
-	{
-		delete[]m_Data;
+		std::copy(table.m_Data.get(), table.m_Data.get() + table.m_Size, m_Data.get()); 
 	}
 	void Add(const Entry& entry);
 	bool IsExist(std::string_view key);
@@ -69,13 +64,10 @@ public:
 		// resize array
 		if (loadFactor > TABLE_MAX_LOAD)
 		{
-			auto oldData = m_Data;
+			auto oldData = std::move(m_Data);
 			m_Size *= 2;
-			m_Data = new Entry[m_Size];
-
-			auto iter = oldData;
-
-
+			m_Data = std::make_unique<Entry[]>(m_Size);
+			
 			// we need recalculate since we are rebuilding hash map 
 			// and tombstones are no longer relevant
 			m_EntriesAmount = 0;
@@ -84,22 +76,21 @@ public:
 			{
 				if (oldData[i].key != nullptr)
 				{
-					auto retrievedEntry = FindEntry(m_Data, oldData[i].key->GetRaw(), m_Size/2);
+					auto retrievedEntry = FindEntry(m_Data.get(), oldData[i].key->GetRaw(), m_Size / 2);
 					retrievedEntry->key = oldData[i].key;
 					retrievedEntry->value = oldData[i].value;
 					m_EntriesAmount++;
 				}
 			}
-			delete[] oldData;
 		}
-		auto retrievedEntry = FindEntry(m_Data, key, m_Size);
+		auto retrievedEntry = FindEntry(m_Data.get(), key, m_Size);
 
 		if (IsNotSet(retrievedEntry))
 		{
 			m_EntriesAmount++;
 		}
 
-		retrievedEntry->key = new String(key.data(), key.size());
+		retrievedEntry->key = std::make_shared<String>(key.data(), key.size());
 		retrievedEntry->value = ValueContainer{ value... };
 		return retrievedEntry;
 	}
@@ -113,7 +104,7 @@ private:
 	// entries + tombstones
 	int m_EntriesAmount = 0;
 	int m_Size = 8;
-	Entry* m_Data = nullptr;
+	std::unique_ptr<Entry[]> m_Data = nullptr;
 	// should benchmark and tune this 
 	const float TABLE_MAX_LOAD = 0.75;
 };

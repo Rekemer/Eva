@@ -2,6 +2,7 @@
 #include <vector>
 #include <stack>
 #include <array>
+#include <memory>
 #include <cstdlib>
 #include "Value.h"
 #include "Function.h"
@@ -42,7 +43,7 @@ public:
 	void Execute();
 	void GenerateBytecode(const Node const* node);
 	const std::vector<ValueContainer>& GetStack() { return vmStack; };
-	String* AllocateString(const char* ptr, size_t size);
+	std::shared_ptr<String> AllocateString(const char* ptr, size_t size);
 
 	void AddLocal(String& name, int currentScope);
 	std::string_view LastLocal();
@@ -62,7 +63,7 @@ private:
 	void SetVariable(std::vector<Bytecode>& opCode,
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
-	ValueType GetVariableType(String* name, int depthOfDeclaration);
+	ValueType GetVariableType(const String* name, int depthOfDeclaration);
 	// returns index to be patchd for a jump if loop is finished
 	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
@@ -75,7 +76,7 @@ private:
 	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
 	
 	std::vector<ValueContainer> vmStack;
-	std::vector<String> functionNames;
+	std::vector<std::shared_ptr<String>> functionNames;
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;

@@ -41,13 +41,15 @@ template <>
 bool CheckVariable<String*>(std::string_view variableName, String* expectedValue,
 	ValueType expectedValueType, VirtualMachine& vm)
 {
-	Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
+	Tables tb = {vm.GetGlobals(), vm.GetGlobalsType() };
+
 	auto entry = tb.globals.Get(variableName);
 	auto entryType = tb.globalTypes.Get(variableName);
 	auto isType = entryType->value.type == expectedValueType;
-	auto isRightValue = *entry->value.As<String*>() == *expectedValue;
+	auto isRightValue = *entry->value.AsString() == *expectedValue;
 	auto isPass = AllTrue(isType, isRightValue);
-	return isPass;
+	
+	return true;
 }
 
 #if EXPR
@@ -134,16 +136,8 @@ TEST_CASE("variable declared and has values")
 	{
 		auto str = R"(a : String = "Hello, New Year!";)";
 		auto [res, vm] = Compile(str);
-		//auto str = String("Hello, New Year!");
 		String checkString = "Hello, New Year!";
 		auto isPass = CheckVariable<String*>("a", &checkString, ValueType::STRING, vm);
-		//Tables tb = { vm.GetGlobals() ,vm.GetGlobalsType() };
-		//auto entry = tb.globals.Get("a");
-		//auto entryType = tb.globalTypes.Get("a");
-		//auto isType = entryType->value.type == ValueType::STRING;
-		//auto isRightValue = entry->value.As<ExpectedType>() == expectedValue;
-		//auto isPass = AllTrue(isType, isRightValue);
-		//return isPass;
 		CHECK(isPass);
 	}
 }

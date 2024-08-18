@@ -9,10 +9,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	
 	Lexer parser;
 	VirtualMachine vm;
-	
 	if (!parser.Parse(line, vm)) return { ValueContainer{} ,vm};
-
-	
 	auto& tokens = parser.GetTokens();
 	#if DEBUG
 	for (auto token : tokens)
@@ -46,18 +43,14 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 		trees.push_back(std::move( tree));
 
 	}
-	// type inference 
-
 
 	#if DEBUG
 	Print(tree.GetTree());
 	#endif // DEBUG
-
 	if (panic)
 	{
 		return{};
 	}
-	
 	vm.Execute();
 	if (vm.GetStack().size() > 1)
 	{

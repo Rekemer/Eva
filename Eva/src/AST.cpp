@@ -56,12 +56,12 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 HashTable& globalTypes, Expression* node,
 	 int offset)
  {
-	 auto& str = *currentToken->value.As<String*>();
-	 globalTypes.Add(str.GetStringView(), type);
+	 auto str = currentToken->value.AsString();
+	 globalTypes.Add(str->GetStringView(), type);
 	 // define global variable
-	 table.Add(str.GetStringView(), type);
+	 table.Add(str->GetStringView(), type);
 	 // to note global that variable is declared, so that in value it can be used
-	 auto variableName = table.Add(str.GetStringView(), ValueContainer{})->key;
+	 auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
 	 // it will initialize node with the name of a variable
 	 node->left = LogicalOr(currentToken);
 
@@ -71,12 +71,12 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
  void AST::DeclareLocal(Iterator& currentToken,
 	 VirtualMachine* vm, Expression* node,ValueType type, int offset)
  {
-	 auto& str = *currentToken->value.As<String*>();
+	 auto str = currentToken->value.AsString();
 	 scopeDeclarations.top()++;
-	 vm->AddLocal(str, scopeDepth);
+	 vm->AddLocal(*str, scopeDepth);
 	 node->left = LogicalOr(currentToken);
 
-	 currentScope->types.Add(str.GetStringView(), type);
+	 currentScope->types.Add(str->GetStringView(), type);
 	 currentToken += offset;
  }
  std::unique_ptr<Node> AST::UnaryOpPrefix( Iterator&  currentToken)
@@ -153,9 +153,9 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	// only creates node, it must be already declared
 	else if (currentToken->type == TokenType::IDENTIFIER)
 	{	
-		auto& str = *currentToken->value.As<String*>();
+		auto str = currentToken->value.AsString();
 		auto& globalTable = vm->GetGlobals();
-		auto entry = globalTable.Get(str.GetStringView());
+		auto entry = globalTable.Get(str->GetStringView());
 		auto isGlobal = entry->key != nullptr;
 
 		if ((currentToken + 1)->type == TokenType::LEFT_PAREN)
@@ -194,19 +194,19 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			if (scopeDepth > 0)
 			{
 
-				auto [isLocalDeclared, index] = vm->IsLocalExist(str, scopeDepth);
+				auto [isLocalDeclared, index] = vm->IsLocalExist(*str, scopeDepth);
 				if (isLocalDeclared)
 				{
 					// should check whether it is declared variable
 
-					auto& variableName = *currentToken->value.As<String*>();
-					node->value = ValueContainer((String*)&variableName);
+					auto variableName = currentToken->value.AsString();
+					node->value = ValueContainer(variableName);
 					node->depth = scopeDepth;
 				}
 				else if (isGlobal)
 				{
 					auto variableName = entry->key;
-					node->value = ValueContainer((String*)variableName);
+					node->value = ValueContainer(variableName);
 					node->depth = 0;
 				}
 				else
@@ -220,7 +220,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			else if (isGlobal && scopeDepth == 0)
 			{
 				auto variableName = entry->key;
-				node->value = ValueContainer((String*)variableName);
+				node->value = ValueContainer(variableName);
 				node->depth = 0;
 			}
 			else
@@ -384,15 +384,15 @@ void Print(const Expression* tree, int level) {
  std::unique_ptr<Node> AST::DeclareFunction(Iterator& currentToken)
  {
 	 currentToken++;
-	 auto& name = *currentToken->value.As<String*>();
+	 auto name = currentToken->value.AsString();
 	 currentToken++;
 	 Error(TokenType::LEFT_PAREN,currentToken,"Function argument list must start with (");
 	 auto function = std::make_unique<FunctionNode>();
 	 auto& globalVariables = vm->GetGlobals();
 	 auto& globalTypes = vm->GetGlobalsType();
-	 auto funcValue = globalVariables.Add(name.GetStringView(), LiteralToType(TokenType::FUN))
-		 ->value.As<Func*>();
-	 function->name = std::move(name);
+	 auto funcValue = globalVariables.Add(name->GetStringView(), LiteralToType(TokenType::FUN))
+		 ->value.AsFunc();
+	 function->name = name;
 	 function->type = TokenType::FUN;
 	 currentScope = &function->paramScope;
 	 BeginBlock();
@@ -414,12 +414,12 @@ void Print(const Expression* tree, int level) {
 	 if (currentToken->type != TokenType::COLON)
 	 {
 		// void function
-		globalTypes.Add(function->name.GetStringView(), ValueType::NIL);
+		globalTypes.Add(function->name->GetStringView(), ValueType::NIL);
 	 }
 	 else
 	 {
 		Error(TokenType::COLON,currentToken,"Function must declare return type");
-		globalTypes.Add(function->name.GetStringView(), LiteralToType(currentToken->type));
+		globalTypes.Add(function->name->GetStringView(), LiteralToType(currentToken->type));
 		currentToken++;
 	 }
 	 function->body = EatBlock(currentToken);
@@ -428,7 +428,7 @@ void Print(const Expression* tree, int level) {
 	 for (auto& arg : function->arguments)
 	 {
 		 auto expr = arg->As<Expression>()->left->As<Expression>();
-		 auto name = expr->value.As<String*>()->GetStringView();
+		 auto name = expr->value.AsString()->GetStringView();
 		 auto entry = function->paramScope.types.Get(name);
 		 body->types.Add(name, entry->value.type);
 	 }
@@ -440,7 +440,7 @@ void Print(const Expression* tree, int level) {
 	 auto& table = vm->GetGlobals();
 	 auto& globalsType = vm->GetGlobalsType();
 
-	 auto str = *currentToken->value.As<String*>();
+	 auto str = *currentToken->value.AsString();
 	 auto declaredType = (currentToken + 2)->type;
 	 auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
 	 auto entry = table.Get(str.GetStringView());
@@ -528,14 +528,14 @@ void Print(const Expression* tree, int level) {
 	 
 	 if (isVariable && isDeclaration)
 	 {	
-		 auto name = currentToken->value.As<String*>()->GetStringView();
+		 auto name = currentToken->value.AsString()->GetStringView();
 		 auto check = isDeclarared(name);
 		 if (check) return {};
 		 return DeclareVariable(currentToken);
 	 }
 	 else if (isFunc)
 	 {	
-		 auto name = (currentToken+1)->value.As<String*>()->GetStringView();
+		 auto name = (currentToken+1)->value.AsString()->GetStringView();
 		 auto check = isDeclarared(name);
 		 if (check) return {};
 		 return DeclareFunction(currentToken);
@@ -895,8 +895,8 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		auto call = static_cast<Call*>(node);
 
 		auto& globals = vm.GetGlobals();
-		auto funcValue = globals.Get(call->name.GetStringView())
-			->value.As<Func*>();
+		auto funcValue = globals.Get(call->name->GetStringView())
+			->value.AsFunc();
 
 		for ( auto i = 0; i < call->args.size(); i++)
 		{
@@ -918,7 +918,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			// with the the type of parameters
 			
 		}
-		auto name = call->name.GetStringView();
+		auto name = call->name->GetStringView();
 		auto entry = vm.GetGlobalsType().Get(name);
 		std::stringstream ss;
 		assert(entry->key != nullptr);
@@ -937,7 +937,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::FUN)
 	{
 		auto fun = static_cast<FunctionNode*>(node);
-		auto entry = vm.GetGlobalsType().Get(fun->name.GetStringView());
+		auto entry = vm.GetGlobalsType().Get(fun->name->GetStringView());
 		auto actualType = TypeCheck(fun->body.get(), vm);
 		assert(entry->key != nullptr);
 		if (entry->value.type != ValueType::NIL)
@@ -1066,7 +1066,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		{
 			if (expr->depth > 0)
 			{
-				auto str = leftChild->value.As<String*>();
+				auto str = leftChild->value.AsString();
 				Entry* entry = nullptr;
 				for (auto scope : currentScopes)
 				{
@@ -1074,13 +1074,13 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 					entry = scope->types.Get(str->GetStringView());
 				}
 				assert(entry != nullptr);
-				entry->value.type = LiteralToType(childType1);
+				entry->value.UpdateType(LiteralToType(childType1));
 			}
 			else
 			{
-				auto str = leftChild->value.As<String*>();
+				auto str = leftChild->value.AsString();
 				auto entry = globalsType.Get(str->GetStringView());
-				entry->value.type = LiteralToType(childType1);
+				entry->value.UpdateType(LiteralToType(childType1));
 			}
 
 		}
@@ -1091,7 +1091,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		if (expr->depth > 0)
 		{
 			
-			auto str = expr->value.As<String*>();
+			auto str = expr->value.AsString();
 			Entry* entry;
 			for (auto scope : currentScopes)
 			{
@@ -1100,7 +1100,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			}
 			return TypeToLiteral(entry->value.type);
 		}
-		auto str = expr->value.As<String*>();
+		auto str = expr->value.AsString();
 		auto entry = globalsType.Get(str->GetStringView());
 		assert(entry->key != nullptr);
 		return TypeToLiteral(entry->value.type);
