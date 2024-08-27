@@ -1020,8 +1020,9 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		}
 		else if (childType1 == TokenType::STRING_LITERAL || childType == TokenType::STRING_LITERAL)
 		{
-			ErrorTypeCheck(expr->line,"Strings cannot participate in binary operations yet ");
-			return TokenType::NIL;
+			//ErrorTypeCheck(expr->line,"Strings cannot participate in binary operations yet ");
+
+			return TokenType::STRING_LITERAL;
 		}
 		expr->value = ValueContainer{ ValueType::FLOAT };
 		return TokenType::FLOAT_LITERAL;

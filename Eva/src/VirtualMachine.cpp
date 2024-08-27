@@ -27,16 +27,18 @@ vmStack.push_back(ValueContainer{v2 operation v});\
 while(false)
 
 
+
+
 #define DETERMINE_OP_TYPE_RET(type,OP)\
 {\
 	if (type == ValueType::INT)\
 	{\
-	currentFunc->opCode.push_back((uint8_t)InCode::OP##_INT); \
+	currentFunc->opCode.push_back((Bytecode)InCode::OP##_INT); \
 	return ValueType::INT; \
 	}\
 	else if (type == ValueType::FLOAT)\
 	{\
-	currentFunc->opCode.push_back((uint8_t)InCode::OP##_FLOAT); \
+	currentFunc->opCode.push_back((Bytecode)InCode::OP##_FLOAT); \
 	return ValueType::FLOAT; \
 	}\
 	else\
@@ -347,8 +349,15 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = Generate(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
-
-			 DETERMINE_OP_TYPE_RET(expr->value.type, ADD);
+			 
+			 if (left == right && left == ValueType::STRING)
+			 {
+				 currentFunc->opCode.push_back((Bytecode)InCode::ADD_STRING);
+			 }
+			 else
+			 {
+				DETERMINE_OP_TYPE_RET(expr->value.type, ADD);
+			 }
 			 break;
 		 }
 		 case TokenType::PLUS_PLUS:
@@ -727,6 +736,20 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 }
 
+
+std::shared_ptr<String> VirtualMachine::AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1) 
+{
+	auto raw1 = s->GetRaw();
+	auto raw2 = s1->GetRaw();
+	auto newSize = s->GetSize() + s1->GetSize();
+	auto newString = new char[newSize + 1];
+	strcpy(newString, raw1);
+	strcat(newString, raw2);
+	auto res = AllocateString(newString, newSize);
+	return res;
+
+}
+
 std::shared_ptr<String> VirtualMachine::AllocateString(const char* ptr, size_t size)
 {
 	if (internalStrings.IsExist(std::string_view{ ptr,size }))
@@ -877,6 +900,17 @@ void VirtualMachine::Execute()
 		case InCode::ADD_INT:
 		{
 			BINARY_OP(int, +);
+			break;
+		}
+		case InCode::ADD_STRING:
+		{
+			auto v = vmStack.back().AsString(); 
+			vmStack.pop_back(); 
+			auto v2 = vmStack.back().AsString();
+			vmStack.pop_back(); 
+			auto newString = VirtualMachine::AddStrings(v2,v);
+			vmStack.push_back(ValueContainer{ newString }); \
+
 			break;
 		}
 		case InCode::CAST_FLOAT:

@@ -1,30 +1,11 @@
-
-g:= 2;
-
-fun print( a : float, b: int)
-{
-	Print g;
-	c :int = b + a;
-	return c;
-}
-g1 := "HI";
-
-fun lol()
-{
-	Print "lol";
-}
-
-fun a () : int 
-{	
-	return 2;
-}
 fun main() : int
 {
 	s := "asd";
 	sa := "asd";
 	a : String = "Hello, New Year!";
-	//Print a == a;
-	Print g1;
+	ilia := " , Ilia";
+	sum := a + ilia;
+	Print sum;
 	return 0;
 }
 

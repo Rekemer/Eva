@@ -44,6 +44,7 @@ public:
 	void GenerateBytecode(const Node const* node);
 	const std::vector<ValueContainer>& GetStack() { return vmStack; };
 	std::shared_ptr<String> AllocateString(const char* ptr, size_t size);
+	std::shared_ptr<String> AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1);
 
 	void AddLocal(String& name, int currentScope);
 	std::string_view LastLocal();
