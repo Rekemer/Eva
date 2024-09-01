@@ -56,7 +56,7 @@ ValueContainer::ValueContainer(ValueType v)
 		as = std::make_shared<String>();
 	}
 }
-ValueContainer& ValueContainer::operator= (const ValueContainer& v)
+ValueContainer& ValueContainer::operator = (const ValueContainer& v)
 {
 	if (this == &v) return *this;
 	type = v.type;

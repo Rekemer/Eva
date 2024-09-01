@@ -1,11 +1,15 @@
 fun main() : int
 {
-	s := "asd";
-	sa := "asd";
-	a : String = "Hello, New Year!";
-	ilia := " , Ilia";
-	sum := a + ilia;
-	Print sum;
+	it := 0;
+	while(it < 100)
+	{
+		a : String = "Hello, New Year!";
+		ilia := " , Ilia";
+		sum := a + ilia;
+		Print sum;
+		it++;
+	}
+	Print "check";
 	return 0;
 }
 

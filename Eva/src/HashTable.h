@@ -32,9 +32,94 @@ inline bool IsNotSet(Entry* entry)
 	return entry->key == nullptr && entry->value.type == ValueType::NIL;
 }
 
+
 class HashTable
 {
+	
 public:
+	template<class T>
+	class HashTableIterator
+	{
+		using PtrType = T*;
+		using RefType = T&;
+	public:
+		HashTableIterator(PtrType  data) : m_Data{data}
+		{
+
+		}
+		static PtrType GetValid(PtrType ptr)
+		{
+			while (!IsSet(ptr))
+			{
+				++ptr;
+			}
+			return ptr;
+		}
+		// prefix operator
+		HashTableIterator& operator++()
+		{
+			++m_Data;
+			m_Data = GetValid(m_Data);
+			return *this;
+		}
+		// postfix operator
+		HashTableIterator operator++(int)
+		{
+			auto next = this;
+			++(*this);
+			return *next;
+		}
+		// prefix operator
+		HashTableIterator& operator--()
+		{
+			--m_Data;
+			return this;
+		}
+		// postfix operator
+		HashTableIterator operator--(int)
+		{
+			auto next = this;
+			--(*this);
+			return *next;
+		}
+		PtrType operator ->()
+		{
+			return m_Data;
+		}
+		RefType operator * ()
+		{
+			return *m_Data;
+		}
+		RefType operator [](int index)
+		{
+			return *(m_Data + index);
+		}
+		bool operator == (HashTableIterator other)
+		{
+			return other.m_Data == m_Data;
+		}
+		bool operator != (HashTableIterator other)
+		{
+			return !(other.m_Data == m_Data);
+		}
+	private:
+		PtrType  m_Data;
+
+	};
+public:
+	using Iterator = HashTableIterator<Entry>;
+	Iterator begin()
+	{
+		auto ptr = m_Data.get();
+		ptr = Iterator::GetValid(ptr);
+		return Iterator{ptr};
+		//return Iterator{m_Data.get()};
+	}
+	Iterator end()
+	{
+		return Iterator{m_Data.get() + m_Size};
+	}
+
 	HashTable()
 	{
 		m_Data = std::make_unique<Entry[]>(m_Size);
@@ -46,6 +131,7 @@ public:
 		m_EntriesAmount = table.m_EntriesAmount;
 		std::copy(table.m_Data.get(), table.m_Data.get() + table.m_Size, m_Data.get()); 
 	}
+	void Print();
 	HashTable& operator = (const HashTable& table)
 	{
 		if (&table == this) return *this;
@@ -76,7 +162,7 @@ public:
 			{
 				if (oldData[i].key != nullptr)
 				{
-					auto retrievedEntry = FindEntry(m_Data.get(), oldData[i].key->GetRaw(), m_Size / 2);
+					auto retrievedEntry = FindEntry(m_Data.get(), oldData[i].key->GetRaw(), m_Size);
 					retrievedEntry->key = oldData[i].key;
 					retrievedEntry->value = oldData[i].value;
 					m_EntriesAmount++;

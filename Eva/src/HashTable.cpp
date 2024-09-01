@@ -1,4 +1,5 @@
 #include"HashTable.h"
+#include<iostream>
 
 void HashTable::Delete(std::string_view key)
 {
@@ -17,7 +18,19 @@ bool HashTable::IsExist(std::string_view key)
 	auto entry = Get(key);
 	return IsSet(entry);
 }
-
+void HashTable::Print()
+{
+	auto index = 0;
+	while (index < m_Size)
+	{
+		auto data = &m_Data[index];
+		if (IsSet(data))
+		{
+			std::cout << *data->key << std::endl;
+		}
+		index +=1;
+	}
+}
 Entry* HashTable::Get(std::string_view key) const
 {
 	return FindEntry(m_Data.get(), key, m_Size);

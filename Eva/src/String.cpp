@@ -2,12 +2,13 @@
 #include <cstring>
 #include <iostream>
 
-String::String(const char* str, size_t size) : m_Size(size+1)
+String::String(const char* str, size_t size) : m_Size(size + 1)
 {
 	m_Data = std::make_unique<char[]>(m_Size);
 	std::copy(str,str+m_Size, m_Data.get());
 	m_Data[m_Size - 1] = '\0';
 }
+
 String::String(const char* str)
 {
 	std::cout << "string alloc\n";

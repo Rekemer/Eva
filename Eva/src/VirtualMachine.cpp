@@ -746,6 +746,8 @@ std::shared_ptr<String> VirtualMachine::AddStrings(std::shared_ptr<String> s, st
 	strcpy(newString, raw1);
 	strcat(newString, raw2);
 	auto res = AllocateString(newString, newSize);
+	// should move instead of  copy at the constructor of string
+	delete[] newString;
 	return res;
 
 }
@@ -757,7 +759,7 @@ std::shared_ptr<String> VirtualMachine::AllocateString(const char* ptr, size_t s
 		auto str = internalStrings.Get(std::string_view{ ptr,size });
 		return (str->key);
 	}
-	auto* entry = internalStrings.Add(std::string_view{ptr,size}, ValueContainer{});
+	auto* entry = internalStrings.Add(std::string_view{ptr,size});
 	return (entry->key);
 }
 std::string_view VirtualMachine::LastLocal()
@@ -826,6 +828,32 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	}
 	return false;
 }
+void VirtualMachine::CollectStrings() 
+{
+
+
+	//auto a = internalStrings.Get(std::string_view{"Hello, New Year!", 16});
+	//internalStrings.Print();
+	
+	//for (HashTable::Iterator i = internalStrings.begin(); i != internalStrings.end(); i++)
+	//{
+	//	std::cout << *i->key << std::endl;
+	//}
+	
+	for (auto& entry : internalStrings)
+	{
+		if (entry.key.use_count() == 1)
+		{
+			std::cout << "CLEANED " << *entry.key << std::endl;
+			entry.key.reset();
+		}
+		else
+		{
+			//std::cout << *entry.key << std::endl;
+		}
+	}
+}
+
 void VirtualMachine::Execute()
 {
 	if (m_Panic)return;
@@ -854,6 +882,10 @@ void VirtualMachine::Execute()
 	auto frame = &callFrames[nextToCurrentCallFrame-1];
 	while (true)
 	{
+		// check if there are strings to be freed
+		// it doesn't have to be here, only for debugging
+		// usually memory is freed when we want to allocate new memory
+		CollectStrings();
 		auto inst = frame->function->opCode[frame->ip++];
 
 		switch (static_cast<InCode>(inst))
