@@ -112,7 +112,9 @@ public:
 	const Node* GetTree()const  { return tree.get(); }
 	class VirtualMachine* vm;
 	bool IsPanic() { return m_Panic; }
+	void Fold();
 private:
+	Expression*  FoldConstants(Expression* node);
 	template<typename ...T>
 	 void ErrorMult(Token*& currentToken, const char* msg, T... expectedType )
 	{

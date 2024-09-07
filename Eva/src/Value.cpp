@@ -1,8 +1,9 @@
-#include"Value.h"
-#include<cassert>
-#include"Object.h"
-#include"String.hpp"
-#include"Function.h"
+#include "Value.h"
+#include <cassert>
+#include "Object.h"
+#include "String.hpp"
+#include "Function.h"
+#include "VirtualMachine.h"
 
 const char* ValueToStr(ValueType valueType) {
 switch (valueType)
@@ -42,6 +43,43 @@ void ValueContainer::UpdateType(ValueType type)
 	}
 	this->type = type;
 	
+}
+bool AreBothNumeric(ValueType left, ValueType right)
+{
+	switch (left)
+	{
+	case ValueType::FLOAT:
+	case ValueType::INT:
+		return (right == ValueType::FLOAT || right == ValueType::INT);
+	default:
+		return false;
+	}
+}
+ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm)
+{
+	bool isNumber = AreBothNumeric(v1.type, v2.type);
+	assert(v1.type == v2.type || isNumber);
+	switch (v1.type)
+	{
+	case ValueType::FLOAT:
+
+		return ValueContainer{ v1.As<float>() + (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>())};
+		break;
+	case ValueType::INT:
+		return ValueContainer{ v1.As<int>() + (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>()) };
+		break;
+	case ValueType::STRING:
+		return ValueContainer{ vm.AddStrings(v1.AsString(),v2.AsString()) };
+		break;
+	case ValueType::BOOL:
+	case ValueType::FUNCTION:
+	case ValueType::DEDUCE:
+	case ValueType::NIL:
+		assert(false);
+	default:
+		break;
+	}
+	return {};
 }
 
 ValueContainer::ValueContainer(ValueType v)

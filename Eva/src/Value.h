@@ -24,6 +24,7 @@ enum class ValueType
 class Object;
 class String;
 struct Func;
+class VirtualMachine;
 const char* ValueToStr(ValueType valueType);
 class ValueContainer
 {
@@ -66,6 +67,8 @@ public:
 	void UpdateType(ValueType type);
 
 	ValueContainer& operator = (const ValueContainer& v);
+
+	static ValueContainer Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm);
 	
 
 	explicit ValueContainer(ValueContainer&& v)
@@ -102,5 +105,5 @@ private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
 
-	std::variant<bool, float, int, std::shared_ptr<String>,std::shared_ptr<Func>>as;
+	std::variant<bool, float, int, std::shared_ptr<String>,std::shared_ptr<Func>> as;
 };

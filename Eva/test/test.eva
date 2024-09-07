@@ -1,16 +1,18 @@
-fun main() : int
-{
-	it := 0;
-	while(it < 100)
-	{
-		a : String = "Hello, New Year!";
-		ilia := " , Ilia";
-		sum := a + ilia;
-		Print sum;
-		it++;
-	}
-	Print "check";
-	return 0;
-}
+a := 2.0 + 3.0 + 77.0;
+Print a;
+//fun main() : int
+//{
+//	it := 0;
+//	while(it < 100)
+//	{
+//		a : String = "Hello, New Year!";
+//		ilia := " , Ilia";
+//		sum := a + ilia;
+//		Print sum;
+//		it++;
+//	}
+//	Print "check";
+//	return 0;
+//}
 
 

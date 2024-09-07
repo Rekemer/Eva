@@ -498,6 +498,99 @@ void Print(const Expression* tree, int level) {
 		 }
 	 }
  }
+
+ bool isLiteral(TokenType type)
+ {
+	 switch (type)
+	 {
+	 case TokenType::INT_LITERAL:
+	 case TokenType::FLOAT_LITERAL:
+	 case TokenType::STRING_LITERAL:
+	 case TokenType::TRUE:
+	 case TokenType::FALSE:
+	 return true;
+	 default:
+	 return false;
+	 }
+ }
+ bool IsBinaryOp(TokenType type)
+ {
+	 return type == TokenType::PLUS || type == TokenType::STAR ||
+		 type == TokenType::SLASH || type == TokenType::MINUS;
+ }
+ Expression* AST::FoldConstants(Expression* expr)
+ {
+	 if (!expr)
+	 {
+		 return {};
+	 }
+	 if (expr->type == TokenType::INT_LITERAL || expr->type == TokenType::FLOAT_LITERAL)
+	 {
+		 return expr;
+	 }
+
+	 // check if both constant
+		// replace subtree with the new node
+	 if (expr->type == TokenType::IDENTIFIER )
+	 {
+		 return {};
+	 }
+	 auto isBinaryOp = IsBinaryOp(expr->type);
+	 if (isBinaryOp)
+	 {
+		 // recurse so we can have series of constant + constant + ...
+		 auto left = FoldConstants(static_cast<Expression*>(expr->left.get()));
+		 auto right = FoldConstants(static_cast<Expression*>(expr->right.get()));
+		 auto isLitL = isLiteral(left ->type);
+		 auto isLitR = isLiteral(right->type);
+		 // case constant + constant 
+		 if (isLitL && isLitR)
+		 {
+			auto node = new Expression();
+			 switch (expr->type)
+			 {
+			 case TokenType::PLUS:
+				 node->value = ValueContainer::Add(left->value, right->value, *vm);
+				 node->type = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+					 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+				 break;
+				 //case TokenType::MINUS:
+				 //	node->value = left->value - right->value;
+				 //	break;
+				 //case TokenType::STAR:
+				 //	node->value = left->value * right->value;
+				 //	break;
+				 //case TokenType::SLASH:
+				 //	node->value = left->value / right->value;
+				 //	break;
+			 default:
+				 break;
+			 }
+			 return node;
+		 }
+		
+	 }
+	return {};
+ }
+ void AST::Fold()
+ {
+	 auto expr = tree->AsMut<Expression>();
+	 auto left = expr->left.get()->AsMut<Expression>();
+	 auto right = expr->right.get()->AsMut<Expression>();
+	 
+	 auto newNodeLeft = FoldConstants(left);
+	 if (newNodeLeft)
+	 {
+		 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
+	 }
+	 auto newNodeRight = FoldConstants(right);
+	 if (newNodeRight)
+	 {
+		 expr->right= std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
+	 }
+
+ }
+
  std::unique_ptr<Node> AST::Declaration(Iterator& currentToken)
  {
 	 bool isVariable = currentToken->type == TokenType::IDENTIFIER;
@@ -999,8 +1092,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 
 	// determine what kind of type operations returns 
 	bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
-	bool isTermOp = expr->type==TokenType::PLUS || expr->type == TokenType::STAR ||
-		expr->type == TokenType::SLASH || expr->type == TokenType::MINUS;
+	bool isTermOp = IsBinaryOp(expr->type);
 	bool isTermOpEqual = expr->type == TokenType::PLUS_EQUAL ||
 		expr->type == TokenType::SLASH_EQUAL ||
 		expr->type == TokenType::MINUS_EQUAL ||
