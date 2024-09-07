@@ -273,12 +273,28 @@ void Print(const Expression* tree, int level) {
 		auto operation = nextToken->type;
 		auto parent = std::make_unique<Expression>();
 		parent->line = currentToken->line;
-
-		currentToken++;
+		auto isMinus = nextToken->type == TokenType::MINUS;
+		if (!isMinus)
+		{
+			currentToken++;
+		}
 		auto right = Term(currentToken);
 		parent->left = std::move(left);
-		parent->right = std::move(right);
-		parent->type = operation;
+		
+		// to fix  2 -1 -1 = 2 
+		//if (nextToken->type == TokenType::MINUS)
+		//{
+		//	auto negation = std::make_unique<Expression>();
+		//	negation->type = TokenType::MINUS;
+		//	negation->left = std::move(right);
+		//	parent->right = std::move(negation);
+		//}
+		//else
+		//{
+			parent->right= std::move(right);
+		//}
+
+		parent->type = TokenType::PLUS;
 		return parent;
 
 	}
