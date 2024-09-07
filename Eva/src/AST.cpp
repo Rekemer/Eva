@@ -528,7 +528,17 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return expr;
 	 }
+	 if (expr->type == TokenType::MINUS && !expr->right && isLiteral(expr->left->type))
+	 {
+		 auto left = expr->left->AsMut<Expression>();
 
+		 // could we perhaps do it without allocation?
+		 auto exprInverted = new Expression();
+		 exprInverted->type = left->type;
+		 exprInverted->value = left->value;
+		 exprInverted->value.Negate();
+		 return exprInverted;
+	 }
 	 // check if both constant
 		// replace subtree with the new node
 	 if (expr->type == TokenType::IDENTIFIER )
@@ -540,23 +550,33 @@ void Print(const Expression* tree, int level) {
 	 {
 		 // recurse so we can have series of constant + constant + ...
 		 auto left = FoldConstants(static_cast<Expression*>(expr->left.get()));
+		 if (IsBinaryOp(expr->left->type))
+		 {
+			 expr->left = std::unique_ptr<Node>(left);
+		 }
 		 auto right = FoldConstants(static_cast<Expression*>(expr->right.get()));
+		 if (IsBinaryOp(expr->right->type))
+		 {
+			 expr->right = std::unique_ptr<Node>(right);
+		 }
 		 auto isLitL = isLiteral(left ->type);
 		 auto isLitR = isLiteral(right->type);
 		 // case constant + constant 
 		 if (isLitL && isLitR)
 		 {
-			auto node = new Expression();
+			 auto node = new Expression();
+			 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+				 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
 			 switch (expr->type)
 			 {
 			 case TokenType::PLUS:
 				 node->value = ValueContainer::Add(left->value, right->value, *vm);
-				 node->type = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
-					 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+				 node->type = newType;
 				 break;
-				 //case TokenType::MINUS:
-				 //	node->value = left->value - right->value;
-				 //	break;
+			 case TokenType::MINUS:
+				 node->value = ValueContainer::Substract(left->value, right->value);
+				 node->type = newType;
+				 break;
 				 //case TokenType::STAR:
 				 //	node->value = left->value * right->value;
 				 //	break;
@@ -568,6 +588,8 @@ void Print(const Expression* tree, int level) {
 			 }
 			 return node;
 		 }
+		 expr->left = std::unique_ptr<Node>(left);
+		 expr->right = std::unique_ptr<Node>(right);
 		
 	 }
 	return {};

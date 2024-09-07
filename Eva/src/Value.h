@@ -69,7 +69,8 @@ public:
 	ValueContainer& operator = (const ValueContainer& v);
 
 	static ValueContainer Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm);
-	
+	static ValueContainer Substract(const ValueContainer& v1, const ValueContainer& v2);
+	void Negate();
 
 	explicit ValueContainer(ValueContainer&& v)
 	{

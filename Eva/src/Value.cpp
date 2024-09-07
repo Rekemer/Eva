@@ -55,6 +55,7 @@ bool AreBothNumeric(ValueType left, ValueType right)
 		return false;
 	}
 }
+
 ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm)
 {
 	bool isNumber = AreBothNumeric(v1.type, v2.type);
@@ -70,6 +71,48 @@ ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContaine
 		break;
 	case ValueType::STRING:
 		return ValueContainer{ vm.AddStrings(v1.AsString(),v2.AsString()) };
+		break;
+	case ValueType::BOOL:
+	case ValueType::FUNCTION:
+	case ValueType::DEDUCE:
+	case ValueType::NIL:
+		assert(false);
+	default:
+		break;
+	}
+	return {};
+}
+
+
+void ValueContainer::Negate()
+{
+	auto isInt = type == ValueType::INT;
+	auto isFloat = type == ValueType::FLOAT;
+	assert(isInt|| isFloat);
+	if (isInt)
+	{
+		auto v = std::get<int>(as);
+		as = -v;
+	}
+	else
+	{
+		auto v = std::get<float>(as);
+		as = -v;
+	}
+}
+
+ValueContainer ValueContainer::Substract(const ValueContainer& v1, const ValueContainer& v2)
+{
+	bool isNumber = AreBothNumeric(v1.type, v2.type);
+	assert(v1.type == v2.type || isNumber);
+	switch (v1.type)
+	{
+	case ValueType::FLOAT:
+
+		return ValueContainer{ v1.As<float>() - (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>()) };
+		break;
+	case ValueType::INT:
+		return ValueContainer{ v1.As<int>() - (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>()) };
 		break;
 	case ValueType::BOOL:
 	case ValueType::FUNCTION:
