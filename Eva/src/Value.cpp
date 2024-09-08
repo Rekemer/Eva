@@ -55,7 +55,33 @@ bool AreBothNumeric(ValueType left, ValueType right)
 		return false;
 	}
 }
-
+#define OP(v1, v2, op)                                         \
+do {                                                           \
+    bool isNumber = AreBothNumeric(v1.type, v2.type);           \
+    assert(v1.type == v2.type || isNumber);                    \
+    switch (v1.type)                                           \
+    {                                                          \
+    case ValueType::FLOAT:                                     \
+        return ValueContainer{ v1.As<float>() op               \
+            (v2.type == ValueType::FLOAT ? v2.As<float>()      \
+                                        : v2.As<int>()) };     \
+        break;                                                 \
+    case ValueType::INT:                                       \
+        return ValueContainer{ v1.As<int>() op                 \
+            (v2.type == ValueType::FLOAT ? v2.As<float>()      \
+                                        : v2.As<int>()) };     \
+        break;                                                 \
+    case ValueType::BOOL:                                      \
+    case ValueType::FUNCTION:                                  \
+    case ValueType::DEDUCE:                                    \
+    case ValueType::NIL:                                       \
+        assert(false && "Invalid operation on non-numeric type"); \
+        break;                                                 \
+    default:                                                   \
+        break;                                                 \
+    }                                                          \
+    return {};                                                 \
+} while (0)
 ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm)
 {
 	bool isNumber = AreBothNumeric(v1.type, v2.type);
@@ -103,27 +129,18 @@ void ValueContainer::Negate()
 
 ValueContainer ValueContainer::Substract(const ValueContainer& v1, const ValueContainer& v2)
 {
-	bool isNumber = AreBothNumeric(v1.type, v2.type);
-	assert(v1.type == v2.type || isNumber);
-	switch (v1.type)
-	{
-	case ValueType::FLOAT:
-
-		return ValueContainer{ v1.As<float>() - (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>()) };
-		break;
-	case ValueType::INT:
-		return ValueContainer{ v1.As<int>() - (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>()) };
-		break;
-	case ValueType::BOOL:
-	case ValueType::FUNCTION:
-	case ValueType::DEDUCE:
-	case ValueType::NIL:
-		assert(false);
-	default:
-		break;
-	}
-	return {};
+	OP(v1, v2, -);
 }
+
+ValueContainer ValueContainer::Divide(const ValueContainer& v1, const ValueContainer& v2)
+{
+	OP(v1, v2, /);
+}
+ValueContainer ValueContainer::Multiply(const ValueContainer& v1, const ValueContainer& v2)
+{
+	OP(v1, v2, *);
+}
+
 
 ValueContainer::ValueContainer(ValueType v)
 {

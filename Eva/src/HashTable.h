@@ -43,13 +43,13 @@ public:
 		using PtrType = T*;
 		using RefType = T&;
 	public:
-		HashTableIterator(PtrType  data) : m_Data{data}
+		HashTableIterator(PtrType  data, PtrType end) : m_Data{ data }, m_End{end}
 		{
 
 		}
-		static PtrType GetValid(PtrType ptr)
+		static PtrType GetValid(PtrType ptr, PtrType end)
 		{
-			while (!IsSet(ptr))
+			while (!IsSet(ptr) && ptr != end)
 			{
 				++ptr;
 			}
@@ -59,15 +59,8 @@ public:
 		HashTableIterator& operator++()
 		{
 			++m_Data;
-			m_Data = GetValid(m_Data);
+			m_Data = GetValid(m_Data, m_End);
 			return *this;
-		}
-		// postfix operator
-		HashTableIterator operator++(int)
-		{
-			auto next = this;
-			++(*this);
-			return *next;
 		}
 		// prefix operator
 		HashTableIterator& operator--()
@@ -76,9 +69,16 @@ public:
 			return this;
 		}
 		// postfix operator
+		HashTableIterator operator++(int)
+		{
+			HashTableIterator next = *this;
+			++(*this);
+			return *next;
+		}
+		// postfix operator
 		HashTableIterator operator--(int)
 		{
-			auto next = this;
+			HashTableIterator next = *this;
 			--(*this);
 			return *next;
 		}
@@ -104,6 +104,8 @@ public:
 		}
 	private:
 		PtrType  m_Data;
+		// without it we have ub since we read wrong memory
+		PtrType  m_End;
 
 	};
 public:
@@ -111,13 +113,13 @@ public:
 	Iterator begin()
 	{
 		auto ptr = m_Data.get();
-		ptr = Iterator::GetValid(ptr);
-		return Iterator{ptr};
+		ptr = Iterator::GetValid(ptr, m_Data.get() + m_Size);
+		return Iterator{ptr,m_Data.get() + m_Size };
 		//return Iterator{m_Data.get()};
 	}
 	Iterator end()
 	{
-		return Iterator{m_Data.get() + m_Size};
+		return Iterator{m_Data.get() + m_Size,m_Data.get() + m_Size };
 	}
 
 	HashTable()

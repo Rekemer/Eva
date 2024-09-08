@@ -274,26 +274,14 @@ void Print(const Expression* tree, int level) {
 		auto parent = std::make_unique<Expression>();
 		parent->line = currentToken->line;
 		auto isMinus = nextToken->type == TokenType::MINUS;
+		// to fix  2 -1 -1 = 2 
 		if (!isMinus)
 		{
 			currentToken++;
 		}
 		auto right = Term(currentToken);
 		parent->left = std::move(left);
-		
-		// to fix  2 -1 -1 = 2 
-		//if (nextToken->type == TokenType::MINUS)
-		//{
-		//	auto negation = std::make_unique<Expression>();
-		//	negation->type = TokenType::MINUS;
-		//	negation->left = std::move(right);
-		//	parent->right = std::move(negation);
-		//}
-		//else
-		//{
-			parent->right= std::move(right);
-		//}
-
+		parent->right= std::move(right);
 		parent->type = TokenType::PLUS;
 		return parent;
 
@@ -544,16 +532,23 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return expr;
 	 }
-	 if (expr->type == TokenType::MINUS && !expr->right && isLiteral(expr->left->type))
+	 if (expr->type == TokenType::MINUS && !expr->right)
 	 {
 		 auto left = expr->left->AsMut<Expression>();
 
-		 // could we perhaps do it without allocation?
-		 auto exprInverted = new Expression();
-		 exprInverted->type = left->type;
-		 exprInverted->value = left->value;
-		 exprInverted->value.Negate();
-		 return exprInverted;
+		auto exprInverted = new Expression();
+		 if (isLiteral(expr->left->type))
+		 {
+			// could we perhaps do it without allocation?
+			exprInverted->type = left->type;
+			exprInverted->value = left->value;
+			exprInverted->value.Negate();
+			return exprInverted;
+		 }
+		// in case -(1-2)
+		exprInverted = FoldConstants(static_cast<Expression*>(expr->left.get()));
+		exprInverted->value.Negate();
+		return exprInverted;
 	 }
 	 // check if both constant
 		// replace subtree with the new node
@@ -587,21 +582,20 @@ void Print(const Expression* tree, int level) {
 			 {
 			 case TokenType::PLUS:
 				 node->value = ValueContainer::Add(left->value, right->value, *vm);
-				 node->type = newType;
 				 break;
 			 case TokenType::MINUS:
 				 node->value = ValueContainer::Substract(left->value, right->value);
-				 node->type = newType;
 				 break;
-				 //case TokenType::STAR:
-				 //	node->value = left->value * right->value;
-				 //	break;
-				 //case TokenType::SLASH:
-				 //	node->value = left->value / right->value;
-				 //	break;
+			case TokenType::STAR:
+				 node->value = ValueContainer::Multiply(left->value, right->value);
+				 break;
+			case TokenType::SLASH:
+				 node->value = ValueContainer::Divide(left->value, right->value);
+				 break;
 			 default:
 				 break;
 			 }
+			 node->type = newType;
 			 return node;
 		 }
 		 expr->left = std::unique_ptr<Node>(left);
