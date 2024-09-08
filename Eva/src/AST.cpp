@@ -517,11 +517,17 @@ void Print(const Expression* tree, int level) {
 	 return false;
 	 }
  }
+ bool isBinaryBoolOp(TokenType type)
+ {
+	 return type == TokenType::EQUAL_EQUAL ||
+		 type == TokenType::OR || type == TokenType::AND || type == TokenType::BANG_EQUAL ||
+		 type == TokenType::GREATER || type == TokenType::GREATER_EQUAL || type == TokenType::LESS ||
+		 type == TokenType::LESS_EQUAL;
+ }
  bool IsBinaryOp(TokenType type)
  {
 	 return type == TokenType::PLUS || type == TokenType::STAR ||
-		 type == TokenType::SLASH || type == TokenType::MINUS || type == TokenType::EQUAL_EQUAL ||
-		 type == TokenType::OR || type == TokenType::AND || type == TokenType::BANG_EQUAL;
+		 type == TokenType::SLASH || type == TokenType::MINUS || isBinaryBoolOp(type);
  }
  Expression* AST::FoldConstants(Expression* expr)
  {
@@ -595,7 +601,7 @@ void Print(const Expression* tree, int level) {
 				 case TokenType::BANG_EQUAL:
 				 {
 					 auto newValue = ValueContainer::Equal(left->value, right->value);
-					 !newValue.AsRef<bool>();
+					 node->value = !newValue.AsRef<bool>();
 					 break;
 				 }
 
@@ -607,8 +613,7 @@ void Print(const Expression* tree, int level) {
 			 }
 			 else
 			 {
-				 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
-					 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+				 
 				 switch (expr->type)
 				 {
 				 case TokenType::PLUS:
@@ -623,10 +628,47 @@ void Print(const Expression* tree, int level) {
 				case TokenType::SLASH:
 					 node->value = ValueContainer::Divide(left->value, right->value);
 					 break;
-				 default:
-					 break;
+				case TokenType::EQUAL_EQUAL:
+					node->value = ValueContainer::Equal(left->value, right->value);
+					break;
+				case TokenType::BANG_EQUAL:
+				{
+					auto newValue = ValueContainer::Equal(left->value, right->value);
+					node->value = !newValue.AsRef<bool>();
+					break;
+				}
+				case TokenType::GREATER:
+					node->value = ValueContainer::Greater(left->value, right->value);
+					break;
+				case TokenType::GREATER_EQUAL:
+				{
+					auto newValue = ValueContainer::Equal(left->value, right->value);
+					node->value = !newValue.AsRef<bool>();
+					break;
+				}
+				case TokenType::LESS:
+					node->value = ValueContainer::Less(left->value, right->value);
+					break;
+				case TokenType::LESS_EQUAL:
+				{
+					auto newValue = ValueContainer::Greater(left->value, right->value);
+					node->value = !newValue.AsRef<bool>();
+					break;
+				}
+				default:
+					assert(false && "unknown binary operation on literals");
+					break;
 				 }
-				node->type = newType;
+				 if (isBinaryBoolOp(expr->type))
+				 {
+					 node->type = node->value.As<bool>() ? TokenType::TRUE : TokenType::FALSE;
+				 }
+				 else
+				 {
+					 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+						 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+					 node->type = newType;
+				 }
 			 }
 			 return node;
 		 }

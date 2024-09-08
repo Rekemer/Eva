@@ -1,14 +1,13 @@
-//a := -2.0+1.0-1.0 + 2 -1 + 4 + (1 - 1);
+a := -2.0+1.0-1.0 + 2 -1 + 4 + (1 - 1);
+
+Print a;
 //b := -(1-2) + 43;
-//Print a;
-//Print b;
 //c := 2*0 + 2/4;
-//Print c;
-//
 //Print "as" + "as";
+check := 5 != 5  ;
 
 
-check := true && false || true == true ;
+
 //Print true;
 //fun main() : int
 //{

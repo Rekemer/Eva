@@ -95,8 +95,12 @@ ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContaine
 		return ValueContainer{ v1.As<float>() + (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>())};
 		break;
 	case ValueType::INT:
-		return ValueContainer{ v1.As<int>() + (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>()) };
+	{
+		int t = (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>());
+		int v = v1.As<int>() + t;
+		return ValueContainer{ v};
 		break;
+	}
 	case ValueType::STRING:
 		return ValueContainer{ vm.AddStrings(v1.AsString(),v2.AsString()) };
 		break;
