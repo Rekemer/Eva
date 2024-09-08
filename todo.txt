@@ -46,3 +46,5 @@ add support of single argument for
 
 peephole optimiser
 Constant Expression Folding
+
+add errors of binary operations where operands of wrong type

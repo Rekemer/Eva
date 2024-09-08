@@ -520,7 +520,8 @@ void Print(const Expression* tree, int level) {
  bool IsBinaryOp(TokenType type)
  {
 	 return type == TokenType::PLUS || type == TokenType::STAR ||
-		 type == TokenType::SLASH || type == TokenType::MINUS;
+		 type == TokenType::SLASH || type == TokenType::MINUS || type == TokenType::EQUAL_EQUAL ||
+		 type == TokenType::OR || type == TokenType::AND || type == TokenType::BANG_EQUAL;
  }
  Expression* AST::FoldConstants(Expression* expr)
  {
@@ -528,7 +529,7 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return {};
 	 }
-	 if (expr->type == TokenType::INT_LITERAL || expr->type == TokenType::FLOAT_LITERAL)
+	 if (isLiteral(expr->type))
 	 {
 		 return expr;
 	 }
@@ -572,34 +573,71 @@ void Print(const Expression* tree, int level) {
 		 }
 		 auto isLitL = isLiteral(left ->type);
 		 auto isLitR = isLiteral(right->type);
-		 // case constant + constant 
+		 // case constant op constant 
 		 if (isLitL && isLitR)
 		 {
+			 auto isBool = left->type == TokenType::TRUE || left->type == TokenType::FALSE &&
+				 right->type == TokenType::TRUE || right->type == TokenType::FALSE;
 			 auto node = new Expression();
-			 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
-				 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-			 switch (expr->type)
+			 if (isBool)
 			 {
-			 case TokenType::PLUS:
-				 node->value = ValueContainer::Add(left->value, right->value, *vm);
-				 break;
-			 case TokenType::MINUS:
-				 node->value = ValueContainer::Substract(left->value, right->value);
-				 break;
-			case TokenType::STAR:
-				 node->value = ValueContainer::Multiply(left->value, right->value);
-				 break;
-			case TokenType::SLASH:
-				 node->value = ValueContainer::Divide(left->value, right->value);
-				 break;
-			 default:
-				 break;
+				 switch (expr->type)
+				 {
+				 case TokenType::AND:
+					 node->value = ValueContainer::And(left->value, right->value);
+					 break;
+				 case TokenType::OR:
+					 node->value = ValueContainer::Or(left->value, right->value);
+					 break;
+				 case TokenType::EQUAL_EQUAL:
+					 node->value = ValueContainer::Equal(left->value, right->value);
+					 break;
+				 case TokenType::BANG_EQUAL:
+				 {
+					 auto newValue = ValueContainer::Equal(left->value, right->value);
+					 !newValue.AsRef<bool>();
+					 break;
+				 }
+
+				 default:
+					 assert(false && "unknown binary operation on bool literals");
+					 break;
+				 }
+				 node->type = node->value.As<bool>() ? TokenType::TRUE : TokenType::FALSE;
 			 }
-			 node->type = newType;
+			 else
+			 {
+				 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+					 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+				 switch (expr->type)
+				 {
+				 case TokenType::PLUS:
+					 node->value = ValueContainer::Add(left->value, right->value, *vm);
+					 break;
+				 case TokenType::MINUS:
+					 node->value = ValueContainer::Substract(left->value, right->value);
+					 break;
+				case TokenType::STAR:
+					 node->value = ValueContainer::Multiply(left->value, right->value);
+					 break;
+				case TokenType::SLASH:
+					 node->value = ValueContainer::Divide(left->value, right->value);
+					 break;
+				 default:
+					 break;
+				 }
+				node->type = newType;
+			 }
 			 return node;
 		 }
-		 expr->left = std::unique_ptr<Node>(left);
-		 expr->right = std::unique_ptr<Node>(right);
+		 if (expr->right.get() != right)
+		 {
+			expr->right = std::unique_ptr<Node>(right);
+		 }
+		 if (expr->left.get() != left)
+		 {
+			expr->left = std::unique_ptr<Node>(left);
+		 }
 		
 	 }
 	return {};
@@ -613,12 +651,18 @@ void Print(const Expression* tree, int level) {
 	 auto newNodeLeft = FoldConstants(left);
 	 if (newNodeLeft)
 	 {
-		 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
+		 if (expr->left.get() != newNodeLeft)
+		 {
+			expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
+		 }
 	 }
 	 auto newNodeRight = FoldConstants(right);
 	 if (newNodeRight)
 	 {
-		 expr->right= std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
+		 if (expr->right.get() != newNodeRight)
+		 {
+			expr->right= std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
+		 }
 	 }
 
  }

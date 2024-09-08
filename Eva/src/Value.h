@@ -72,6 +72,13 @@ public:
 	static ValueContainer Substract(const ValueContainer& v1, const ValueContainer& v2);
 	static ValueContainer Multiply(const ValueContainer& v1, const ValueContainer& v2);
 	static ValueContainer Divide(const ValueContainer& v1, const ValueContainer& v2);
+	static ValueContainer And(const ValueContainer& v1, const ValueContainer& v2);
+	static ValueContainer Or(const ValueContainer& v1, const ValueContainer& v2);
+	static ValueContainer Greater(const ValueContainer& v1, const ValueContainer& v2);
+	static ValueContainer Less(const ValueContainer& v1, const ValueContainer& v2);
+	static ValueContainer Equal (const ValueContainer& v1, const ValueContainer& v2);
+
+
 	void Negate();
 
 	explicit ValueContainer(ValueContainer&& v)

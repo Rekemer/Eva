@@ -72,6 +72,8 @@ do {                                                           \
                                         : v2.As<int>()) };     \
         break;                                                 \
     case ValueType::BOOL:                                      \
+		return ValueContainer{ v1.As<bool>() op  v2.As<bool>() };\
+		break;												   \
     case ValueType::FUNCTION:                                  \
     case ValueType::DEDUCE:                                    \
     case ValueType::NIL:                                       \
@@ -140,7 +142,27 @@ ValueContainer ValueContainer::Multiply(const ValueContainer& v1, const ValueCon
 {
 	OP(v1, v2, *);
 }
+ValueContainer ValueContainer::And(const ValueContainer& v1, const ValueContainer& v2)
+{
+	OP(v1, v2, &&);
+}
 
+ValueContainer ValueContainer::Or(const ValueContainer& v1, const ValueContainer& v2)
+{
+	OP(v1, v2, ||);
+}
+ValueContainer ValueContainer::Greater(const ValueContainer& v1, const ValueContainer& v2)
+{
+	OP(v1, v2, > );
+}
+ValueContainer ValueContainer::Less(const ValueContainer& v1, const ValueContainer& v2)
+{
+	OP(v1, v2, < );
+}
+ValueContainer ValueContainer::Equal(const ValueContainer& v1, const ValueContainer& v2)
+{
+	OP(v1, v2, == );
+}
 
 ValueContainer::ValueContainer(ValueType v)
 {

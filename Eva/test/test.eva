@@ -3,8 +3,13 @@
 //Print a;
 //Print b;
 //c := 2*0 + 2/4;
-Print 1==1;
+//Print c;
+//
+//Print "as" + "as";
 
+
+check := true && false || true == true ;
+//Print true;
 //fun main() : int
 //{
 //	it := 0;
