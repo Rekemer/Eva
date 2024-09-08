@@ -588,9 +588,9 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return expr;
 	 }
-	 if (expr->type == TokenType::MINUS && !expr->right)
+	 if (expr->type == TokenType::MINUS && expr->left->type != TokenType::IDENTIFIER && !expr->right)
 	 {
-		 auto left = expr->left->AsMut<Expression>();
+		auto left = expr->left->AsMut<Expression>();
 
 		auto exprInverted = new Expression();
 		 if (isLiteral(expr->left->type))
@@ -612,7 +612,9 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return expr;
 	 }
-	 auto isBinaryOp = IsBinaryOp(expr->type);
+	 // should have unary and binary minus to remove this check
+	 auto isUnaryMinus = expr->type == TokenType::MINUS ? expr->right == nullptr : false;
+	 auto isBinaryOp = IsBinaryOp(expr->type) && isUnaryMinus;
 	 if (isBinaryOp)
 	 {
 		 // recurse so we can have series of constant + constant + ...
@@ -627,7 +629,7 @@ void Print(const Expression* tree, int level) {
 		//
 		//	 expr->right = std::unique_ptr<Node>(right);
 		// }
-		 auto isLitL = isLiteral(left ->type);
+		 auto isLitL = isLiteral(left->type);
 		 auto isLitR = isLiteral(right->type);
 		 // case constant op constant 
 		 if (isLitL && isLitR)
@@ -682,47 +684,47 @@ void Print(const Expression* tree, int level) {
 		 // types of op must match?
 
 		 // accumulate on left node of current operation
-		 else if ( (isLitL ) && IsBinaryOp(right->type))
-		 {
-			 auto isLeftLiteral = isLiteral(right->left->type);
-			 auto isRightLiteral = isLiteral(right->right->type);
-			 Expression* node = left;
-			 if (isLitL && isLeftLiteral)
-			 {
-			     CalculateConstant(expr->type, left, static_cast<Expression*>(right->left.get()), node);
-				 expr->right = std::move(right->right);
-			 }
-			 else if (isLitL && isRightLiteral)
-			 {
-				 CalculateConstant(expr->type, left, static_cast<Expression*>(right->right.get()), node);
-				 expr->right = std::move(right->left);
-			 }
-			 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
-				 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-			 node->type = newType;
-			 return expr;
-		 }
-		 // accumulate on right node of current operation
-		 else if (isLitR && IsBinaryOp(left->type))
-		 {
-			auto isLeftLiteral = isLiteral(left->left->type);
-			auto isRightLiteral = isLiteral(left->right->type);
-			Expression* node = right;
-			if (isLitR && isLeftLiteral)
-			{
-				 CalculateConstant(expr->type, right, static_cast<Expression*>(left->left.get()), node);
-				 expr->left= std::move(right->right);
-			}
-			else if (isLitR && isRightLiteral)
-			{
-				CalculateConstant(expr->type, right, static_cast<Expression*>(left->right.get()), node);
-				expr->left= std::move(right->left);
-			}
-			auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
-				 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-			node->type = newType;
-			return expr;
-		 }
+		 //else if ( (isLitL ) && IsBinaryOp(right->type))
+		 //{
+		//	 auto isLeftLiteral = isLiteral(right->left->type);
+		//	 auto isRightLiteral = isLiteral(right->right->type);
+		//	 Expression* node = left;
+		//	 if (isLitL && isLeftLiteral)
+		//	 {
+		//	     CalculateConstant(expr->type, left, static_cast<Expression*>(right->left.get()), node);
+		//		 expr->right = std::move(right->right);
+		//	 }
+		//	 else if (isLitL && isRightLiteral)
+		//	 {
+		//		 CalculateConstant(expr->type, left, static_cast<Expression*>(right->right.get()), node);
+		//		 expr->right = std::move(right->left);
+		//	 }
+		//	 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+		//		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+		//	 node->type = newType;
+		//	 return expr;
+		 //}
+		 //// accumulate on right node of current operation
+		 //else if (isLitR && IsBinaryOp(left->type))
+		 //{
+		//	auto isLeftLiteral = isLiteral(left->left->type);
+		//	auto isRightLiteral = isLiteral(left->right->type);
+		//	Expression* node = right;
+		//	if (isLitR && isLeftLiteral)
+		//	{
+		//		 CalculateConstant(expr->type, right, static_cast<Expression*>(left->left.get()), node);
+		//		 expr->left= std::move(right->right);
+		//	}
+		//	else if (isLitR && isRightLiteral)
+		//	{
+		//		CalculateConstant(expr->type, right, static_cast<Expression*>(left->right.get()), node);
+		//		expr->left= std::move(right->left);
+		//	}
+		//	auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+		//		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+		//	node->type = newType;
+		//	return expr;
+		 //}
 
 
 		 if (expr->right.get() != right)
@@ -737,29 +739,80 @@ void Print(const Expression* tree, int level) {
 	 }
 	return expr;
  }
+
+ void AST::FoldBlockConstants(Scope* block)
+ {
+	 for (auto& node : block->expressions)
+	 {
+		 if (node->type == TokenType::BLOCK)
+		 {
+			 FoldBlockConstants(static_cast<Scope*>(node.get()));
+			 return;
+		 }
+
+		 auto expr = node->AsMut<Expression>();
+		 auto left = expr->left.get()->AsMut<Expression>();
+		 auto right = expr->right.get()->AsMut<Expression>();
+
+		 auto newNodeLeft = FoldConstants(left);
+		 if (newNodeLeft)
+		 {
+			 if (expr->left.get() != newNodeLeft)
+			 {
+				 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
+			 }
+		 }
+		 auto newNodeRight = FoldConstants(right);
+		 if (newNodeRight)
+		 {
+			 if (expr->right.get() != newNodeRight)
+			 {
+				 expr->right = std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
+			 }
+		 }
+	 }
+ }
+
  void AST::Fold()
  {
-	 auto expr = tree->AsMut<Expression>();
-	 auto left = expr->left.get()->AsMut<Expression>();
-	 auto right = expr->right.get()->AsMut<Expression>();
 	 
-	 auto newNodeLeft = FoldConstants(left);
-	 if (newNodeLeft)
+	 if (tree->type == TokenType::BLOCK)
 	 {
-		 if (expr->left.get() != newNodeLeft)
+		 auto block = static_cast<Scope*>(tree.get());
+		 FoldBlockConstants(block);
+	 }
+	 else if (tree->type == TokenType::FOR)
+	 {
+		 auto forNode = static_cast<For*>(tree.get());
+		 FoldBlockConstants(&forNode->initScope);
+	 }
+	 else if (tree->type == TokenType::FUN)
+	 {
+		 auto funNode = static_cast<FunctionNode*>(tree.get());
+		 FoldBlockConstants(static_cast<Scope*>(funNode->body.get()));
+	 }
+	 else
+	 {
+		 auto expr = tree->AsMut<Expression>();
+		 auto left = expr->left.get()->AsMut<Expression>();
+		 auto right = expr->right.get()->AsMut<Expression>();
+		 auto newNodeLeft = FoldConstants(left);
+		 if (newNodeLeft)
 		 {
-			expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
+			 if (expr->left.get() != newNodeLeft)
+			 {
+				 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
+			 }
+		 }
+		 auto newNodeRight = FoldConstants(right);
+		 if (newNodeRight)
+		 {
+			 if (expr->right.get() != newNodeRight)
+			 {
+				 expr->right = std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
+			 }
 		 }
 	 }
-	 auto newNodeRight = FoldConstants(right);
-	 if (newNodeRight)
-	 {
-		 if (expr->right.get() != newNodeRight)
-		 {
-			expr->right= std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
-		 }
-	 }
-
  }
 
  std::unique_ptr<Node> AST::Declaration(Iterator& currentToken)

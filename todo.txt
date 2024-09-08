@@ -48,3 +48,4 @@ peephole optimiser
 Constant Expression Folding
 
 add errors of binary operations where operands of wrong type
+add constant folding for arguments of function
