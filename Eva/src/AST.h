@@ -114,6 +114,7 @@ public:
 	bool IsPanic() { return m_Panic; }
 	void Fold();
 private:
+	void CalculateConstant(TokenType op,Expression* left, Expression* right, Expression* newValue);
 	Expression*  FoldConstants(Expression* node);
 	template<typename ...T>
 	 void ErrorMult(Token*& currentToken, const char* msg, T... expectedType )

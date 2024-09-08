@@ -213,7 +213,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 				{
 					m_Panic = true;
 					std::cout << "ERROR[" << (currentToken)->line << "]: " <<
-						"The name " << str << " is used but not declared " << std::endl;
+						"The name " << *str << " is used but not declared " << std::endl;
 				}
 			}
 			// if scope == 0 then can read only global
@@ -227,7 +227,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			{
 				m_Panic = true;
 				std::cout << "ERROR[" << (currentToken)->line << "]: " <<
-					"The name " << str << " is used but not declared " << std::endl;
+					"The name " << *str << " is used but not declared " << std::endl;
 			}
 
 		}
@@ -529,6 +529,55 @@ void Print(const Expression* tree, int level) {
 	 return type == TokenType::PLUS || type == TokenType::STAR ||
 		 type == TokenType::SLASH || type == TokenType::MINUS || isBinaryBoolOp(type);
  }
+ void AST::CalculateConstant(TokenType op,Expression* left, Expression* right, Expression* newValue)
+ {
+	 auto node = newValue;
+	 switch (op)
+	 {
+	 case TokenType::PLUS:
+		 node->value = ValueContainer::Add(left->value, right->value, *vm);
+		 break;
+	 case TokenType::MINUS:
+		 node->value = ValueContainer::Substract(left->value, right->value);
+		 break;
+	 case TokenType::STAR:
+		 node->value = ValueContainer::Multiply(left->value, right->value);
+		 break;
+	 case TokenType::SLASH:
+		 node->value = ValueContainer::Divide(left->value, right->value);
+		 break;
+	 case TokenType::EQUAL_EQUAL:
+		 node->value = ValueContainer::Equal(left->value, right->value);
+		 break;
+	 case TokenType::BANG_EQUAL:
+	 {
+		 auto newValue = ValueContainer::Equal(left->value, right->value);
+		 node->value = !newValue.AsRef<bool>();
+		 break;
+	 }
+	 case TokenType::GREATER:
+		 node->value = ValueContainer::Greater(left->value, right->value);
+		 break;
+	 case TokenType::GREATER_EQUAL:
+	 {
+		 auto newValue = ValueContainer::Equal(left->value, right->value);
+		 node->value = !newValue.AsRef<bool>();
+		 break;
+	 }
+	 case TokenType::LESS:
+		 node->value = ValueContainer::Less(left->value, right->value);
+		 break;
+	 case TokenType::LESS_EQUAL:
+	 {
+		 auto newValue = ValueContainer::Greater(left->value, right->value);
+		 node->value = !newValue.AsRef<bool>();
+		 break;
+	 }
+	 default:
+		 assert(false && "unknown binary operation on literals");
+		 break;
+	 }
+ }
  Expression* AST::FoldConstants(Expression* expr)
  {
 	 if (!expr)
@@ -561,22 +610,23 @@ void Print(const Expression* tree, int level) {
 		// replace subtree with the new node
 	 if (expr->type == TokenType::IDENTIFIER )
 	 {
-		 return {};
+		 return expr;
 	 }
 	 auto isBinaryOp = IsBinaryOp(expr->type);
 	 if (isBinaryOp)
 	 {
 		 // recurse so we can have series of constant + constant + ...
 		 auto left = FoldConstants(static_cast<Expression*>(expr->left.get()));
-		 if (IsBinaryOp(expr->left->type))
-		 {
-			 expr->left = std::unique_ptr<Node>(left);
-		 }
+		//if (IsBinaryOp(expr->left->type))
+		//{
+		//	 expr->left = std::unique_ptr<Node>(left);
+		//}
 		 auto right = FoldConstants(static_cast<Expression*>(expr->right.get()));
-		 if (IsBinaryOp(expr->right->type))
-		 {
-			 expr->right = std::unique_ptr<Node>(right);
-		 }
+		// if (IsBinaryOp(expr->right->type))
+		// {
+		//
+		//	 expr->right = std::unique_ptr<Node>(right);
+		// }
 		 auto isLitL = isLiteral(left ->type);
 		 auto isLitR = isLiteral(right->type);
 		 // case constant op constant 
@@ -613,52 +663,7 @@ void Print(const Expression* tree, int level) {
 			 }
 			 else
 			 {
-				 
-				 switch (expr->type)
-				 {
-				 case TokenType::PLUS:
-					 node->value = ValueContainer::Add(left->value, right->value, *vm);
-					 break;
-				 case TokenType::MINUS:
-					 node->value = ValueContainer::Substract(left->value, right->value);
-					 break;
-				case TokenType::STAR:
-					 node->value = ValueContainer::Multiply(left->value, right->value);
-					 break;
-				case TokenType::SLASH:
-					 node->value = ValueContainer::Divide(left->value, right->value);
-					 break;
-				case TokenType::EQUAL_EQUAL:
-					node->value = ValueContainer::Equal(left->value, right->value);
-					break;
-				case TokenType::BANG_EQUAL:
-				{
-					auto newValue = ValueContainer::Equal(left->value, right->value);
-					node->value = !newValue.AsRef<bool>();
-					break;
-				}
-				case TokenType::GREATER:
-					node->value = ValueContainer::Greater(left->value, right->value);
-					break;
-				case TokenType::GREATER_EQUAL:
-				{
-					auto newValue = ValueContainer::Equal(left->value, right->value);
-					node->value = !newValue.AsRef<bool>();
-					break;
-				}
-				case TokenType::LESS:
-					node->value = ValueContainer::Less(left->value, right->value);
-					break;
-				case TokenType::LESS_EQUAL:
-				{
-					auto newValue = ValueContainer::Greater(left->value, right->value);
-					node->value = !newValue.AsRef<bool>();
-					break;
-				}
-				default:
-					assert(false && "unknown binary operation on literals");
-					break;
-				 }
+				 CalculateConstant(expr->type,left,right,node);
 				 if (isBinaryBoolOp(expr->type))
 				 {
 					 node->type = node->value.As<bool>() ? TokenType::TRUE : TokenType::FALSE;
@@ -672,6 +677,54 @@ void Print(const Expression* tree, int level) {
 			 }
 			 return node;
 		 }
+		 // it can be partial folding like 3 + a + 5;
+		 // we need to check children of operation to see if we can fold
+		 // types of op must match?
+
+		 // accumulate on left node of current operation
+		 else if ( (isLitL ) && IsBinaryOp(right->type))
+		 {
+			 auto isLeftLiteral = isLiteral(right->left->type);
+			 auto isRightLiteral = isLiteral(right->right->type);
+			 Expression* node = left;
+			 if (isLitL && isLeftLiteral)
+			 {
+			     CalculateConstant(expr->type, left, static_cast<Expression*>(right->left.get()), node);
+				 expr->right = std::move(right->right);
+			 }
+			 else if (isLitL && isRightLiteral)
+			 {
+				 CalculateConstant(expr->type, left, static_cast<Expression*>(right->right.get()), node);
+				 expr->right = std::move(right->left);
+			 }
+			 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+				 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+			 node->type = newType;
+			 return expr;
+		 }
+		 // accumulate on right node of current operation
+		 else if (isLitR && IsBinaryOp(left->type))
+		 {
+			auto isLeftLiteral = isLiteral(left->left->type);
+			auto isRightLiteral = isLiteral(left->right->type);
+			Expression* node = right;
+			if (isLitR && isLeftLiteral)
+			{
+				 CalculateConstant(expr->type, right, static_cast<Expression*>(left->left.get()), node);
+				 expr->left= std::move(right->right);
+			}
+			else if (isLitR && isRightLiteral)
+			{
+				CalculateConstant(expr->type, right, static_cast<Expression*>(left->right.get()), node);
+				expr->left= std::move(right->left);
+			}
+			auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
+				 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+			node->type = newType;
+			return expr;
+		 }
+
+
 		 if (expr->right.get() != right)
 		 {
 			expr->right = std::unique_ptr<Node>(right);
@@ -682,7 +735,7 @@ void Print(const Expression* tree, int level) {
 		 }
 		
 	 }
-	return {};
+	return expr;
  }
  void AST::Fold()
  {
