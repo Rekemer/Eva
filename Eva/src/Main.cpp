@@ -12,7 +12,6 @@
 #define SCRIPT_PATH "test/"
 int main(int argc, const char* argv[])
 {
-	
 	if (argc == 1)
 	{
 		// repl mode

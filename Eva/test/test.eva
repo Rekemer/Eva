@@ -1,53 +1,22 @@
-//a := 2;
-//c := 4;
-////c = 1 - 2 * 0;
-//b:= 2  -  c;
-
-
-//a: int = 3;
-//{
-//	b : int = 15;
-//	b+=2;
-//	{
-//		c : float = -1;
-//		b*= c;
-//		a -=c;
-//	}
-//	a+=b;
-//	
-//}
-
-//Print b;
-//Print b;
-//b := -(1-2) + 43;
-//c := 2*0 + 2/4;
-//Print "a" + "a";
-//check := 5 != 5  ;
 
 
 
-//Print true;
-//fun main() : int
-//{
-//	it := 0;
-//	while(it < 100)
-//	{
-//		a : String = "Hello, New Year!";
-//		ilia := " , Ilia";
-//		sum := a + ilia;
-//		Print sum;
-//		it++;
-//	}
-//	Print "check";
-//	return 0;
-//}
+
 
 
 fun fib(n : int) : int
 {
 	return n + 2;
 }
+
+a := 2;
+c := 4;
+d := 1 - 2 * 0;
+b:= 2  -  c;
+
 fun main() : int
-{
-	return fib(2+2);
+{	
+	c := fib(2.0 + 3.5) + a + 3 + 3  ;
+	Print c;
+	return c;
 }

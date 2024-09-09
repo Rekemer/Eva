@@ -578,12 +578,27 @@ void Print(const Expression* tree, int level) {
 		 break;
 	 }
  }
- Expression* AST::FoldConstants(Expression* expr)
+ Node* AST::FoldConstants(Node* node)
  {
-	 if (!expr)
+	 if (!node)
 	 {
 		 return {};
 	 }
+
+	 if (node->type == TokenType::LEFT_PAREN)
+	 {
+		 auto call = static_cast<Call*>(node);
+		 for (auto& arg : call->args)
+		 {
+			 auto node = FoldConstants(arg.get());
+			 if (node != arg.get())
+			 {
+				 arg =  std::unique_ptr<Node>(node);
+			 }
+		 }
+		 return call;
+	 }
+	 auto expr = static_cast<Expression*>(node);
 	 if (isLiteral(expr->type))
 	 {
 		 return expr;
@@ -592,7 +607,9 @@ void Print(const Expression* tree, int level) {
 	 {
 		auto left = expr->left->AsMut<Expression>();
 
-		auto exprInverted = new Expression();
+		Node* node = new Expression();
+		auto exprInverted= static_cast<Expression*>(node);
+
 		 if (isLiteral(expr->left->type))
 		 {
 			// could we perhaps do it without allocation?
@@ -602,9 +619,9 @@ void Print(const Expression* tree, int level) {
 			return exprInverted;
 		 }
 		// in case -(1-2)
-		exprInverted = FoldConstants(static_cast<Expression*>(expr->left.get()));
+		node = static_cast<Node*>(FoldConstants(static_cast<Expression*>(expr->left.get())));
 		exprInverted->value.Negate();
-		return exprInverted;
+		return node;
 	 }
 	 // check if both constant
 		// replace subtree with the new node
@@ -613,17 +630,19 @@ void Print(const Expression* tree, int level) {
 		 return expr;
 	 }
 	 // should have unary and binary minus to remove this check
-	 auto isUnaryMinus = expr->type == TokenType::MINUS ? expr->right == nullptr : false;
+	 auto isUnaryMinus = expr->type == TokenType::MINUS ? expr->right != nullptr : true;
 	 auto isBinaryOp = IsBinaryOp(expr->type) && isUnaryMinus;
 	 if (isBinaryOp)
 	 {
 		 // recurse so we can have series of constant + constant + ...
 		 auto left = FoldConstants(static_cast<Expression*>(expr->left.get()));
+		 auto leftExpr = static_cast<Expression*>(left);
 		//if (IsBinaryOp(expr->left->type))
 		//{
 		//	 expr->left = std::unique_ptr<Node>(left);
 		//}
 		 auto right = FoldConstants(static_cast<Expression*>(expr->right.get()));
+		 auto rightExpr = static_cast<Expression*>(right);
 		// if (IsBinaryOp(expr->right->type))
 		// {
 		//
@@ -642,17 +661,17 @@ void Print(const Expression* tree, int level) {
 				 switch (expr->type)
 				 {
 				 case TokenType::AND:
-					 node->value = ValueContainer::And(left->value, right->value);
+					 node->value = ValueContainer::And(leftExpr->value, rightExpr->value);
 					 break;
 				 case TokenType::OR:
-					 node->value = ValueContainer::Or(left->value, right->value);
+					 node->value = ValueContainer::Or(leftExpr->value, rightExpr->value);
 					 break;
 				 case TokenType::EQUAL_EQUAL:
-					 node->value = ValueContainer::Equal(left->value, right->value);
+					 node->value = ValueContainer::Equal(leftExpr->value, rightExpr->value);
 					 break;
 				 case TokenType::BANG_EQUAL:
 				 {
-					 auto newValue = ValueContainer::Equal(left->value, right->value);
+					 auto newValue = ValueContainer::Equal(leftExpr->value, rightExpr->value);
 					 node->value = !newValue.AsRef<bool>();
 					 break;
 				 }
@@ -665,7 +684,7 @@ void Print(const Expression* tree, int level) {
 			 }
 			 else
 			 {
-				 CalculateConstant(expr->type,left,right,node);
+				 CalculateConstant(expr->type,leftExpr,rightExpr,node);
 				 if (isBinaryBoolOp(expr->type))
 				 {
 					 node->type = node->value.As<bool>() ? TokenType::TRUE : TokenType::FALSE;
@@ -740,6 +759,31 @@ void Print(const Expression* tree, int level) {
 	return expr;
  }
 
+
+ void AST::StartFolding(Node* node)
+ {
+	 auto expr = node->AsMut<Expression>();
+	 auto left = expr->left.get()->AsMut<Expression>();
+	 auto right = expr->right.get()->AsMut<Expression>();
+
+	 auto newNodeLeft = FoldConstants(left);
+	 if (newNodeLeft)
+	 {
+		 if (expr->left.get() != newNodeLeft)
+		 {
+			 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
+		 }
+	 }
+	 auto newNodeRight = FoldConstants(right);
+	 if (newNodeRight)
+	 {
+		 if (expr->right.get() != newNodeRight)
+		 {
+			 expr->right = std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
+		 }
+	 }
+ }
+
  void AST::FoldBlockConstants(Scope* block)
  {
 	 for (auto& node : block->expressions)
@@ -749,27 +793,8 @@ void Print(const Expression* tree, int level) {
 			 FoldBlockConstants(static_cast<Scope*>(node.get()));
 			 return;
 		 }
-
-		 auto expr = node->AsMut<Expression>();
-		 auto left = expr->left.get()->AsMut<Expression>();
-		 auto right = expr->right.get()->AsMut<Expression>();
-
-		 auto newNodeLeft = FoldConstants(left);
-		 if (newNodeLeft)
-		 {
-			 if (expr->left.get() != newNodeLeft)
-			 {
-				 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
-			 }
-		 }
-		 auto newNodeRight = FoldConstants(right);
-		 if (newNodeRight)
-		 {
-			 if (expr->right.get() != newNodeRight)
-			 {
-				 expr->right = std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
-			 }
-		 }
+		 StartFolding(node.get());
+		 
 	 }
  }
 
@@ -793,25 +818,7 @@ void Print(const Expression* tree, int level) {
 	 }
 	 else
 	 {
-		 auto expr = tree->AsMut<Expression>();
-		 auto left = expr->left.get()->AsMut<Expression>();
-		 auto right = expr->right.get()->AsMut<Expression>();
-		 auto newNodeLeft = FoldConstants(left);
-		 if (newNodeLeft)
-		 {
-			 if (expr->left.get() != newNodeLeft)
-			 {
-				 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
-			 }
-		 }
-		 auto newNodeRight = FoldConstants(right);
-		 if (newNodeRight)
-		 {
-			 if (expr->right.get() != newNodeRight)
-			 {
-				 expr->right = std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
-			 }
-		 }
+		 StartFolding(tree.get());
 	 }
  }
 

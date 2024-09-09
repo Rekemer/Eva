@@ -55,6 +55,8 @@ bool AreBothNumeric(ValueType left, ValueType right)
 		return false;
 	}
 }
+// turns out ternary operator can perform type promotion which causes int to be casted to float
+// later on it causes exception at runtime
 #define OP(v1, v2, op)                                         \
 do {                                                           \
     bool isNumber = AreBothNumeric(v1.type, v2.type);           \
@@ -62,18 +64,22 @@ do {                                                           \
     switch (v1.type)                                           \
     {                                                          \
     case ValueType::FLOAT:                                     \
-        return ValueContainer{ v1.As<float>() op               \
-            (v2.type == ValueType::FLOAT ? v2.As<float>()      \
-                                        : v2.As<int>()) };     \
+        if (v2.type == ValueType::FLOAT) {                     \
+            return ValueContainer{ v1.As<float>() op v2.As<float>() };  \
+        } else {                                               \
+            return ValueContainer{ v1.As<float>() op v2.As<int>() };    \
+        }                                                      \
         break;                                                 \
     case ValueType::INT:                                       \
-        return ValueContainer{ v1.As<int>() op                 \
-            (v2.type == ValueType::FLOAT ? v2.As<float>()      \
-                                        : v2.As<int>()) };     \
+        if (v2.type == ValueType::FLOAT) {                     \
+            return ValueContainer{ v1.As<int>() op v2.As<float>() };    \
+        } else {                                               \
+            return ValueContainer{ v1.As<int>() op v2.As<int>() };      \
+        }                                                      \
         break;                                                 \
     case ValueType::BOOL:                                      \
-		return ValueContainer{ v1.As<bool>() op  v2.As<bool>() };\
-		break;												   \
+        return ValueContainer{ v1.As<bool>() op v2.As<bool>() };\
+        break;                                                 \
     case ValueType::FUNCTION:                                  \
     case ValueType::DEDUCE:                                    \
     case ValueType::NIL:                                       \
@@ -84,6 +90,7 @@ do {                                                           \
     }                                                          \
     return {};                                                 \
 } while (0)
+
 ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm)
 {
 	bool isNumber = AreBothNumeric(v1.type, v2.type);
@@ -91,16 +98,23 @@ ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContaine
 	switch (v1.type)
 	{
 	case ValueType::FLOAT:
-
-		return ValueContainer{ v1.As<float>() + (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>())};
+		if (v2.type == ValueType::FLOAT) {
+			
+				return ValueContainer{ v1.As<float>() + v2.As<float>() };  
+		}
+		return ValueContainer{ v1.As<float>() + v2.As<int>() };    
 		break;
+
 	case ValueType::INT:
 	{
-		int t = (v2.type == ValueType::FLOAT ? v2.As <float>() : v2.As <int>());
-		int v = v1.As<int>() + t;
-		return ValueContainer{ v};
+		
+		if (v2.type == ValueType::FLOAT) {
+			return ValueContainer{ v1.As<int>() + v2.As<float>() };
+		}
+		return ValueContainer{ v1.As<int>() + v2.As<int>() };
 		break;
 	}
+
 	case ValueType::STRING:
 		return ValueContainer{ vm.AddStrings(v1.AsString(),v2.AsString()) };
 		break;
@@ -165,6 +179,10 @@ ValueContainer ValueContainer::Less(const ValueContainer& v1, const ValueContain
 }
 ValueContainer ValueContainer::Equal(const ValueContainer& v1, const ValueContainer& v2)
 {
+	if (v1.type == v2.type  && v1.type == ValueType::STRING)
+	{
+		return ValueContainer { *v1.AsString() == *v2.AsString() };
+	}
 	OP(v1, v2, == );
 }
 

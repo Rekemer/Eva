@@ -115,8 +115,9 @@ public:
 	void Fold();
 private:
 	void CalculateConstant(TokenType op,Expression* left, Expression* right, Expression* newValue);
-	Expression*  FoldConstants(Expression* node);
+	Node*  FoldConstants(Node* node);
 	void FoldBlockConstants(Scope* scope);
+	void StartFolding(Node* node);
 	template<typename ...T>
 	 void ErrorMult(Token*& currentToken, const char* msg, T... expectedType )
 	{
