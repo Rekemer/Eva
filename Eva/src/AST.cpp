@@ -818,17 +818,15 @@ void Print(const Expression* tree, int level) {
 		 // it can be partial folding like 3 + a + 5;
 		 // we need to check children of operation to see if we can fold
 		 // accumulate on left node of current operation
-		 else if ( (isLitL ) && IsBinaryOp(rightExpr->type) && rightExpr->type == expr->type)
+		 // we can also have cases like 3 + a - 5 - they must be folded too
+		 else if ( isLitL && IsBinaryOp(rightExpr->type) && rightExpr->type == expr->type)
 		 {
-			 //PartialFoldLeft(rightExpr->left.get(), rightExpr->right.get(), isLitL, isLitR,left,right,expr,leftExpr);
 			 PartialFold(rightExpr->left.get(), rightExpr->right.get(), isLitL, isLitR,left,right,expr,leftExpr,false);
 			 right = nullptr;
-			 
 		 }
 		 // accumulate on right node of current operation
 		 else if (isLitR && IsBinaryOp(left->type) && rightExpr->type == expr->type)
 		 {
-			//PartialFoldRight(leftExpr->left.get(), leftExpr->right.get(), isLitL, isLitR, left, right,expr, rightExpr);
 			PartialFold(leftExpr->left.get(), leftExpr->right.get(), isLitL, isLitR, left, right,expr, rightExpr,true);
 			 left = nullptr;
 			

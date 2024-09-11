@@ -90,6 +90,8 @@ private:
 	// track the declared locals
 	int m_StackPtr = 0;
 	bool m_Panic = false;
+	bool m_IsSameOrder = false;
+	
 	// if we hit break or continue we should know where to jump
 	// we need stack because there can be loops in loops
 	std::stack<int> m_StartLoopIndexes;

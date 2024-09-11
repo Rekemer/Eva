@@ -27,26 +27,72 @@ vmStack.push_back(ValueContainer{v2 operation v});\
 while(false)
 
 
+InCode m_SameOrderOp;
+
+ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
+{
+	switch (op)
+	{
+	case InCode::MULTIPLY:
+		if (type == ValueType::INT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::MULTIPLY_INT);
+			return ValueType::INT;
+		}
+		else if (type == ValueType::FLOAT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::MULTIPLY_FLOAT);
+			return ValueType::FLOAT;
+		}
+		break;
+
+	case InCode::SUBSTRACT:
+		if (type == ValueType::INT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::SUBSTRACT_INT);
+			return ValueType::INT;
+		}
+		else if (type == ValueType::FLOAT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::SUBSTRACT_FLOAT);
+			return ValueType::FLOAT;
+		}
+		break;
+
+	case InCode::ADD:
+		if (type == ValueType::INT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::ADD_INT);
+			return ValueType::INT;
+		}
+		else if (type == ValueType::FLOAT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::ADD_FLOAT);
+			return ValueType::FLOAT;
+		}
+		break;
+	case InCode::DIVIDE:
+		if (type == ValueType::INT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::DIVIDE_INT);
+			return ValueType::INT;
+		}
+		else if (type == ValueType::FLOAT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::DIVIDE_FLOAT);
+			return ValueType::FLOAT;
+		}
+		break;
+	default:
+		assert(false && "Unknown operation");
+		return ValueType::NIL;
+	}
+
+	// If none of the conditions match, return NIL as a fallback.
+	return ValueType::NIL;
+}
 
 
-#define DETERMINE_OP_TYPE_RET(type,OP)\
-{\
-	if (type == ValueType::INT)\
-	{\
-	currentFunc->opCode.push_back((Bytecode)InCode::OP##_INT); \
-	return ValueType::INT; \
-	}\
-	else if (type == ValueType::FLOAT)\
-	{\
-	currentFunc->opCode.push_back((Bytecode)InCode::OP##_FLOAT); \
-	return ValueType::FLOAT; \
-	}\
-	else\
-	{\
-	assert(false&& "type checking didn't work"); \
-	return ValueType::NIL; \
-	}\
-}\
 // deterni
 #define DETERMINE_OP_TYPE(type,OP)\
 {\
@@ -356,7 +402,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 			 else
 			 {
-				DETERMINE_OP_TYPE_RET(expr->value.type, ADD);
+				return DetermineOpTypeRet(expr->value.type, InCode::ADD,currentFunc);
 			 }
 			 break;
 		 }
@@ -378,11 +424,23 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::STAR:
 		 {
+			 auto& rightExpr = tree->As<Expression>()->right;
 			 auto left = Generate(tree->As<Expression>()->left.get());
+			 if (m_IsSameOrder)
+			 {
+				DetermineOpTypeRet(expr->value.type, InCode::MULTIPLY, currentFunc);
+				m_IsSameOrder = false;
+			 }
+			 m_IsSameOrder = rightExpr->type == TokenType::STAR || rightExpr->type == TokenType::SLASH;
+			 m_SameOrderOp = InCode::MULTIPLY;
+			 bool isTrue = m_IsSameOrder;
 			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = Generate(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
-			 DETERMINE_OP_TYPE_RET(expr->value.type, MULTIPLY);
+			 if (isTrue == m_IsSameOrder)
+			 {
+				return DetermineOpTypeRet(expr->value.type, InCode::MULTIPLY, currentFunc);
+			 }
 			 break;
 		 }
 		 case TokenType::MINUS:
@@ -393,7 +451,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				 CAST_INT_FLOAT(left, expr->value.type);
 				 auto right = Generate(tree->As<Expression>()->right.get());
 				 CAST_INT_FLOAT(right, expr->value.type);
-				 DETERMINE_OP_TYPE_RET(expr->value.type, SUBSTRACT);
+				 return DetermineOpTypeRet(expr->value.type, InCode::SUBSTRACT, currentFunc);
 			 }
 			 else
 			 {
@@ -405,11 +463,23 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::SLASH:
 		 {
+			 auto& rightExpr = tree->As<Expression>()->right;
 			 auto left = Generate(tree->As<Expression>()->left.get());
+			 if (m_IsSameOrder)
+			 {
+				 DetermineOpTypeRet(expr->value.type, m_SameOrderOp, currentFunc);
+				 m_IsSameOrder = false;
+			 }
+			 m_IsSameOrder = rightExpr->type == TokenType::STAR || rightExpr->type == TokenType::SLASH;
+			 m_SameOrderOp = InCode::DIVIDE;
+			 bool isTrue = m_IsSameOrder;
 			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = Generate(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
-			 DETERMINE_OP_TYPE_RET(expr->value.type, DIVIDE);
+			 if (isTrue == m_IsSameOrder)
+			 {
+				 return DetermineOpTypeRet(expr->value.type, InCode::DIVIDE, currentFunc);
+			 }
 			 break;
 		 }
 		 case TokenType::PERCENT:

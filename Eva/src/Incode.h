@@ -12,6 +12,13 @@ enum class InCode
 	DIVIDE_FLOAT,
 	DIVIDE_PERCENT,
 
+
+	// not to be in the final code
+	MULTIPLY,
+	ADD,
+	SUBSTRACT,
+	DIVIDE,
+	//
 	MULTIPLY_INT,
 	MULTIPLY_FLOAT,
 	SUBSTRACT_FLOAT,

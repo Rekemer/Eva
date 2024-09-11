@@ -9,7 +9,6 @@
 //	return n + 2;
 //}
 
-//a := 2;
 //c := 4;
 //
 //fun main() : int
@@ -28,4 +27,5 @@
 //	return 0;
 //}
 
-Print 2 * 2 / 4;
+a := 2;
+Print 2 + 2- a;
