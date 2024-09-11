@@ -9,23 +9,23 @@
 //	return n + 2;
 //}
 
-a := 2;
-c := 4;
-//d := 1 - 2 * 0;
-//b:= 2  -  c;
+//a := 2;
+//c := 4;
+//
+//fun main() : int
+//{	
+//	//c := fib(2.0 + 3.5) + a + 3 + 3  ; 
+//	c := 3 + a + 3 ;
+//	Print c;
+//	c1 := 3 + 3 + a;
+//	Print c1;
+//	c2 := 2 *6  + a - 3 - 3/2;
+//	Print c2;
+//	c3 :=  a + 2 *6   - 3 - 3/2 - c+ c -c;
+//	Print c3;
+//	c4 := 2 *6  + a - c;
+//	Print c4;
+//	return 0;
+//}
 
-fun main() : int
-{	
-	//c := fib(2.0 + 3.5) + a + 3 + 3  ; 
-	//c := 3 + a + 3 ;
-	//Print c;
-	//c1 := 3 + 3 + a;
-	//Print c1;
-	//c2 := 2 *6  + a - 3 - 3/2;
-	//Print c2;
-	c3 :=  a + 2 *6   - 3 - 3/2 - c+ c -c;
-	Print c3;
-	c4 := 2 *6  + a - c;
-	Print c4;
-	return 0;
-}
+Print 2 * 2 / 4;

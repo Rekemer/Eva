@@ -773,3 +773,23 @@ TEST_CASE("functions")
 	}
 }
 #endif
+TEST_CASE("constant folding")
+{
+	SUBCASE("constant folding all cases")
+	{
+		auto a = R"(
+					a := 2;
+					c := 3 + a + 3 ; 
+					c1 := 3 + 3 + a;
+					c2 := 2 *6  + a - 3 - 3/2;
+					c3 :=  a + 2 *6   - 3 - 3/2 - c+ c -c;
+					c4 := 2 *6  + a - c;
+					d := 1 - 2 * 0;
+					b:= 0/2 + d + 2 ;
+					check : bool = d == 1 && b == 3&& c == 8 && c1 == 8  && c2 == 10 && c3 == (c2 - c + c - c) && c4 == 6;   
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<bool>("check", true, ValueType::BOOL, vm);
+		CHECK(isPass);
+	}
+}

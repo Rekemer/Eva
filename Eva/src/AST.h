@@ -114,6 +114,9 @@ public:
 	bool IsPanic() { return m_Panic; }
 	void Fold();
 private:
+	void PartialFold(Node* leftOperandSibling, Node* rightOperandSibling,
+		bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight,
+		Expression* baseExpression, Expression* accumulateNode, bool isRightDirection);
 	void CalculateConstant(TokenType op,Expression* left, Expression* right, Expression* newValue);
 	Node*  FoldConstants(Node* node);
 	void FoldBlockConstants(Scope* scope);

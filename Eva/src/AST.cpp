@@ -579,6 +579,45 @@ void Print(const Expression* tree, int level) {
 	 }
  }
 
+ void AST::PartialFold(Node* leftOperandSibling, Node* rightOperandSibling,
+	 bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight,
+	 Expression* baseExpression, Expression* accumulateNode, bool isRightDirection)
+ {
+	 auto isLeftLiteralRightChild = isLiteral(leftOperandSibling->type);
+	 auto isRightLiteralRightChild = isLiteral(rightOperandSibling->type);
+	 TokenType rightType = TokenType::LEFT_PAREN;
+
+	 auto leftNode =  FoldConstants(leftOperandSibling);
+	 auto rightNode = FoldConstants(rightOperandSibling);
+
+	 if (rightNode->type == TokenType::MINUS || leftNode->type == TokenType::MINUS) {
+		 return;
+	 }
+
+	 // if partial folding and the subtree has a node which operates on two variables
+	 auto areBothVariables = leftNode->type == TokenType::IDENTIFIER && rightNode->type == TokenType::IDENTIFIER;
+	 if (areBothVariables) return;
+
+	 if (isLeftLBase && isLeftLiteralRightChild) {
+		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(leftNode), accumulateNode);
+		 rightType = leftNode->type;
+		 baseExpression->right = std::move(isRightDirection ? static_cast<Expression*>(baseRight)->right
+			 : static_cast<Expression*>(baseRight)->right);
+	 }
+	 else if (isLeftLBase && isRightLiteralRightChild) {
+		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(rightNode), accumulateNode);
+		 rightType = rightNode->type;
+		 baseExpression->right = std::move(isRightDirection ? static_cast<Expression*>(baseLeft)->left
+			 : static_cast<Expression*>(baseRight)->left);
+	 }
+
+	 assert(rightType != TokenType::LEFT_PAREN);
+
+	 auto newType = (accumulateNode->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
+		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+
+	 accumulateNode->type = newType;
+ }
 
 
  void AST::PartialFoldRight(Node* leftOperandSibling, Node* rightOperandSibling,
@@ -775,79 +814,24 @@ void Print(const Expression* tree, int level) {
 			 }
 			 return node;
 		 }
+
 		 // it can be partial folding like 3 + a + 5;
 		 // we need to check children of operation to see if we can fold
-		 // types of op must match?
-
 		 // accumulate on left node of current operation
 		 else if ( (isLitL ) && IsBinaryOp(rightExpr->type) && rightExpr->type == expr->type)
 		 {
-			 PartialFoldLeft(rightExpr->left.get(), rightExpr->right.get(), isLitL, isLitR,left,right,expr,leftExpr);
+			 //PartialFoldLeft(rightExpr->left.get(), rightExpr->right.get(), isLitL, isLitR,left,right,expr,leftExpr);
+			 PartialFold(rightExpr->left.get(), rightExpr->right.get(), isLitL, isLitR,left,right,expr,leftExpr,false);
 			 right = nullptr;
-			 //auto isLeftLiteralRightChild = isLiteral(rightExpr->left->type);
-			 //auto isRightLiteralRightChild = isLiteral(rightExpr->right->type);
-			 //TokenType rightType = TokenType::LEFT_PAREN;
-			 //Expression* node = leftExpr;
-
-			 //auto rightLeft = FoldConstants(rightExpr->left.get());
-			 //auto rightRight= FoldConstants(rightExpr->right.get());
-
-			 //// if partial folding and the subtree has a node which operates on two variables
-			 //auto areBothVariables = rightLeft ->type == TokenType::IDENTIFIER && rightRight->type == TokenType::IDENTIFIER;
-			 //if (areBothVariables) return expr;
-			 //if (isLitL && isLeftLiteralRightChild)
-			 //{
-			 //    CalculateConstant(expr->type, leftExpr, static_cast<Expression*>(rightLeft), node);
-				// rightType = rightLeft->type;
-				// expr->right = std::unique_ptr<Node>{ rightRight };
-			 //}
-			 //else if (isLitL && isRightLiteralRightChild)
-			 //{
-				// CalculateConstant(expr->type, leftExpr, static_cast<Expression*>(rightRight), node);
-				// rightType = rightRight->type;
-				// expr->right = std::unique_ptr<Node>{ rightLeft };
-			 //}
-			 //assert(rightType != TokenType::LEFT_PAREN);
-			 //auto newType = (left->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
-				// ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-			 //right = nullptr;
-			 //node->type = newType;
-			// return expr;
+			 
 		 }
 		 // accumulate on right node of current operation
 		 else if (isLitR && IsBinaryOp(left->type) && rightExpr->type == expr->type)
 		 {
-			PartialFoldRight(leftExpr->left.get(), leftExpr->right.get(), isLitL, isLitR, left, right,expr, rightExpr);
+			//PartialFoldRight(leftExpr->left.get(), leftExpr->right.get(), isLitL, isLitR, left, right,expr, rightExpr);
+			PartialFold(leftExpr->left.get(), leftExpr->right.get(), isLitL, isLitR, left, right,expr, rightExpr,true);
 			 left = nullptr;
-			//auto isLeftLiteralLeftChild = isLiteral(leftExpr->left->type);
-			//auto isLeftLiteralRightChild = isLiteral(leftExpr->right->type);
-			//Expression* node = rightExpr;
-			//TokenType rightType = TokenType::LEFT_PAREN;
-
-			//auto leftLeft = FoldConstants(leftExpr->left.get());
-			//auto leftRight = FoldConstants(leftExpr->right.get());
-
-			//// if partial folding and the subtree has a node which operates on two variables
-			//auto areBothVariables = leftLeft->type == TokenType::IDENTIFIER&& leftRight->type == TokenType::IDENTIFIER;
-			//if (areBothVariables) return expr;
-			//if (isLitR && isLeftLiteralLeftChild)
-			//{
-			//	 CalculateConstant(expr->type, rightExpr, static_cast<Expression*>(leftLeft), node);
-			//	 rightType = leftLeft->type;
-			//	 expr->left= std::unique_ptr<Node>{ leftRight };
-			//}
-			//else if (isLitR && isLeftLiteralRightChild)
-			//{
-			//	CalculateConstant(expr->type, rightExpr, static_cast<Expression*>(leftRight), node);
-			//	rightType = leftRight->type;
-			//	expr->left= std::unique_ptr<Node>{ leftLeft };
-			//}
-			//assert(rightType != TokenType::LEFT_PAREN);
-			//auto newType = (left->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
-			//	 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-			//left = nullptr;
-			//node->type = newType;
-			//return expr;
+			
 		 }
 
 
