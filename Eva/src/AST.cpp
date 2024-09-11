@@ -578,6 +578,82 @@ void Print(const Expression* tree, int level) {
 		 break;
 	 }
  }
+
+
+
+ void AST::PartialFoldRight(Node* leftOperandSibling, Node* rightOperandSibling,
+	 bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight, Expression* baseExpression, Expression* accumulateNode)
+ {
+	 auto isLeftLiteralRightChild = isLiteral(leftOperandSibling->type);
+	 auto isRightLiteralRightChild = isLiteral(rightOperandSibling->type);
+	 TokenType rightType = TokenType::LEFT_PAREN;
+
+	 auto leftLeft = FoldConstants(leftOperandSibling);
+	 auto leftRight = FoldConstants(rightOperandSibling);
+	 if (leftRight->type == TokenType::MINUS || leftLeft->type == TokenType::MINUS)
+	 {
+		 return;
+	 }
+
+	 // if partial folding and the subtree has a node which operates on two variables
+	 auto areBothVariables = leftLeft->type == TokenType::IDENTIFIER && leftRight->type == TokenType::IDENTIFIER;
+	 //if (areBothVariables) return expr;
+	 if (areBothVariables) return;
+	 if (isLeftLBase && isLeftLiteralRightChild)
+	 {
+		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(leftLeft), accumulateNode);
+		 rightType = leftLeft->type;
+		 baseExpression->right = std::move(static_cast<Expression*>(baseLeft)->right);
+	 }
+	 else if (isLeftLBase && isRightLiteralRightChild)
+	 {
+		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(leftRight), accumulateNode);
+		 rightType = leftRight->type;
+		 baseExpression->right = std::move(static_cast<Expression*>(baseLeft)->left);
+	 }
+	 assert(rightType != TokenType::LEFT_PAREN);
+	 auto newType = (accumulateNode->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
+		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+
+	 accumulateNode->type = newType;
+ }
+
+ void AST::PartialFoldLeft(Node* leftOperandSibling, Node* rightOperandSibling, 
+	 bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight, Expression* baseExpression, Expression* accumulateNode)
+ {
+	 auto isLeftLiteralRightChild = isLiteral(leftOperandSibling->type);
+	 auto isRightLiteralRightChild = isLiteral(rightOperandSibling->type);
+	 TokenType rightType = TokenType::LEFT_PAREN;
+
+	 auto rightLeft = FoldConstants(leftOperandSibling);
+	 auto rightRight = FoldConstants(rightOperandSibling);
+	 if (rightRight->type == TokenType::MINUS  || rightLeft->type == TokenType::MINUS)
+	 {
+		 return;
+	 }
+	 // if partial folding and the subtree has a node which operates on two variables
+	 auto areBothVariables = rightLeft->type == TokenType::IDENTIFIER && rightRight->type == TokenType::IDENTIFIER;
+	 //if (areBothVariables) return expr;
+	 if (areBothVariables) return;
+	 if (isLeftLBase && isLeftLiteralRightChild)
+	 {
+		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(rightLeft), accumulateNode);
+		 rightType = rightLeft->type;
+		 baseExpression->right = std::move(static_cast<Expression*>(baseRight)->right);
+	 }
+	 else if (isLeftLBase && isRightLiteralRightChild)
+	 {
+		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(rightRight), accumulateNode);
+		 rightType = rightRight->type;
+		 baseExpression->right = std::move(static_cast<Expression*>(baseRight)->left);
+	 }
+	 assert(rightType != TokenType::LEFT_PAREN);
+	 auto newType = (accumulateNode->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
+		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+	
+	 accumulateNode->type = newType;
+ }
+
  Node* AST::FoldConstants(Node* node)
  {
 	 if (!node)
@@ -649,7 +725,8 @@ void Print(const Expression* tree, int level) {
 		//	 expr->right = std::unique_ptr<Node>(right);
 		// }
 		 auto isLitL = isLiteral(left->type);
-		 auto isLitR = isLiteral(right->type);
+		 auto isLitR = isLiteral(right->type);\
+		
 		 // case constant op constant 
 		 if (isLitL && isLitR)
 		 {
@@ -703,54 +780,82 @@ void Print(const Expression* tree, int level) {
 		 // types of op must match?
 
 		 // accumulate on left node of current operation
-		 //else if ( (isLitL ) && IsBinaryOp(right->type))
-		 //{
-		//	 auto isLeftLiteral = isLiteral(right->left->type);
-		//	 auto isRightLiteral = isLiteral(right->right->type);
-		//	 Expression* node = left;
-		//	 if (isLitL && isLeftLiteral)
-		//	 {
-		//	     CalculateConstant(expr->type, left, static_cast<Expression*>(right->left.get()), node);
-		//		 expr->right = std::move(right->right);
-		//	 }
-		//	 else if (isLitL && isRightLiteral)
-		//	 {
-		//		 CalculateConstant(expr->type, left, static_cast<Expression*>(right->right.get()), node);
-		//		 expr->right = std::move(right->left);
-		//	 }
-		//	 auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
-		//		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-		//	 node->type = newType;
-		//	 return expr;
-		 //}
-		 //// accumulate on right node of current operation
-		 //else if (isLitR && IsBinaryOp(left->type))
-		 //{
-		//	auto isLeftLiteral = isLiteral(left->left->type);
-		//	auto isRightLiteral = isLiteral(left->right->type);
-		//	Expression* node = right;
-		//	if (isLitR && isLeftLiteral)
-		//	{
-		//		 CalculateConstant(expr->type, right, static_cast<Expression*>(left->left.get()), node);
-		//		 expr->left= std::move(right->right);
-		//	}
-		//	else if (isLitR && isRightLiteral)
-		//	{
-		//		CalculateConstant(expr->type, right, static_cast<Expression*>(left->right.get()), node);
-		//		expr->left= std::move(right->left);
-		//	}
-		//	auto newType = (left->type == TokenType::FLOAT_LITERAL || right->type == TokenType::FLOAT_LITERAL)
-		//		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-		//	node->type = newType;
-		//	return expr;
-		 //}
+		 else if ( (isLitL ) && IsBinaryOp(rightExpr->type) && rightExpr->type == expr->type)
+		 {
+			 PartialFoldLeft(rightExpr->left.get(), rightExpr->right.get(), isLitL, isLitR,left,right,expr,leftExpr);
+			 right = nullptr;
+			 //auto isLeftLiteralRightChild = isLiteral(rightExpr->left->type);
+			 //auto isRightLiteralRightChild = isLiteral(rightExpr->right->type);
+			 //TokenType rightType = TokenType::LEFT_PAREN;
+			 //Expression* node = leftExpr;
+
+			 //auto rightLeft = FoldConstants(rightExpr->left.get());
+			 //auto rightRight= FoldConstants(rightExpr->right.get());
+
+			 //// if partial folding and the subtree has a node which operates on two variables
+			 //auto areBothVariables = rightLeft ->type == TokenType::IDENTIFIER && rightRight->type == TokenType::IDENTIFIER;
+			 //if (areBothVariables) return expr;
+			 //if (isLitL && isLeftLiteralRightChild)
+			 //{
+			 //    CalculateConstant(expr->type, leftExpr, static_cast<Expression*>(rightLeft), node);
+				// rightType = rightLeft->type;
+				// expr->right = std::unique_ptr<Node>{ rightRight };
+			 //}
+			 //else if (isLitL && isRightLiteralRightChild)
+			 //{
+				// CalculateConstant(expr->type, leftExpr, static_cast<Expression*>(rightRight), node);
+				// rightType = rightRight->type;
+				// expr->right = std::unique_ptr<Node>{ rightLeft };
+			 //}
+			 //assert(rightType != TokenType::LEFT_PAREN);
+			 //auto newType = (left->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
+				// ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+			 //right = nullptr;
+			 //node->type = newType;
+			// return expr;
+		 }
+		 // accumulate on right node of current operation
+		 else if (isLitR && IsBinaryOp(left->type) && rightExpr->type == expr->type)
+		 {
+			PartialFoldRight(leftExpr->left.get(), leftExpr->right.get(), isLitL, isLitR, left, right,expr, rightExpr);
+			 left = nullptr;
+			//auto isLeftLiteralLeftChild = isLiteral(leftExpr->left->type);
+			//auto isLeftLiteralRightChild = isLiteral(leftExpr->right->type);
+			//Expression* node = rightExpr;
+			//TokenType rightType = TokenType::LEFT_PAREN;
+
+			//auto leftLeft = FoldConstants(leftExpr->left.get());
+			//auto leftRight = FoldConstants(leftExpr->right.get());
+
+			//// if partial folding and the subtree has a node which operates on two variables
+			//auto areBothVariables = leftLeft->type == TokenType::IDENTIFIER&& leftRight->type == TokenType::IDENTIFIER;
+			//if (areBothVariables) return expr;
+			//if (isLitR && isLeftLiteralLeftChild)
+			//{
+			//	 CalculateConstant(expr->type, rightExpr, static_cast<Expression*>(leftLeft), node);
+			//	 rightType = leftLeft->type;
+			//	 expr->left= std::unique_ptr<Node>{ leftRight };
+			//}
+			//else if (isLitR && isLeftLiteralRightChild)
+			//{
+			//	CalculateConstant(expr->type, rightExpr, static_cast<Expression*>(leftRight), node);
+			//	rightType = leftRight->type;
+			//	expr->left= std::unique_ptr<Node>{ leftLeft };
+			//}
+			//assert(rightType != TokenType::LEFT_PAREN);
+			//auto newType = (left->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
+			//	 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
+			//left = nullptr;
+			//node->type = newType;
+			//return expr;
+		 }
 
 
-		 if (expr->right.get() != right)
+		 if (expr->right.get() != right && right != nullptr)
 		 {
 			expr->right = std::unique_ptr<Node>(right);
 		 }
-		 if (expr->left.get() != left)
+		 if (expr->left.get() != left && left != nullptr)
 		 {
 			expr->left = std::unique_ptr<Node>(left);
 		 }

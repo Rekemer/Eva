@@ -118,6 +118,10 @@ private:
 	Node*  FoldConstants(Node* node);
 	void FoldBlockConstants(Scope* scope);
 	void StartFolding(Node* node);
+	void PartialFoldLeft(Node* leftOperandSibling, Node* rightOperandSibling,
+		bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight,Expression* baseExpression, Expression* accumulateNode);
+	void PartialFoldRight(Node* leftOperandSibling, Node* rightOperandSibling,
+		bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight, Expression* baseExpression, Expression* accumulateNode);
 	template<typename ...T>
 	 void ErrorMult(Token*& currentToken, const char* msg, T... expectedType )
 	{
