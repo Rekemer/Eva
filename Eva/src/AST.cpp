@@ -630,108 +630,10 @@ void Print(const Expression* tree, int level) {
  }
 
 
- void AST::PartialFoldRight(Node* leftOperandSibling, Node* rightOperandSibling,
-	 bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight, Expression* baseExpression, Expression* accumulateNode)
- {
-	 auto isLeftLiteralRightChild = isLiteral(leftOperandSibling->type);
-	 auto isRightLiteralRightChild = isLiteral(rightOperandSibling->type);
-	 TokenType rightType = TokenType::LEFT_PAREN;
 
-	 auto leftLeft = FoldConstants(leftOperandSibling);
-	 auto leftRight = FoldConstants(rightOperandSibling);
-	 if (leftRight->type == TokenType::MINUS || leftLeft->type == TokenType::MINUS)
-	 {
-		 return;
-	 }
+ 
 
-	 // if partial folding and the subtree has a node which operates on two variables
-	 auto areBothVariables = leftLeft->type == TokenType::IDENTIFIER && leftRight->type == TokenType::IDENTIFIER;
-	 //if (areBothVariables) return expr;
-	 if (areBothVariables) return;
-	 if (isLeftLBase && isLeftLiteralRightChild)
-	 {
-		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(leftLeft), accumulateNode);
-		 rightType = leftLeft->type;
-		 baseExpression->right = std::move(static_cast<Expression*>(baseLeft)->right);
-	 }
-	 else if (isLeftLBase && isRightLiteralRightChild)
-	 {
-		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(leftRight), accumulateNode);
-		 rightType = leftRight->type;
-		 baseExpression->right = std::move(static_cast<Expression*>(baseLeft)->left);
-	 }
-	 assert(rightType != TokenType::LEFT_PAREN);
-	 auto newType = (accumulateNode->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
-		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-
-	 accumulateNode->type = newType;
- }
-
- void AST::PartialFoldLeft(Node* leftOperandSibling, Node* rightOperandSibling, 
-	 bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight, Expression* baseExpression, Expression* accumulateNode)
- {
-	 auto isLeftLiteralRightChild = isLiteral(leftOperandSibling->type);
-	 auto isRightLiteralRightChild = isLiteral(rightOperandSibling->type);
-	 TokenType rightType = TokenType::LEFT_PAREN;
-
-	 auto rightLeft = FoldConstants(leftOperandSibling);
-	 auto rightRight = FoldConstants(rightOperandSibling);
-	 if (rightRight->type == TokenType::MINUS  || rightLeft->type == TokenType::MINUS)
-	 {
-		 return;
-	 }
-	 // if partial folding and the subtree has a node which operates on two variables
-	 auto areBothVariables = rightLeft->type == TokenType::IDENTIFIER && rightRight->type == TokenType::IDENTIFIER;
-	 //if (areBothVariables) return expr;
-	 if (areBothVariables) return;
-	 if (isLeftLBase && isLeftLiteralRightChild)
-	 {
-		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(rightLeft), accumulateNode);
-		 rightType = rightLeft->type;
-		 baseExpression->right = std::move(static_cast<Expression*>(baseRight)->right);
-	 }
-	 else if (isLeftLBase && isRightLiteralRightChild)
-	 {
-		 CalculateConstant(baseExpression->type, accumulateNode, static_cast<Expression*>(rightRight), accumulateNode);
-		 rightType = rightRight->type;
-		 baseExpression->right = std::move(static_cast<Expression*>(baseRight)->left);
-	 }
-	 assert(rightType != TokenType::LEFT_PAREN);
-	 auto newType = (accumulateNode->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
-		 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-	
-	 accumulateNode->type = newType;
- }
-
- bool AreCompatible(TokenType op1, TokenType op2)
- {
-
-	 bool isMultOrDiv1 = (op1 == TokenType::STAR|| op1 == TokenType::SLASH);
-	 bool isMultOrDiv2 = (op2 == TokenType::STAR|| op2 == TokenType::SLASH);
-
-	 if ((isMultOrDiv1 && isMultOrDiv2))
-	 {
-		 return true; 
-	 }
-	 return false; 
- }
- // minus is already taken care of by traveral of the tree
- TokenType ReverseOperation(TokenType opOnBaseConstant)
- {
-	 switch (opOnBaseConstant)
-	 {
-	 case TokenType::SLASH:
-		 return TokenType::STAR;
-		 break;
-	 case TokenType::STAR:
-		 return TokenType::SLASH;
-		 break;
-	 default:
-		 assert(false);
-		 break;
-	 }
- }
-
+ 
  Node* AST::FoldConstants(Node* node)
  {
 	 if (!node)
@@ -869,51 +771,7 @@ void Print(const Expression* tree, int level) {
 			 left = nullptr;
 			
 		 }
-		 else
-		 {	
-			// we can also have cases with different but compatible operations 3 + a - 5 - they must be folded too
-			// +- and -+ are converted to + and already taken care of
-			// */
-			// /*
-			 bool isRightCompat= AreCompatible(expr->type, rightExpr->type);
-			 bool isLeftCompat = AreCompatible(expr->type, leftExpr->type);
-
-
-			 if (isLitL && isRightCompat)
-			 {
-				auto leftNode = FoldConstants(rightExpr->left.get());
-				auto rightNode = FoldConstants(rightExpr->right.get());
-				auto isLeftLiteralRightChild = isLiteral(leftNode->type);
-				auto isRightLiteralRightChild = isLiteral(rightNode->type);
-				assert(isLeftLiteralRightChild != isRightLiteralRightChild);
-				if (isLeftLiteralRightChild)
-				{
-
-					CalculateConstant(ReverseOperation(expr->type), leftExpr, static_cast<Expression*>(leftNode), leftExpr);
-				}
-				else if (isRightLiteralRightChild)
-				{
-					CalculateConstant(ReverseOperation(expr->type), leftExpr, static_cast<Expression*>(rightNode), leftExpr);
-				}
-			 }
-			 else if (isLitR && isLeftCompat)
-			 {
-				 auto leftNode = FoldConstants(leftExpr->left.get());
-				 auto rightNode = FoldConstants(leftExpr->right.get());
-				 auto isLeftLiteralLeftChild = isLiteral(leftNode->type);
-				 auto isRightLiteralLeftChild = isLiteral(rightNode->type);
-				 assert(isLeftLiteralLeftChild != isRightLiteralLeftChild);
-				 if (isLeftLiteralLeftChild)
-				 {
-
-					 CalculateConstant(ReverseOperation(expr->type), rightExpr, static_cast<Expression*>(leftNode), rightExpr);
-				 }
-				 else if (isRightLiteralLeftChild)
-				 {
-					 CalculateConstant(ReverseOperation(expr->type), rightExpr, static_cast<Expression*>(rightNode), rightExpr);
-				 }
-			 }
-		 }
+		
 
 
 		 if (expr->right.get() != right && right != nullptr)
@@ -1437,6 +1295,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		if (entry->value.type != ValueType::NIL)
 		{
 			auto declaredType = TypeToLiteral(entry->value.type);
+			if (actualType == TokenType::BLOCK) assert(false && "Could not find the actual return type");
 			assert(declaredType == actualType);
 			return declaredType;
 		}

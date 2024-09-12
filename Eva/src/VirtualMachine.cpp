@@ -142,7 +142,7 @@ if (type1== ValueType::INT && type2== ValueType::FLOAT)\
 }\
 else if (type1== ValueType::FLOAT && type2== ValueType::INT)\
 {\
-	currentFunc->opCode.push_back(((Bytecode)InCode::CAST_FLOAT));\
+	currentFunc->opCode.push_back(((Bytecode)InCode::CAST_INT));\
 }\
 
 
@@ -896,6 +896,7 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 		auto str2 = b.AsString();
 		return *str == *str2;
 	}
+	assert(false && "cannot compare the values of different type");
 	return false;
 }
 void VirtualMachine::CollectStrings() 
