@@ -80,6 +80,14 @@ bool CheckVariable<String*>(std::string_view variableName, String* expectedValue
 		CHECK(CompileTest("2+5 >= 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
+		CHECK(CompileTest("(2/2 * 2 == 2 )").As<bool>() == true);
+		CHECK(CompileTest("(4* 6/3 == 8 )").As<bool>() == true);
+		CHECK(CompileTest("(4.0* 6/3 == 8.0 )").As<bool>() == true);
+		CHECK(CompileTest("(4.0* 6/3 + 2 == 10.0 )").As<bool>() == true);
+		CHECK(CompileTest("(4.0* 6/(4/2.0) + 2 == 14.0 )").As<bool>() == true);
+		CHECK(CompileTest("( 6.0/(6/2.0) * 4.0 + 2 == 10.0 )").As<bool>() == true);
+		CHECK(CompileTest("( 2.0 / 4 * 3  == 1.5)").As<bool>() == true);
+		CHECK(CompileTest("( 3 * 2 / 4.0 == 6.0/4)").As<bool>() == true);
 	}
 
 #endif // EXPR

@@ -56,6 +56,7 @@ public:
 	~VirtualMachine();
 	ValueType Generate(const Node* tree);
 private:
+	void CastWithDeclared(ValueType assignedType, ValueType declared);
 	void CollectStrings();
 	void BeginContinue(int startLoopIndex);
 	int BeginBreak();

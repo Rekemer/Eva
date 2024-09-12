@@ -28,7 +28,14 @@ while(false)
 
 
 InCode m_SameOrderOp;
+ValueType m_SameOrderType;
 
+ValueType Strongest(ValueType v, ValueType v1)
+{
+	if (v == ValueType::FLOAT) return ValueType::FLOAT;
+	if (v1 == ValueType::FLOAT) return ValueType::FLOAT;
+	return ValueType::INT;
+}
 ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 {
 	switch (op)
@@ -128,15 +135,32 @@ if (type== ValueType::INT)\
 currentFunc->opCode.push_back(((uint8_t)InCode::CAST_BOOL_FLOAT));\
 }\
 
-#define CAST_INT_FLOAT(child,parentType)\
-if (child== ValueType::INT && parentType== ValueType::FLOAT)\
+#define CAST_INT_FLOAT(type1,type2)\
+if (type1== ValueType::INT && type2== ValueType::FLOAT)\
 {\
-	currentFunc->opCode.push_back(((uint8_t)InCode::CAST_FLOAT));\
+	currentFunc->opCode.push_back(((Bytecode)InCode::CAST_FLOAT));\
 }\
-else if (child== ValueType::FLOAT && parentType== ValueType::INT)\
+else if (type1== ValueType::FLOAT && type2== ValueType::INT)\
 {\
-	currentFunc->opCode.push_back(((uint8_t)InCode::CAST_INT));\
+	currentFunc->opCode.push_back(((Bytecode)InCode::CAST_FLOAT));\
 }\
+
+
+void VirtualMachine::CastWithDeclared(ValueType assignedType, ValueType declared)
+{
+	if (assignedType != declared && assignedType != ValueType::NIL)
+	{
+		if (declared == ValueType::INT)
+		{
+			currentFunc->opCode.push_back(((Bytecode)InCode::CAST_INT));
+		}
+		else
+		{
+			currentFunc->opCode.push_back(((Bytecode)InCode::CAST_FLOAT));
+		}
+	}
+}
+
 
 #define CAST_INT(child)\
 if (child== ValueType::FLOAT)\
@@ -360,7 +384,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				 auto& arg = call->args[i];
 				 auto argType = Generate(arg.get());
 				 auto declType = funcValue->argTypes[i];
-				 CAST_INT_FLOAT(argType,declType);
+				 CastWithDeclared(argType,declType);
 
 			 }
 			 currentFunc->opCode.push_back((uint8_t)InCode::CALL);
@@ -424,23 +448,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::STAR:
 		 {
-			 auto& rightExpr = tree->As<Expression>()->right;
 			 auto left = Generate(tree->As<Expression>()->left.get());
-			 if (m_IsSameOrder)
-			 {
-				DetermineOpTypeRet(expr->value.type, InCode::MULTIPLY, currentFunc);
-				m_IsSameOrder = false;
-			 }
-			 m_IsSameOrder = rightExpr->type == TokenType::STAR || rightExpr->type == TokenType::SLASH;
-			 m_SameOrderOp = InCode::MULTIPLY;
-			 bool isTrue = m_IsSameOrder;
 			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = Generate(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
-			 if (isTrue == m_IsSameOrder)
-			 {
-				return DetermineOpTypeRet(expr->value.type, InCode::MULTIPLY, currentFunc);
-			 }
+			 return DetermineOpTypeRet(expr->value.type, InCode::MULTIPLY,currentFunc);
 			 break;
 		 }
 		 case TokenType::MINUS:
@@ -463,23 +475,11 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::SLASH:
 		 {
-			 auto& rightExpr = tree->As<Expression>()->right;
 			 auto left = Generate(tree->As<Expression>()->left.get());
-			 if (m_IsSameOrder)
-			 {
-				 DetermineOpTypeRet(expr->value.type, m_SameOrderOp, currentFunc);
-				 m_IsSameOrder = false;
-			 }
-			 m_IsSameOrder = rightExpr->type == TokenType::STAR || rightExpr->type == TokenType::SLASH;
-			 m_SameOrderOp = InCode::DIVIDE;
-			 bool isTrue = m_IsSameOrder;
 			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = Generate(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
-			 if (isTrue == m_IsSameOrder)
-			 {
-				 return DetermineOpTypeRet(expr->value.type, InCode::DIVIDE, currentFunc);
-			 }
+			 return DetermineOpTypeRet(expr->value.type, InCode::DIVIDE, currentFunc);
 			 break;
 		 }
 		 case TokenType::PERCENT:
@@ -570,7 +570,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 assert(tree->As<Expression>()->left.get() != nullptr);
 			 auto str = exprLeft->value.AsString();
 			 auto declType = GetVariableType(str.get(), exprLeft->depth);
-			 CAST_INT_FLOAT(expressionType, declType);
+			 CastWithDeclared(expressionType, declType);
 
 
 			 assert(exprLeft != nullptr);
@@ -589,7 +589,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 auto declType = Generate(tree->As<Expression>()->left.get());
 			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
-			 CAST_INT_FLOAT(expressionType, declType);
+			 CastWithDeclared(expressionType, declType);
 			 SetVariable(currentFunc->opCode, exprLeft);
 			 break;
 			 }
@@ -598,7 +598,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 auto left = Generate(tree->As<Expression>()->left.get());
 			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
-			 CAST_INT_FLOAT(expressionType, left);
+			 CastWithDeclared(expressionType, left);
 
 
 			 DETERMINE_OP_TYPE(left, ADD);
@@ -612,7 +612,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
-			 CAST_INT_FLOAT(expressionType, left);
+			 CastWithDeclared(expressionType, left);
 
 
 			 DETERMINE_OP_TYPE(left, MULTIPLY);
@@ -627,7 +627,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
-			 CAST_INT_FLOAT(expressionType, left);
+			 CastWithDeclared(expressionType, left);
 
 
 			 DETERMINE_OP_TYPE(left, DIVIDE);
@@ -642,7 +642,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 auto expressionType = Generate(tree->As<Expression>()->right.get());
 
 
-			 CAST_INT_FLOAT(expressionType, left);
+			 CastWithDeclared(expressionType, left);
 
 
 			 DETERMINE_OP_TYPE(left, SUBSTRACT);

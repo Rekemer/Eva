@@ -20,24 +20,34 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
  std::unique_ptr<Node> AST::Factor( Iterator& currentToken)
 {
 	auto left = UnaryOpPrefix(currentToken);
-	auto nextToken = (currentToken );
-	bool isMultiplication = nextToken->type == TokenType::STAR ||
-		nextToken->type == TokenType::SLASH || 
-		nextToken->type == TokenType::PERCENT;
-	if (isMultiplication)
+	// Handle consecutive multiplication/division/modulus operations
+	while (true)  
 	{
-		//currentToken++;
+		auto nextToken = (currentToken);  
+
+		bool isMultiplication = nextToken->type == TokenType::STAR ||
+			nextToken->type == TokenType::SLASH ||
+			nextToken->type == TokenType::PERCENT;
+
+		if (!isMultiplication)
+		{
+			break;  
+		}
+
 		auto operation = currentToken->type;
 		auto parent = std::make_unique<Expression>();
 		parent->line = currentToken->line;
-		currentToken++;
-		auto right = Factor(currentToken);
+		currentToken++;  
+
+		auto right = UnaryOpPrefix(currentToken);
+
 		parent->left = std::move(left);
 		parent->right = std::move(right);
 		parent->type = operation;
-		return parent;
 
+		left = std::move(parent);
 	}
+
 	return left;
 }
 
@@ -693,6 +703,35 @@ void Print(const Expression* tree, int level) {
 	 accumulateNode->type = newType;
  }
 
+ bool AreCompatible(TokenType op1, TokenType op2)
+ {
+
+	 bool isMultOrDiv1 = (op1 == TokenType::STAR|| op1 == TokenType::SLASH);
+	 bool isMultOrDiv2 = (op2 == TokenType::STAR|| op2 == TokenType::SLASH);
+
+	 if ((isMultOrDiv1 && isMultOrDiv2))
+	 {
+		 return true; 
+	 }
+	 return false; 
+ }
+ // minus is already taken care of by traveral of the tree
+ TokenType ReverseOperation(TokenType opOnBaseConstant)
+ {
+	 switch (opOnBaseConstant)
+	 {
+	 case TokenType::SLASH:
+		 return TokenType::STAR;
+		 break;
+	 case TokenType::STAR:
+		 return TokenType::SLASH;
+		 break;
+	 default:
+		 assert(false);
+		 break;
+	 }
+ }
+
  Node* AST::FoldConstants(Node* node)
  {
 	 if (!node)
@@ -818,18 +857,62 @@ void Print(const Expression* tree, int level) {
 		 // it can be partial folding like 3 + a + 5;
 		 // we need to check children of operation to see if we can fold
 		 // accumulate on left node of current operation
-		 // we can also have cases like 3 + a - 5 - they must be folded too
 		 else if ( isLitL && IsBinaryOp(rightExpr->type) && rightExpr->type == expr->type)
 		 {
 			 PartialFold(rightExpr->left.get(), rightExpr->right.get(), isLitL, isLitR,left,right,expr,leftExpr,false);
 			 right = nullptr;
 		 }
 		 // accumulate on right node of current operation
-		 else if (isLitR && IsBinaryOp(left->type) && rightExpr->type == expr->type)
+		 else if (isLitR && IsBinaryOp(leftExpr->type) && leftExpr->type == expr->type)
 		 {
 			PartialFold(leftExpr->left.get(), leftExpr->right.get(), isLitL, isLitR, left, right,expr, rightExpr,true);
 			 left = nullptr;
 			
+		 }
+		 else
+		 {	
+			// we can also have cases with different but compatible operations 3 + a - 5 - they must be folded too
+			// +- and -+ are converted to + and already taken care of
+			// */
+			// /*
+			 bool isRightCompat= AreCompatible(expr->type, rightExpr->type);
+			 bool isLeftCompat = AreCompatible(expr->type, leftExpr->type);
+
+
+			 if (isLitL && isRightCompat)
+			 {
+				auto leftNode = FoldConstants(rightExpr->left.get());
+				auto rightNode = FoldConstants(rightExpr->right.get());
+				auto isLeftLiteralRightChild = isLiteral(leftNode->type);
+				auto isRightLiteralRightChild = isLiteral(rightNode->type);
+				assert(isLeftLiteralRightChild != isRightLiteralRightChild);
+				if (isLeftLiteralRightChild)
+				{
+
+					CalculateConstant(ReverseOperation(expr->type), leftExpr, static_cast<Expression*>(leftNode), leftExpr);
+				}
+				else if (isRightLiteralRightChild)
+				{
+					CalculateConstant(ReverseOperation(expr->type), leftExpr, static_cast<Expression*>(rightNode), leftExpr);
+				}
+			 }
+			 else if (isLitR && isLeftCompat)
+			 {
+				 auto leftNode = FoldConstants(leftExpr->left.get());
+				 auto rightNode = FoldConstants(leftExpr->right.get());
+				 auto isLeftLiteralLeftChild = isLiteral(leftNode->type);
+				 auto isRightLiteralLeftChild = isLiteral(rightNode->type);
+				 assert(isLeftLiteralLeftChild != isRightLiteralLeftChild);
+				 if (isLeftLiteralLeftChild)
+				 {
+
+					 CalculateConstant(ReverseOperation(expr->type), rightExpr, static_cast<Expression*>(leftNode), rightExpr);
+				 }
+				 else if (isRightLiteralLeftChild)
+				 {
+					 CalculateConstant(ReverseOperation(expr->type), rightExpr, static_cast<Expression*>(rightNode), rightExpr);
+				 }
+			 }
 		 }
 
 
