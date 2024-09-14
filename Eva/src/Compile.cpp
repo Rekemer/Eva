@@ -27,7 +27,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	{
 		AST tree;
 		tree.vm = &vm;
-		tree.Build(ptr);
+		auto stackSim = tree.Build(ptr);
 		if (tree.IsPanic())
 		{
 			panic = true;
@@ -40,9 +40,16 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 			continue;
 		}
 		//tree.Fold();
-		vm.GenerateBytecode(tree.GetTree());
+		//vm.stackSim = &tree.stackSim;
+		//vm.GenerateBytecode(tree.GetTree());
 		trees.push_back(std::move( tree));
 
+	}
+
+	for (auto& tree : trees)
+	{
+		vm.stackSim = &tree.stackSim;
+		vm.GenerateBytecode(tree.GetTree());
 	}
 
 	#if DEBUG

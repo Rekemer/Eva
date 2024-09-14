@@ -2,6 +2,7 @@
 #include "Tokens.h"
 #include "Value.h"
 #include "Hashtable.h"
+#include "Local.h"
 #include  <memory>
 #include  <stack>
 #include  <vector>
@@ -9,93 +10,14 @@
 
 
 
-struct Node
-{
-	TokenType type;
-	int line = 0;
-	int childrenCount = 0;
-	Node() = default;
-	Node(const Node&) = delete;
-	Node(Node&&) = default;
-	/*Node::Node(const Node& e)
-	{
-		childrenCount = e.childrenCount;
-		type = e.type;
-		line = e.line;
-
-	}*/
-	virtual ~Node()
-	{
-
-	};
-	template <typename T>
-	const T* As() const
-	{
-		return static_cast<const T*>(this);
-	}
-	template <typename T>
-	T* AsMut() const
-	{
-		return (T*)(this);
-	}
-};
-
-struct Expression : public Node
-{
-	ValueContainer value;
-	int depth = 0;
-	Expression() = default;
-	Expression(Expression&&);
-	Expression(const Expression&) = delete;
-
-	std::unique_ptr<Node> left = nullptr;
-	std::unique_ptr<Node> right = nullptr;
-
-};
-
-
-
-struct Scope : public Node
-{
-	std::vector<std::unique_ptr<Node>> expressions;
-	HashTable types;
-	Scope() = default;
-	// Delete the copy constructor and copy assignment operator
-	Scope(const Scope&) = delete;
-	Scope& operator=(const Scope&) = delete;
-
-	// Default the move constructor and move assignment operator
-	Scope(Scope&&) = default;
-	Scope& operator=(Scope&&) = default;
-	int popAmount = 0;
-};
-struct For : public Node
-{
-	Scope initScope;
-	std::unique_ptr<Node> init = nullptr;
-	std::unique_ptr<Node> condition = nullptr;
-	std::unique_ptr<Node> action = nullptr;
-	std::unique_ptr<Node> body = nullptr;
-};
-struct FunctionNode : public Node
-{
-	Scope paramScope;
-	std::unique_ptr<Node> body;
-	std::shared_ptr<String> name;
-	std::vector<std::unique_ptr<Node>> arguments;
-};
-struct Call : public Node
-{
-	std::shared_ptr<String> name;
-	std::vector<std::unique_ptr<Node>> args;
-};
 
 
 
 // Token*  const currentToken = can change the contents but not the pointer
 //const Token * currentToken = can change a pointer but not the contents
 using Iterator = std::vector<Token>::iterator;
-
+struct Node;
+struct Expression;
 void Print(const Expression* tree, int level = 0);
 class AST
 {
@@ -104,10 +26,11 @@ public:
 	AST(AST&& e )
 	{
 		tree = std::move(e.tree);
+		stackSim = e.stackSim;
 		e.tree = nullptr;
 	}
 	AST() = default;
-	bool Build(Iterator& firstToken);
+	StackSim Build(Iterator& firstToken);
 	void TypeCheck(VirtualMachine& vm);
 	const Node* GetTree()const  { return tree.get(); }
 	class VirtualMachine* vm;
@@ -180,6 +103,22 @@ private:
 		VirtualMachine* vm, Expression* node,ValueType type,int offset);
 
 	void BindValue(Iterator& currentToken, Node* variable);
+
+	void AddLocal(String& name, int currentScope)
+	{
+		auto endIterator = stackSim.locals.begin() + stackSim.m_StackPtr;
+		auto iter = std::find_if(stackSim.locals.begin(), endIterator, [&](auto& local)
+			{
+				return local.name == name && local.depth == currentScope;
+			});
+
+		if (iter != endIterator)
+		{
+			assert(false && "variable already declared in current scope");
+		}
+		stackSim.locals[stackSim.m_StackPtr].name = name;
+		stackSim.locals[stackSim.m_StackPtr++].depth = currentScope;
+	}
 private:
 	// unique_ptr causes slicing 
 	// if std::make_unique<Node>(std::move(*expr))
@@ -196,5 +135,6 @@ private:
 	// to populate types of local variables
 	Scope* currentScope = nullptr;
 	std::vector<Scope*> currentScopes;
-
+public:
+	StackSim stackSim;
 };

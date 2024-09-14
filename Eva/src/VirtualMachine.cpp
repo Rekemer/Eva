@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <sstream>
 #include"TokenConversion.h"
+#include "Local.h"
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.back().As<type>();\
@@ -232,13 +233,13 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
-		auto [isDeclared,index] = IsLocalExist(*str, expr->depth);
+		auto [isDeclared,index] = stackSim->IsLocalExist(*str, expr->depth);
 	
 		currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
 		currentFunc->opCode.push_back(index);
 
 		Entry* entry = nullptr;
-		for (auto& scope : currentScopes)
+		for (auto& scope : stackSim->currentScopes)
 		{
 			entry = scope->types.Get(str->GetStringView());
 			if (entry->key != nullptr) break;
@@ -269,7 +270,7 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	}
 	else
 	{
-		auto [isDeclared, index] = IsLocalExist(*str, expression->depth);
+		auto [isDeclared, index] = stackSim->IsLocalExist(*str, expression->depth);
 		currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
 		currentFunc->opCode.push_back(index);
 	}
@@ -314,7 +315,7 @@ ValueType VirtualMachine::GetVariableType(const String* name, int depthOfDeclara
 	if (depthOfDeclaration > 0)
 	{
 		Entry* entry = nullptr;
-		entry = currentScopes[depthOfDeclaration - 1]->types.Get(name->GetStringView());
+		entry = stackSim->currentScopes[depthOfDeclaration - 1]->types.Get(name->GetStringView());
 		if (entry->key != nullptr) return entry->value.type;
 		assert(false);
 	}
@@ -345,7 +346,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				 mainFunc = funcValue.get();
 			 }
 			 currentFunc = funcValue.get();
-			 currentScopes.push_back(&func->paramScope);
+			 stackSim->currentScopes.push_back(&func->paramScope);
 			 for (auto& arg : func->arguments)
 			 {
 				 Generate(arg.get());
@@ -353,7 +354,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 Generate(func->body.get());
 			 auto type = globalVariablesTypes.Get(func->name->GetStringView())->value.type;
 			 ClearLocal();
-			 currentScopes.pop_back();
+			 stackSim->currentScopes.pop_back();
 			 if (type == ValueType::NIL)
 			 {
 				 currentFunc->opCode.push_back((uint8_t)InCode::NIL);
@@ -404,13 +405,13 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 {
 				 return{};
 			 }
-			 currentScopes.push_back(block);
+			 stackSim->currentScopes.push_back(block);
 			 for (auto& expression : block->expressions)
 			 {
 				 Generate(expression.get());
 			 }
 			 // once we finish block, we must clear the stack
-			 ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
+			 ClearScope(stackSim->currentScopes, stackSim->m_StackPtr, currentFunc->opCode);
 			 break;
 		 }
 		 case TokenType::PLUS:
@@ -755,7 +756,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 case TokenType::FOR:
 		 {
 			 auto forNode = tree->As<For>();
-			 currentScopes.push_back(&forNode->initScope);
+			 stackSim->currentScopes.push_back(&forNode->initScope);
 			 Generate(forNode->init.get());
 			 auto firstIteration = Jump(currentFunc->opCode);
 			 auto startLoopIndex = currentFunc->opCode.size();
@@ -779,7 +780,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
 			 currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
 			 // because for loop has declared iterator variable
-			 ClearScope(currentScopes, m_StackPtr, currentFunc->opCode);
+			 ClearScope(stackSim->currentScopes, stackSim->m_StackPtr, currentFunc->opCode);
 			 break;
 		 }
 		 case TokenType::CONTINUE:
@@ -832,43 +833,11 @@ std::shared_ptr<String> VirtualMachine::AllocateString(const char* ptr, size_t s
 	auto* entry = internalStrings.Add(std::string_view{ptr,size});
 	return (entry->key);
 }
-std::string_view VirtualMachine::LastLocal()
-{
-	return locals[m_StackPtr - 1].name.GetStringView();
-}
-void VirtualMachine::AddLocal(String& name, int currentScope)
-{
-	auto endIterator = locals.begin() + m_StackPtr;
-	auto iter = std::find_if(locals.begin(), endIterator, [&](auto& local)
-		{
-			return local.name == name && local.depth == currentScope;
-		});
 
-	if (iter != endIterator)
-	{
-		assert(false && "variable already declared in current scope");
-	}
-	locals[m_StackPtr].name = name;
-	locals[m_StackPtr++].depth = currentScope;
-}
-
-std::tuple<bool, int> VirtualMachine::IsLocalExist(String& name, size_t scope)
-{
-	auto temp = m_StackPtr - 1;
-	while (temp >= 0 )
-	{
-		if (name == locals[temp].name && scope >= locals[temp].depth)
-		{
-			return { true ,temp };
-		}
-		temp--;
-	}
-	return { false ,-1 };
-}
 
 void VirtualMachine::ClearLocal()
 {
-	m_StackPtr = 0;
+	stackSim->m_StackPtr = 0;
 }
 
 VirtualMachine::~VirtualMachine()
@@ -1274,7 +1243,6 @@ size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t base
 void VirtualMachine::GenerateBytecode(const Node const* node)
 {
 	currentFunc = globalFunc.get();
-
 	try
 	{
 		Generate(node);

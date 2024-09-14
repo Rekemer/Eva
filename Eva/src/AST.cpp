@@ -83,7 +83,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
  {
 	 auto str = currentToken->value.AsString();
 	 scopeDeclarations.top()++;
-	 vm->AddLocal(*str, scopeDepth);
+	 AddLocal(*str, scopeDepth);
 	 node->left = LogicalOr(currentToken);
 
 	 currentScope->types.Add(str->GetStringView(), type);
@@ -204,7 +204,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			if (scopeDepth > 0)
 			{
 
-				auto [isLocalDeclared, index] = vm->IsLocalExist(*str, scopeDepth);
+				auto [isLocalDeclared, index] = stackSim.IsLocalExist(*str, scopeDepth);
 				if (isLocalDeclared)
 				{
 					// should check whether it is declared variable
@@ -413,7 +413,7 @@ void Print(const Expression* tree, int level) {
 	 while (currentToken->type != TokenType::RIGHT_PAREN)
 	 {
 		 auto arg = Declaration(currentToken);
-		 auto name = vm->LastLocal();
+		 auto name = stackSim.LastLocal();
 		 auto declaredType = currentScope->types.Get(name)->value.type;
 		 funcValue->argTypes.push_back(declaredType);
 		 //auto type = currentScope->
@@ -1213,10 +1213,10 @@ std::unique_ptr<Node> AST::ParseExpression( Iterator& currentToken)
 	auto tree = Statement(currentToken);
 	return tree;
 }
-bool AST::Build(Iterator& firstToken)
+StackSim AST::Build(Iterator& firstToken)
 {
 	tree = ParseExpression(firstToken);
-	return true;
+	return stackSim;
 }
 
 void AST::TypeCheck(VirtualMachine& vm)

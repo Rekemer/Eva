@@ -8,12 +8,9 @@
 #include "Function.h"
 #include "HashTable.h"
 #include "Bytecode.h"
-  
-struct Local
-{
-	int depth;
-	String name;
-};
+ 
+
+
 
 struct CallFrame
 {
@@ -28,6 +25,7 @@ class AST;
 struct Node;
 struct Expression;
 struct Scope;
+struct StackSim;
 class VirtualMachine
 {
 public:
@@ -46,15 +44,12 @@ public:
 	std::shared_ptr<String> AllocateString(const char* ptr, size_t size);
 	std::shared_ptr<String> AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1);
 
-	void AddLocal(String& name, int currentScope);
-	std::string_view LastLocal();
-	// checks if  exists in imitation of runtime stack and returns index
-	std::tuple<bool, int> IsLocalExist(String& name, size_t scope);
 	void ClearLocal();
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
 	ValueType Generate(const Node* tree);
+	StackSim* stackSim;
 private:
 	void CastWithDeclared(ValueType assignedType, ValueType declared);
 	void CollectStrings();
@@ -83,13 +78,9 @@ private:
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
-	// so we can access previous scopes too
-	std::vector<const Scope*> currentScopes;
-	std::array<Local, 256> locals;
+	
 	std::array<CallFrame, 64> callFrames;
 	int nextToCurrentCallFrame = 0;
-	// track the declared locals
-	int m_StackPtr = 0;
 	bool m_Panic = false;
 	bool m_IsSameOrder = false;
 	
