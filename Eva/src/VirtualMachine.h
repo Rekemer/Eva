@@ -49,7 +49,6 @@ public:
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
 	ValueType Generate(const Node* tree);
-	StackSim* stackSim;
 private:
 	void CastWithDeclared(ValueType assignedType, ValueType declared);
 	void CollectStrings();
@@ -91,4 +90,6 @@ private:
 	// to come back and  patch it with correct distance
 	// for a jump
 	std::stack<int> m_BreakIndexes;
+public:
+	StackSim* stackSim;
 };

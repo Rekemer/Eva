@@ -109,10 +109,10 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	{
 		auto expr = static_cast<Expression*>(postfix.get());
 		expr->left = std::move(value);
-		if (currentToken->type == TokenType::SEMICOLON)
-		{
-			currentToken++;
-		}
+		//if (currentToken->type == TokenType::SEMICOLON)
+		//{
+		//	currentToken++;
+		//}
 		return postfix;
 	}
 	

@@ -50,66 +50,13 @@ Constant Expression Folding
 add errors of binary operations where operands of wrong type
 add constant folding for cases where operators are different but constant folding is possible
 
+add support of returning value for postfix operators: b : int = a++;
+right now it doesn't return value and we have empty stack problem
 
- else
-		 {	
-			// we can also have cases with different but compatible operations 3 + a - 5 - they must be folded too
-			// +- and -+ are converted to + and already taken care of
-			// */
-			// /*
-			 bool isRightCompat= AreCompatible(expr->type, rightExpr->type);
-			 bool isLeftCompat = AreCompatible(expr->type, leftExpr->type);
+we should differentiate whether postfix operator used as statement or expression, so that we know when stack is supposed to be cleared
 
 
-			 if (isLitL && isRightCompat)
-			 {
-				auto leftNode = FoldConstants(rightExpr->left.get());
-				auto rightNode = FoldConstants(rightExpr->right.get());
-				auto isLeftLiteralRightChild = isLiteral(leftNode->type);
-				auto isRightLiteralRightChild = isLiteral(rightNode->type);
-				assert(isLeftLiteralRightChild != isRightLiteralRightChild);
-				if (isLeftLiteralRightChild)
-				{
-					CalculateConstant(ReverseOperation(expr->type), leftExpr, static_cast<Expression*>(leftNode), leftExpr);
-				}
-				else if (isRightLiteralRightChild)
-				{
-					CalculateConstant(ReverseOperation(expr->type), leftExpr, static_cast<Expression*>(rightNode), leftExpr);
-				}
-			 }
-			 else if (isLitR && isLeftCompat)
-			 {
-				 auto leftNode = FoldConstants(leftExpr->left.get());
-				 auto rightNode = FoldConstants(leftExpr->right.get());
-				 auto isLeftLiteralLeftChild = isLiteral(leftNode->type);
-				 auto isRightLiteralLeftChild = isLiteral(rightNode->type);
-				 assert(isLeftLiteralLeftChild != isRightLiteralLeftChild);
-				 if (isLeftLiteralLeftChild)
-				 {
-					 FoldConstantsWithVarAndOp(expr,leftNode, rightExpr,leftExpr);
-					 expr->left = std::move(leftExpr->right);
-					 left = nullptr;
-					 //auto rightType = leftNode->type;
-					 //if (expr->type == leftExpr->type)
-					 //{
-					//	CalculateConstant(expr->type, rightExpr, static_cast<Expression*>(leftNode), rightExpr);
-					 //}
-					 //else 
-					 //{
-					//	CalculateConstant(TokenType::SLASH, rightExpr,static_cast<Expression*>(leftNode),  rightExpr);
-					 //}
-					 //
-					 //auto newType = (rightExpr->type == TokenType::FLOAT_LITERAL || rightType == TokenType::FLOAT_LITERAL)
-					//	 ? TokenType::FLOAT_LITERAL : TokenType::INT_LITERAL;
-					 //rightExpr->type = newType;
-						 
-				 }
-				 else if (isRightLiteralLeftChild)
-				 {
-					 FoldConstantsWithVarAndOp(expr, rightNode, rightExpr, leftExpr);
-					 expr->left = std::move(leftExpr->left);
-					 left = nullptr;
+this is the way we do it now 
 
-				 }
-			 }
-		 }
+a++;
+b:int =a;

@@ -119,15 +119,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Nodes.h" />
-    <ClInclude Include="src\Bytecode.h" />
     <ClInclude Include="src\AST.h" />
+    <ClInclude Include="src\Bytecode.h" />
     <ClInclude Include="src\Compile.h" />
     <ClInclude Include="src\Debug.h" />
+    <ClInclude Include="src\Function.h" />
     <ClInclude Include="src\HashTable.h" />
     <ClInclude Include="src\Incode.h" />
     <ClInclude Include="src\Lexer.h" />
+    <ClInclude Include="src\Local.h" />
+    <ClInclude Include="src\Nodes.h" />
     <ClInclude Include="src\Object.h" />
+    <ClInclude Include="src\SSA.h" />
     <ClInclude Include="src\TokenConversion.h" />
     <ClInclude Include="src\Tokens.h" />
     <ClInclude Include="src\Value.h" />
@@ -141,6 +144,7 @@
     <ClCompile Include="src\Lexer.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Object.cpp" />
+    <ClCompile Include="src\SSA.cpp" />
     <ClCompile Include="src\String.cpp" />
     <ClCompile Include="src\Tokens.cpp" />
     <ClCompile Include="src\Value.cpp" />

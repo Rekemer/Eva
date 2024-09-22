@@ -1,6 +1,7 @@
 #pragma once
 #include "object.h"
 #include <ostream>
+
 class String  : public Object
 {
 public:
@@ -43,3 +44,16 @@ inline std::ostream& operator<<(std::ostream& os, String& string)
 	return os;
 }
 
+namespace std
+{
+	template<>
+	struct hash<String>
+	{
+		size_t operator()(const String& s) const
+		{
+			//return std::hash<std::string>{}(s.GetRaw());
+			return std::hash<const char*>()(s.GetRaw());
+		}
+	};
+
+}

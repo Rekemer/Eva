@@ -1,26 +1,15 @@
-a: float = 3;
-{
-	a: float = 2;
-	a+=2;
-}
 
 {
-	b : int = 15;
-	b+=2;
-	{
-		c : float = -1;
-		b*= c;
-		a -=c;
-	}
-	a+=b;
-}
-{
-	b : int = 15;
-	b+=2;
-	{
-		c : float = -1;
-		b*= c;
-		a -=c;
-	}
-	a+=b;
+  a:int = 1;
+  a++;
+  a = 5;
+  b:int =a;
+  c:int = 2;
+
+  // SSA form 
+  // t = 4 + 1;
+  // t1 = 2 + t;
+  // d := t1;
+  d := 2 + 4 + 1;
+
 }

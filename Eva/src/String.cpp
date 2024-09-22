@@ -2,6 +2,9 @@
 #include <cstring>
 #include <iostream>
 
+
+
+
 String::String(const char* str, size_t size) : m_Size(size + 1)
 {
 	m_Data = std::make_unique<char[]>(m_Size);

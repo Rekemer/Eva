@@ -4,6 +4,7 @@
 #include "Lexer.h"
 #include "VirtualMachine.h"
 #include "AST.h"
+#include "SSA.h"
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
 	
@@ -27,7 +28,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	{
 		AST tree;
 		tree.vm = &vm;
-		auto stackSim = tree.Build(ptr);
+		tree.Build(ptr);
 		if (tree.IsPanic())
 		{
 			panic = true;
@@ -40,18 +41,24 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 			continue;
 		}
 		//tree.Fold();
-		//vm.stackSim = &tree.stackSim;
-		//vm.GenerateBytecode(tree.GetTree());
 		trees.push_back(std::move( tree));
 
 	}
 
+	CFG cfg;
+	cfg.vm = &vm;
+	for (auto& tree : trees)
+	{
+		auto node = tree.GetTree();
+		cfg.ConvertAST(node);
+	}
+	cfg.Debug();
+	return {};
 	for (auto& tree : trees)
 	{
 		vm.stackSim = &tree.stackSim;
 		vm.GenerateBytecode(tree.GetTree());
 	}
-
 	#if DEBUG
 	Print(tree.GetTree());
 	#endif // DEBUG

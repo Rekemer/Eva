@@ -40,7 +40,8 @@ std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::VAR, "VAR"},
 		{TokenType::WHILE, "WHILE"},
 		{TokenType::ERROR, "ERROR"},
-		{TokenType::END, "END"}
+		{TokenType::END, "END"},
+		{TokenType::DECLARE, "DECLARE"},
 };
 std::string tokenToString(TokenType token) {
 

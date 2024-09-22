@@ -33,6 +33,9 @@
     <ClCompile Include="..\Eva\src\Object.cpp">
       <Filter>Eva\src</Filter>
     </ClCompile>
+    <ClCompile Include="..\Eva\src\SSA.cpp">
+      <Filter>Eva\src</Filter>
+    </ClCompile>
     <ClCompile Include="..\Eva\src\String.cpp">
       <Filter>Eva\src</Filter>
     </ClCompile>
