@@ -3,13 +3,23 @@
 #include "VirtualMachine.h"
 #include "Tokens.h"
 #include <cassert>
+#include <queue>
+#include <unordered_set>
 
 std::ostream& operator<<(std::ostream& os, const Instruction& v)
 {
 	os << v.result.name << " = ";
 	if (v.operLeft.name != "null") os << v.operLeft.name << " ";
 	os << tokenToString(v.instrType) << " ";
-	if (v.operRight.name != "null") os << v.operRight.name << std::endl;
+	if (v.operRight.name != "null") os << v.operRight.name << " ";
+	if (v.targets.size() > 0)
+	{
+		for (auto block : v.targets)
+		{
+			std::cout << block->name << " ";
+		}
+	}
+	std::cout << std::endl;
 	return os;
 }
 
@@ -49,7 +59,12 @@ bool CFG::IsStatement(const Node* node)
 	}
 	return false;
 }
-
+Block* CFG::CreateBlock(const std::string& name)
+{
+	Block* block = &graph[name];
+	block->name = name;
+	return block;
+}
 int GetVersion(std::unordered_map<String, int>& map, String& name)
 {
 	int version = -1;
@@ -96,16 +111,55 @@ void CFG::ConvertStatementAST(const Node* tree)
 		// we need to convert the condition
 		auto condition = expr->left.get();
 		auto valueCondition = ConvertExpressionAST(condition);
+		
+		
 
+		createBlock = false;
 		
 		// then
-		ConvertStatementAST(flows->As<Expression>()->right.get());
+		std::stringstream thenBlockName;
+		thenBlockName << "[then_" <<  std::to_string(Block::counterThen++) << "]";
+		auto then = CreateBlock(thenBlockName.str());
+		auto prevblock = currentBlock;
 
+		currentBlock = then;
+		std::stringstream mergeName;
+		mergeName << "[merge_" << Block::counterMerge << "]";
+		ConvertStatementAST(flows->As<Expression>()->right.get());
+		currentBlock->instructions.
+			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
+		
+		prevblock->blocks.push_back(then);
 		// handle elif cases
 
 		// else
+		std::stringstream elseBlockName;
+		elseBlockName << "[else_" << std::to_string(Block::counterElse++) << "]";
+		auto els = CreateBlock(elseBlockName.str());
+		currentBlock = els;
 		ConvertStatementAST(flows->As<Expression>()->left.get());
+		currentBlock->instructions.
+			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
+		
+		prevblock->blocks.push_back(els);
+
 		//Instruction branch;
+		auto branchInstr = Instruction{ TokenType::BRANCH,{},{valueCondition},{} };
+		
+		branchInstr.targets.push_back(then);
+		branchInstr.targets.push_back(els);
+
+		prevblock->instructions.push_back(branchInstr);
+
+
+		auto merge = CreateBlock(mergeName.str());
+		// phi function
+
+		then->blocks.push_back(merge);
+		els->blocks.push_back(merge);
+		
+		currentBlock = merge;
+
 		break;
 	}
 	case TokenType::ELIF:
@@ -122,24 +176,24 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::BLOCK:
 	{
 		Block* block = currentBlock;
-		if (createBlock)
-		{
-			createBlock = false;
-			Block::number++;
-			auto name = std::string{ "Block_" } + std::to_string(Block::number);
-			block = &graph[name];
-			block->name = name;
-		}
-		auto previousBlock = currentBlock;
-		currentBlock = block;
-		if (Block::number == 1)
-		{
-			startBlock = currentBlock;
-		}
-		else
-		{
-			previousBlock->blocks.push_back(currentBlock);
-		}
+		//if (createBlock)
+		//{
+		//
+		//	createBlock = false;
+		//	auto name = std::string{ "Block_" } + std::to_string/(Block::counterStraight/++);
+		//	currentBlock = block = CreateBlock(name);
+		//	
+		//}
+		//auto previousBlock = currentBlock;
+		//currentBlock = block;
+		//if (Block::counterStraight == 1)
+		//{
+		//	startBlock = currentBlock;
+		//}
+		//else
+		//{
+		//	previousBlock->blocks.push_back(currentBlock);
+		//}
 		auto scope = tree->As<Scope>();
 		for (auto& statement : scope->expressions)
 		{
@@ -154,16 +208,45 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 }
 
+void PrintBlock(Block* block)
+{
+	std::cout  << std::endl << block->name << std::endl;
+	//std::cout << "------------" << std::endl;
+	for (auto& instr : block->instructions)
+	{
+		std::cout << instr;
+	}
+	//std::cout << std::endl << "------------" << std::endl;
+}
+
 void CFG::Debug()
 {
 	// just current block for now
 	// once we add control flow we should traverse blocks
-	std::cout << currentBlock->name << std::endl;
-	for (auto& instr : currentBlock->instructions)
-	{
-		std::cout << instr;
-	}
+	assert(startBlock != nullptr);
 
+	std::queue<Block*> blockQueue;
+	std::unordered_set<Block*> visitedBlocks;
+
+	blockQueue.push(startBlock);
+	visitedBlocks.insert(startBlock);
+
+	while (!blockQueue.empty())
+	{
+		auto blockToPrint = blockQueue.front(); 
+		blockQueue.pop();
+		PrintBlock(blockToPrint);
+
+		for (auto block : blockToPrint->blocks)
+		{
+			if (visitedBlocks.find(block) == visitedBlocks.end())
+			{
+				blockQueue.push(block);
+				visitedBlocks.insert(block);
+			}
+		}
+
+	}
 }
 void CFG::CreateVariable(const Node* tree)
 {
@@ -176,7 +259,7 @@ void CFG::CreateVariable(const Node* tree)
 	// local variable
 	if (left->depth > 0)
 	{
-		version = GetVersion(currentBlock->localVariables, *name);
+		version = GetVersion(localVariables, *name);
 	}
 	// global variable
 	else
@@ -267,11 +350,12 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		break;
 	}
 	case TokenType::TRUE:
-	{
-		break;
-	}
 	case TokenType::FALSE:
 	{
+		auto value = expr->value.As<bool>();
+		auto str = value ? "true" : "false";
+		Operand op{ str,true,0 };
+		return op;
 		break;
 	}
 	case TokenType::GREATER:
@@ -344,7 +428,9 @@ void CFG::ConvertAST(const Node* tree)
 {
 	auto expr = tree->As<Expression>();
 	auto type = tree->type;
-	
+
+	startBlock  = currentBlock= CreateBlock("[block_0]");
+	Block::counterStraight++;
 	if (IsStatement(tree))
 	{
 		ConvertStatementAST(tree);

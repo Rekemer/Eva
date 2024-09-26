@@ -42,6 +42,8 @@ std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::ERROR, "ERROR"},
 		{TokenType::END, "END"},
 		{TokenType::DECLARE, "DECLARE"},
+		{TokenType::JUMP, "JUMP"},
+		{TokenType::BRANCH, "BRANCH"},
 };
 std::string tokenToString(TokenType token) {
 

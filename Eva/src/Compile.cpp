@@ -45,7 +45,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 
 	}
 
-#if 0
+#if 1
 	CFG cfg;
 	cfg.vm = &vm;
 	for (auto& tree : trees)

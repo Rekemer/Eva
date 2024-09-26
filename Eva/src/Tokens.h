@@ -41,10 +41,12 @@ enum class TokenType : uint8_t {
 
 	// not really a token which lexer produces,
 	//  but a way to tell that it is a block of expressions
-	// should be reworked
+	// should be reworked, I am too lazy to add other enums
 	BLOCK,
 	DEDUCE,
 	DECLARE,
+	JUMP,
+	BRANCH,
 	
 };
 

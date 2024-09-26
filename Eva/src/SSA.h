@@ -10,6 +10,13 @@ struct Operand
 	bool isConstant;
 	int version;
 
+	Operand(std::string& name ) : name{ name },
+		isConstant{ false },
+		version{ -1 }
+	{
+
+	}
+
 	Operand() : name{"null"},
 		isConstant{false},
 		version{-1}
@@ -59,13 +66,17 @@ struct Instruction
 struct Block
 {
 	std::string name;
-	std::unordered_map<String, int> localVariables;
+	
 	std::vector<Instruction> instructions;
 	
 	// next blocks
 	std::vector<Block*> blocks;
 	// number of block - number of node in graph
-	static inline int number = 0;
+	static inline int counterStraight = 0;
+	static inline int counterThen = 0;
+	static inline int counterElse = 0;
+	static inline int counterElif = 0;
+	static inline int counterMerge = 0;
 };
 
 struct Node;
@@ -84,6 +95,7 @@ private:
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
 	bool IsStatement(const Node* node);
+	Block* CreateBlock(const std::string& name);
 	Operand BinaryInstr(const Expression* expr, TokenType type);
 	int GetTempVersion ()
 	{
@@ -95,9 +107,10 @@ private:
 	bool createBlock = true;
 	int tempVersion = 0;
 	// whenever we hit condition we create a new block
-	Block* currentBlock;
-	Block* startBlock;
+	Block* currentBlock = nullptr;
+	Block* startBlock = nullptr;
 	// int is a version
 	std::unordered_map<String, int> globalVariables;
+	std::unordered_map<String, int> localVariables;
 	std::unordered_map<std::string, Block > graph;
 };
