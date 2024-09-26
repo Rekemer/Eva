@@ -50,6 +50,8 @@ public:
 	~VirtualMachine();
 	ValueType Generate(const Node* tree);
 private:
+	void ClearScope(const Scope* scope, StackSim& stackSim,
+		std::vector<Bytecode>& opCode);
 	void CastWithDeclared(ValueType assignedType, ValueType declared);
 	void CollectStrings();
 	void BeginContinue(int startLoopIndex);
@@ -91,5 +93,5 @@ private:
 	// for a jump
 	std::stack<int> m_BreakIndexes;
 public:
-	StackSim* stackSim;
+	Scope* currentScope= nullptr;
 };

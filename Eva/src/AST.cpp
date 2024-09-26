@@ -1,6 +1,7 @@
 #include "AST.h"
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 #include "VirtualMachine.h"
 #include "Value.h"
 #include "Tokens.h"
@@ -203,8 +204,8 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			// if local scope then read global or local
 			if (scopeDepth > 0)
 			{
-
-				auto [isLocalDeclared, index] = stackSim.IsLocalExist(*str, scopeDepth);
+				auto [isLocalDeclared, index] = currentScope->IsLocalExist(*str,scopeDepth);
+				
 				if (isLocalDeclared)
 				{
 					// should check whether it is declared variable
@@ -408,12 +409,17 @@ void Print(const Expression* tree, int level) {
 		 ->value.AsFunc();
 	 function->name = name;
 	 function->type = TokenType::FUN;
-	 currentScope = &function->paramScope;
+
+	 auto prevScope = currentScope;
 	 BeginBlock();
+	 currentScope = &function->paramScope;
+	 currentScope->depth = scopeDepth;
+	 currentScope->prevScope = prevScope;
+
 	 while (currentToken->type != TokenType::RIGHT_PAREN)
 	 {
 		 auto arg = Declaration(currentToken);
-		 auto name = stackSim.LastLocal();
+		 auto name = currentScope->stack.LastLocal();
 		 auto declaredType = currentScope->types.Get(name)->value.type;
 		 funcValue->argTypes.push_back(declaredType);
 		 //auto type = currentScope->
@@ -940,9 +946,20 @@ void Print(const Expression* tree, int level) {
  std::unique_ptr<Node> AST::EatBlock(Iterator& currentToken)
  {
 	 Error(TokenType::LEFT_BRACE, currentToken, "Expected { at the beginning of the block");
-	 BeginBlock();
+	 
 	 auto block = std::make_unique<Scope>();
-	 currentScope = block.get();
+	 
+	 int offset = 0;
+	 if (currentScope)
+	 {
+		 offset = currentScope->stack.m_StackPtr;
+	 }
+	 auto prevScope = currentScope;
+	 UpdateScope(offset, prevScope, block.get());
+	 //currentScope = block.get();
+	 //currentScope->depth = scopeDepth;
+	 //currentScope->stack.m_StackPtr = offset;
+	 //if (currentScope != prevScope) currentScope->prevScope = prevScope;
 	 block->type = TokenType::BLOCK;
 	 while (currentToken->type != TokenType::RIGHT_BRACE &&
 		 currentToken->type != TokenType::END)
@@ -952,7 +969,7 @@ void Print(const Expression* tree, int level) {
 	 }
 	 Error(TokenType::RIGHT_BRACE, currentToken, "Expected } at the end of the block");
 	 block->popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
-	 EndBlock();
+	 currentScope = prevScope;
 	 return block;
  }
 
@@ -966,7 +983,9 @@ void Print(const Expression* tree, int level) {
 	 ifnode->left = LogicalOr(currentToken);
 	 //currentToken += 1;
 	 ifnode->right = std::make_unique<Expression>();
+	 BeginBlock();
 	 auto then = EatBlock(currentToken);
+	 EndBlock();
 	 //ifnode->type= solutionType 
 	 // get all then statements in range { } 
 
@@ -1035,6 +1054,7 @@ void Print(const Expression* tree, int level) {
 		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
 		 return printNode;
 	 }
+	 // ifnode represents the whole if statement
 	 // left child is condition
 	 // right child is the then and else branches
 	 // right right is then
@@ -1058,7 +1078,9 @@ void Print(const Expression* tree, int level) {
 		 if (currentToken->type == TokenType::ELSE)
 		 {
 			 currentToken++;
+			 BeginBlock();
 			 auto elseScope = EatBlock(currentToken);
+			 EndBlock();
 			 right->left = std::move(elseScope);
 		 }
 		 return ifnode;
@@ -1071,7 +1093,9 @@ void Print(const Expression* tree, int level) {
 		 whileNode->line = currentToken->line;
 		 currentToken++;
 		 whileNode->left = LogicalOr(currentToken);
+		 BeginBlock();
 		 whileNode->right = EatBlock(currentToken);
+		 EndBlock();
 		 m_ParseLoops.pop();
 		 return whileNode;
 	 }
@@ -1090,8 +1114,17 @@ void Print(const Expression* tree, int level) {
 		 {
 			 currentToken++;
 
-			 currentScope = &(forNode->initScope);
+			 int offset = 0;
+			 if (currentScope)
+			 {
+				 offset = currentScope->stack.m_StackPtr;
+			 }
+			 auto prevScope = currentScope;
 			 BeginBlock();
+			 UpdateScope(offset, currentScope,&forNode->initScope);
+
+
+
 
 			 auto begin= (currentToken+3);
 			 auto end= (currentToken+5);
@@ -1120,8 +1153,11 @@ void Print(const Expression* tree, int level) {
 				 forNode->action = Statement(forLoopPtr);
 				 assert(forLoopPtr->type == TokenType::END);
 				 currentToken+=6;
+				 BeginBlock();
 				 forNode->body = EatBlock(currentToken);
+				 EndBlock();
  				 forNode->initScope.popAmount = scopeDeclarations.size() > 0 ? scopeDeclarations.top() : 0;
+				 currentScope = prevScope;
 				 EndBlock();
 			 }
 			 else
@@ -1133,9 +1169,15 @@ void Print(const Expression* tree, int level) {
 		 else if (isIdentifier)
 		 {
 			 currentToken += 1;
+			 auto prevScope = currentScope;
+			 int offset = 0;
+			 if (currentScope)
+			 {
+				 offset = currentScope->stack.m_StackPtr;
+			 }
 			 // so we can create i Iterator&
-			 currentScope = &forNode->initScope;
 			 BeginBlock();
+			 UpdateScope(offset, currentScope, &forNode->initScope);
 			 // init node
 			 forNode->init = Declaration(currentToken);
 			 
@@ -1145,9 +1187,12 @@ void Print(const Expression* tree, int level) {
 			 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
 
 			 forNode->action= Statement(currentToken);
+			 BeginBlock();
 			 forNode->body = EatBlock(currentToken);
+			 EndBlock();
 			 forNode->initScope.popAmount = scopeDeclarations.size() > 0 ?
 				 scopeDeclarations.top() : 0;
+			 currentScope = prevScope;
 			 EndBlock();
 		 }
 		 m_ParseLoops.pop();
@@ -1182,8 +1227,9 @@ void Print(const Expression* tree, int level) {
 	 }
 	 else if (currentToken->type == TokenType::LEFT_BRACE)
 	 {
-		
+		 BeginBlock();
 		 auto scope = EatBlock(currentToken);
+		 EndBlock();
 		 return scope;
 	 }
 	 else
@@ -1197,6 +1243,13 @@ void Print(const Expression* tree, int level) {
 	 }
  }
  
+ void AST::UpdateScope(int stackOffset, Scope* prevScope, Scope* newScope)
+ {
+	 currentScope = newScope;
+	 currentScope->depth = scopeDepth;
+	 if (newScope != prevScope) currentScope->prevScope = prevScope;
+	 currentScope->stack.m_StackPtr = stackOffset;
+ }
  void AST::BeginBlock()
  {
 	 scopeDepth++;
@@ -1213,10 +1266,9 @@ std::unique_ptr<Node> AST::ParseExpression( Iterator& currentToken)
 	auto tree = Statement(currentToken);
 	return tree;
 }
-StackSim AST::Build(Iterator& firstToken)
+void AST::Build(Iterator& firstToken)
 {
 	tree = ParseExpression(firstToken);
-	return stackSim;
 }
 
 void AST::TypeCheck(VirtualMachine& vm)
@@ -1308,9 +1360,10 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::BLOCK)
 	{
 		auto block = static_cast<Scope*>(node);
-		currentScopes.push_back(block);
 
+		currentScopes.push_back(block);
 		BeginBlock();
+		block->depth = scopeDepth;
 		auto ret = TokenType::BLOCK;
 		for (auto& e : block->expressions)
 		{
@@ -1327,14 +1380,14 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::FOR)
 	{
 		auto forNode = static_cast<For*>(node);
-		//currentScope = &forNode->initScope;
-		currentScopes.push_back(&forNode->initScope);
+		currentScope = &forNode->initScope;
+		currentScopes.push_back(currentScope);
 		TypeCheck(forNode->init.get(), vm);
 		TypeCheck(forNode->condition.get(), vm);
 		TypeCheck(forNode->action.get(), vm);
 		TypeCheck(forNode->body.get(), vm);
+		indexCurrentScope--;
 		currentScopes.pop_back();
-
 		return TokenType::FOR;
 	}
 	auto expr = static_cast<Expression*>(node);
@@ -1421,6 +1474,13 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			{
 				auto str = leftChild->value.AsString();
 				Entry* entry = nullptr;
+				//auto tmp = indexCurrentScope;
+				//while (tmp != -1)
+				//{
+				//	auto scope = currentScopes[tmp--];
+				//	if (!scope->types.IsExist(str->GetStringView())) continue;
+				//	entry = scope->types.Get(str->GetStringView());
+				//}
 				for (auto scope : currentScopes)
 				{
 					if (!scope->types.IsExist(str->GetStringView())) continue;
@@ -1445,12 +1505,20 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		{
 			
 			auto str = expr->value.AsString();
-			Entry* entry;
+			Entry* entry = nullptr;
+			//auto tmp = indexCurrentScope;
+			//while (tmp != -1)
+			//{
+			//	auto scope = currentScopes[tmp--];
+			//	if (!scope->types.IsExist(str->GetStringView())) continue;
+			//	entry = scope->types.Get(str->GetStringView());
+			//}
 			for (auto scope : currentScopes)
 			{
 				if (!scope->types.IsExist(str->GetStringView())) continue;
 				entry = scope->types.Get(str->GetStringView());
 			}
+			assert(entry != nullptr);
 			return TypeToLiteral(entry->value.type);
 		}
 		auto str = expr->value.AsString();

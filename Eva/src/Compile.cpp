@@ -45,6 +45,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 
 	}
 
+#if 0
 	CFG cfg;
 	cfg.vm = &vm;
 	for (auto& tree : trees)
@@ -54,9 +55,11 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	}
 	cfg.Debug();
 	return {};
+#endif // DEBUG
+
+	
 	for (auto& tree : trees)
 	{
-		vm.stackSim = &tree.stackSim;
 		vm.GenerateBytecode(tree.GetTree());
 	}
 	#if DEBUG

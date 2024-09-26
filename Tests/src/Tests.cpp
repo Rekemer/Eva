@@ -298,6 +298,30 @@ TEST_CASE("scope test")
 		auto isPass = CheckVariable<int>("a", -13, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+
+	SUBCASE("declare variable after scope ends")
+	{
+		auto a = R"(a: int = 3;
+		{
+			b : int = 15;
+			b+=2;
+			{
+				c : float = -1;
+				b*= c;
+				a -=c;
+			}
+			e := 2;
+			
+			a+=b;
+			a+=e;
+		}
+
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", -11, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
 	SUBCASE("multiple scopes in a row")
 	{
 		auto a = R"(a: float = 3;
@@ -588,8 +612,9 @@ TEST_CASE("loops in loops")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto sumJPerI = 1 + 2 + 3;
-		auto isPass = CheckVariable<int>("a", (sumJPerI * 3 + 2 + 4), ValueType::INT, vm);
+		auto declRes = (1 + 2 + 3) * 3 + 2 + 4;
+
+		auto isPass = CheckVariable<int>("a", declRes, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 	SUBCASE("whlie loop in while")

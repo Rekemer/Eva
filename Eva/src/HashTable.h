@@ -144,7 +144,7 @@ public:
 		std::copy(table.m_Data.get(), table.m_Data.get() + table.m_Size, m_Data.get()); 
 	}
 	void Add(const Entry& entry);
-	bool IsExist(std::string_view key);
+	bool IsExist(std::string_view key) const;
 	template<class... Arg>
 	Entry* Add(std::string_view key, Arg... value)
 	{

@@ -1,8 +1,9 @@
 #pragma once
 #include"String.hpp"
-#include"Nodes.h"
 #include<array>
 #include<vector>
+
+struct Scope;
 struct Local
 {
 	int depth;
@@ -10,12 +11,10 @@ struct Local
 };
 struct StackSim
 {
-	// so we can access previous scopes too
-	std::vector<const Scope*> currentScopes;
+	// so we can access previous scopes too - used during code generation in virtual machine
 	std::array<Local, 256> locals;
 	// track the declared locals
 	int m_StackPtr = 0;
-
 	std::string_view LastLocal()
 	{
 		return locals[m_StackPtr - 1].name.GetStringView();

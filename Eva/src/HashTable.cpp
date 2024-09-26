@@ -13,7 +13,7 @@ void HashTable::MakeTombstone(Entry* entry)
 	entry->value = true;
 }
 
-bool HashTable::IsExist(std::string_view key)
+bool HashTable::IsExist(std::string_view key) const
 {
 	auto entry = Get(key);
 	return IsSet(entry);

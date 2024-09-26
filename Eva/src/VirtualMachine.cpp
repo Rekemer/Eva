@@ -199,19 +199,33 @@ int CalculateJumpIndex(const std::vector<Bytecode> const &  opCode, const int fr
 	return opCode.size() - 1 - from;
 }
 
-void ClearScope(std::vector<const Scope*>& scopes, int& stackPtr,
+void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	std::vector<Bytecode>& opCode)
 {
-	int popAmount = scopes.back()->popAmount;
+	int popAmount = scope->popAmount;
 	while (popAmount > 0)
 	{
 		opCode.push_back((uint8_t)InCode::POP);
 		popAmount--;
 	}
-
-	stackPtr -= scopes.back()->popAmount;
-	scopes.pop_back();
-	assert(stackPtr >= 0);
+	
+	//if (stackSim.m_StackPtr == scopes.back()->popAmount)
+	//{
+	//	stackSim.m_StackPtr = 0;
+	//	return;
+	//}
+	//if (stackSim.m_StackPtr < scopes.back()->popAmount)
+	//{
+	//	assert(false && "cannot pop so many elements");
+	//}
+	//for (int i = stackSim.m_StackPtr ; i > (stackSim.m_StackPtr - scopes.back()->popAmount); i-- )
+	//{
+	//	stackSim.locals[i-1] = stackSim.locals[i];
+	//}
+	//stackSim.m_StackPtr -= scopes.back()->popAmount;
+	currentScope = currentScope->prevScope;
+	//scopes.pop_back();
+	//assert(stackSim.m_StackPtr >= 0);
 }
 
 ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expression* expr)
@@ -233,17 +247,14 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
-		auto [isDeclared,index] = stackSim->IsLocalExist(*str, expr->depth);
+		auto [isDeclared,index] = currentScope->IsLocalExist(*str, expr->depth);
 	
 		currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
+		//assert(index > 0 && "wrong index of local variable");
 		currentFunc->opCode.push_back(index);
 
-		Entry* entry = nullptr;
-		for (auto& scope : stackSim->currentScopes)
-		{
-			entry = scope->types.Get(str->GetStringView());
-			if (entry->key != nullptr) break;
-		}
+		Entry* entry = currentScope->GetType(*str);
+
 		if (entry->key == nullptr)
 		{
 			std::stringstream ss;
@@ -270,8 +281,9 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	}
 	else
 	{
-		auto [isDeclared, index] = stackSim->IsLocalExist(*str, expression->depth);
+		auto [isDeclared, index] = currentScope->IsLocalExist(*str, expression->depth);
 		currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
+		assert(index != -1);
 		currentFunc->opCode.push_back(index);
 	}
 }
@@ -315,9 +327,24 @@ ValueType VirtualMachine::GetVariableType(const String* name, int depthOfDeclara
 	if (depthOfDeclaration > 0)
 	{
 		Entry* entry = nullptr;
-		entry = stackSim->currentScopes[depthOfDeclaration - 1]->types.Get(name->GetStringView());
+		auto currentDepth = currentScope->depth;
+		if (currentDepth == depthOfDeclaration)
+		{
+			entry = currentScope->types.Get(name->GetStringView());
+		}
+		else
+		{
+			auto diff = std::abs(currentDepth - depthOfDeclaration);
+			Scope* prevScope = currentScope;
+			while (diff > 0)
+			{
+				prevScope = prevScope->prevScope;
+				diff--;
+			}
+			entry = prevScope->types.Get(name->GetStringView());
+		}
 		if (entry->key != nullptr) return entry->value.type;
-		assert(false);
+		assert(false && "could not get type of variable");
 	}
 	else
 	{
@@ -346,7 +373,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 				 mainFunc = funcValue.get();
 			 }
 			 currentFunc = funcValue.get();
-			 stackSim->currentScopes.push_back(&func->paramScope);
+			 auto prevScope = currentScope;
+			 currentScope = const_cast<Scope*>(&func->paramScope);
+			 currentScope->prevScope = prevScope;
 			 for (auto& arg : func->arguments)
 			 {
 				 Generate(arg.get());
@@ -354,7 +383,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 Generate(func->body.get());
 			 auto type = globalVariablesTypes.Get(func->name->GetStringView())->value.type;
 			 ClearLocal();
-			 stackSim->currentScopes.pop_back();
+			 currentScope = prevScope;
+			 //currentScope->stack.currentScopes.pop_back();
 			 if (type == ValueType::NIL)
 			 {
 				 currentFunc->opCode.push_back((uint8_t)InCode::NIL);
@@ -399,19 +429,22 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::BLOCK:
 		 {
-			 auto block = static_cast<const Scope*>(tree);
+			 auto block = static_cast<Scope*>(const_cast<Node*>(tree));
 			 // empty block
 			 if (block->expressions.size() == 0)
 			 {
 				 return{};
 			 }
-			 stackSim->currentScopes.push_back(block);
+			 auto prevScope = currentScope;
+			 currentScope = const_cast<Scope*>(block);
+			 currentScope->prevScope = prevScope;
+
 			 for (auto& expression : block->expressions)
 			 {
 				 Generate(expression.get());
 			 }
 			 // once we finish block, we must clear the stack
-			 ClearScope(stackSim->currentScopes, stackSim->m_StackPtr, currentFunc->opCode);
+			 ClearScope(currentScope, currentScope->stack, currentFunc->opCode);
 			 break;
 		 }
 		 case TokenType::PLUS:
@@ -756,7 +789,12 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 case TokenType::FOR:
 		 {
 			 auto forNode = tree->As<For>();
-			 stackSim->currentScopes.push_back(&forNode->initScope);
+
+			 auto prevScope = currentScope;
+			 currentScope = const_cast<Scope*>(&forNode->initScope);
+			 currentScope->prevScope = prevScope;
+
+
 			 Generate(forNode->init.get());
 			 auto firstIteration = Jump(currentFunc->opCode);
 			 auto startLoopIndex = currentFunc->opCode.size();
@@ -780,7 +818,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
 			 currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
 			 // because for loop has declared iterator variable
-			 ClearScope(stackSim->currentScopes, stackSim->m_StackPtr, currentFunc->opCode);
+			 ClearScope(currentScope, currentScope->stack, currentFunc->opCode);
 			 break;
 		 }
 		 case TokenType::CONTINUE:
@@ -837,7 +875,7 @@ std::shared_ptr<String> VirtualMachine::AllocateString(const char* ptr, size_t s
 
 void VirtualMachine::ClearLocal()
 {
-	stackSim->m_StackPtr = 0;
+	currentScope->stack.m_StackPtr = 0;
 }
 
 VirtualMachine::~VirtualMachine()

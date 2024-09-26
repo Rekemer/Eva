@@ -35,7 +35,7 @@ struct Operand
 };
 
 
-
+struct Block;
 struct Instruction 
 {
 	TokenType instrType;
@@ -50,10 +50,10 @@ struct Instruction
 	{
 
 	}
-	
-	
-
+	// for branches 
+	std::vector<Block*> targets;
 };
+
 
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
@@ -63,12 +63,13 @@ struct Block
 	std::vector<Instruction> instructions;
 	
 	// next blocks
-	std::vector<Block> blocks;
+	std::vector<Block*> blocks;
 	// number of block - number of node in graph
 	static inline int number = 0;
 };
 
 struct Node;
+struct Expression;
 class Tree;
 class VirtualMachine;
 // control flow graph
@@ -79,13 +80,23 @@ public:
 	void ConvertAST(const Node* tree);
 	void Debug();
 private:
+	void CreateVariable(const Node* tree);
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
 	bool IsStatement(const Node* node);
+	Operand BinaryInstr(const Expression* expr, TokenType type);
+	int GetTempVersion ()
+	{
+		return tempVersion++;
+	};
+
+
 private:
+	bool createBlock = true;
 	int tempVersion = 0;
 	// whenever we hit condition we create a new block
 	Block* currentBlock;
+	Block* startBlock;
 	// int is a version
 	std::unordered_map<String, int> globalVariables;
 	std::unordered_map<std::string, Block > graph;

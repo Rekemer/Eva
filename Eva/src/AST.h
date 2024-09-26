@@ -3,6 +3,7 @@
 #include "Value.h"
 #include "Hashtable.h"
 #include "Local.h"
+#include "Nodes.h"
 #include  <memory>
 #include  <stack>
 #include  <vector>
@@ -26,11 +27,10 @@ public:
 	AST(AST&& e )
 	{
 		tree = std::move(e.tree);
-		stackSim = e.stackSim;
 		e.tree = nullptr;
 	}
 	AST() = default;
-	StackSim Build(Iterator& firstToken);
+	void Build(Iterator& firstToken);
 	void TypeCheck(VirtualMachine& vm);
 	const Node* GetTree()const  { return tree.get(); }
 	class VirtualMachine* vm;
@@ -39,7 +39,7 @@ public:
 private:
 
 	
-
+	void UpdateScope(int stackOffset, Scope* prevScope, Scope* newScope);
 	void PartialFold(Node* leftOperandSibling, Node* rightOperandSibling,
 		bool isLeftLBase, bool isRightLBase, Node* baseLeft, Node* baseRight,
 		Expression* baseExpression, Expression* accumulateNode, bool isRightDirection);
@@ -103,20 +103,20 @@ private:
 
 	void BindValue(Iterator& currentToken, Node* variable);
 
-	void AddLocal(String& name, int currentScope)
+	void AddLocal(String& name, int currentScopeDepth)
 	{
-		auto endIterator = stackSim.locals.begin() + stackSim.m_StackPtr;
-		auto iter = std::find_if(stackSim.locals.begin(), endIterator, [&](auto& local)
+		auto endIterator = currentScope->stack.locals.begin() + currentScope->stack.m_StackPtr;
+		auto iter = std::find_if(currentScope->stack.locals.begin(), endIterator, [&](auto& local)
 			{
-				return local.name == name && local.depth == currentScope;
+				return local.name == name && local.depth == currentScopeDepth;
 			});
 
 		if (iter != endIterator)
 		{
 			assert(false && "variable already declared in current scope");
 		}
-		stackSim.locals[stackSim.m_StackPtr].name = name;
-		stackSim.locals[stackSim.m_StackPtr++].depth = currentScope;
+		currentScope->stack.locals[currentScope->stack.m_StackPtr].name = name;
+		currentScope->stack.locals[currentScope->stack.m_StackPtr++].depth = currentScopeDepth;
 	}
 private:
 	// unique_ptr causes slicing 
@@ -134,6 +134,5 @@ private:
 	// to populate types of local variables
 	Scope* currentScope = nullptr;
 	std::vector<Scope*> currentScopes;
-public:
-	StackSim stackSim;
+	int indexCurrentScope = -1;
 };

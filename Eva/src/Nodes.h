@@ -4,6 +4,11 @@
 #include <memory>
 #include <vector>
 #include "HashTable.h"
+
+
+
+
+
 struct Node
 {
 	TokenType type;
@@ -54,6 +59,9 @@ struct Scope : public Node
 {
 	std::vector<std::unique_ptr<Node>> expressions;
 	HashTable types;
+	Scope* prevScope = nullptr;
+	StackSim stack;
+	int depth = 0;
 	Scope() = default;
 	// Delete the copy constructor and copy assignment operator
 	Scope(const Scope&) = delete;
@@ -63,6 +71,43 @@ struct Scope : public Node
 	Scope(Scope&&) = default;
 	Scope& operator=(Scope&&) = default;
 	int popAmount = 0;
+
+	std::tuple<bool, int> IsLocalExist(String& name, int scopeDepth)
+	{
+		auto tmpScope = this;
+		bool isLocalDeclared = false;
+		auto localIndex = -1;
+		while (tmpScope != nullptr)
+		{
+			auto [exist, index] = tmpScope->stack.IsLocalExist(name, scopeDepth);
+			if (exist)
+			{
+				isLocalDeclared = true;
+				localIndex = index;
+				break;
+			}
+			tmpScope = tmpScope->prevScope;
+		}
+		if (isLocalDeclared)
+		{
+			return { isLocalDeclared,localIndex};
+		}
+		return { false, - 1 };
+	}
+
+	Entry* GetType(String& str)
+	{
+		Entry* entry = nullptr;
+		auto tmpScope = this;
+		while (tmpScope != nullptr)
+		{
+			entry = tmpScope->types.Get(str.GetStringView());
+			if (entry->key) break;
+			tmpScope = tmpScope->prevScope;
+		}
+		return entry;
+	}
+
 };
 struct For : public Node
 {
