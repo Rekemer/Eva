@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include "Tokens.h"
 #include<ostream>
+#include<set>
+#include<functional>
 struct Operand
 {
 	std::string name;
@@ -69,6 +71,15 @@ struct Block
 	
 	std::vector<Instruction> instructions;
 	
+	// for building dominator trees
+	std::vector<Block*> parents;
+
+	// blocks that dominate curret block
+	std::set<Block*> dom;
+
+	// immediate dominator
+	Block* idom = nullptr;
+
 	// next blocks
 	std::vector<Block*> blocks;
 	// number of block - number of node in graph
@@ -88,20 +99,29 @@ class CFG
 {
 public:
 	VirtualMachine* vm;
+	void BuildDominatorTree();
 	void ConvertAST(const Node* tree);
+	void TopSort();
 	void Debug();
 private:
+
+	void FindDoms();
+	void FindIDoms();
+
 	void CreateVariable(const Node* tree);
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
 	bool IsStatement(const Node* node);
-	Block* CreateBlock(const std::string& name);
+	Block* CreateBlock(const std::string& name, std::vector<Block*>  parents);
 	Operand BinaryInstr(const Expression* expr, TokenType type);
 	int GetTempVersion ()
 	{
 		return tempVersion++;
 	};
 
+
+	//breadth first search
+	void Bfs(Block* start, std::function<void(Block*)> action);
 
 private:
 	bool createBlock = true;
@@ -113,4 +133,10 @@ private:
 	std::unordered_map<String, int> globalVariables;
 	std::unordered_map<String, int> localVariables;
 	std::unordered_map<std::string, Block > graph;
+
+	
+
+	// topologically sorted graph
+	std::vector<Block*> tpgSort;
+
 };

@@ -53,6 +53,8 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 		auto node = tree.GetTree();
 		cfg.ConvertAST(node);
 	}
+	cfg.TopSort();
+	cfg.BuildDominatorTree();
 	cfg.Debug();
 	return {};
 #endif // DEBUG

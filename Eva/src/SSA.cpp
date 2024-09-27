@@ -59,10 +59,11 @@ bool CFG::IsStatement(const Node* node)
 	}
 	return false;
 }
-Block* CFG::CreateBlock(const std::string& name)
+Block* CFG::CreateBlock(const std::string& name, std::vector<Block*> parents)
 {
 	Block* block = &graph[name];
 	block->name = name;
+	block->parents = parents;
 	return block;
 }
 int GetVersion(std::unordered_map<String, int>& map, String& name)
@@ -99,6 +100,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 	case TokenType::ELSE:
 	{
+		assert(false && "we should be here");
 		break;
 	}
 	case TokenType::CONTINUE:
@@ -111,6 +113,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		// we need to convert the condition
 		auto condition = expr->left.get();
 		auto valueCondition = ConvertExpressionAST(condition);
+		auto parentBlock = currentBlock;
 		
 		
 
@@ -119,8 +122,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		// then
 		std::stringstream thenBlockName;
 		thenBlockName << "[then_" <<  std::to_string(Block::counterThen++) << "]";
-		auto then = CreateBlock(thenBlockName.str());
-		auto prevblock = currentBlock;
+		auto then = CreateBlock(thenBlockName.str(), { parentBlock });
 
 		currentBlock = then;
 		std::stringstream mergeName;
@@ -129,19 +131,19 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock->instructions.
 			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
 		
-		prevblock->blocks.push_back(then);
+		parentBlock->blocks.push_back(then);
 		// handle elif cases
 
 		// else
 		std::stringstream elseBlockName;
 		elseBlockName << "[else_" << std::to_string(Block::counterElse++) << "]";
-		auto els = CreateBlock(elseBlockName.str());
+		auto els = CreateBlock(elseBlockName.str(), { parentBlock });
 		currentBlock = els;
 		ConvertStatementAST(flows->As<Expression>()->left.get());
 		currentBlock->instructions.
 			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
 		
-		prevblock->blocks.push_back(els);
+		parentBlock->blocks.push_back(els);
 
 		//Instruction branch;
 		auto branchInstr = Instruction{ TokenType::BRANCH,{},{valueCondition},{} };
@@ -149,10 +151,10 @@ void CFG::ConvertStatementAST(const Node* tree)
 		branchInstr.targets.push_back(then);
 		branchInstr.targets.push_back(els);
 
-		prevblock->instructions.push_back(branchInstr);
+		parentBlock->instructions.push_back(branchInstr);
 
 
-		auto merge = CreateBlock(mergeName.str());
+		auto merge = CreateBlock(mergeName.str(), {then,els});
 		// phi function
 
 		then->blocks.push_back(merge);
@@ -176,24 +178,6 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::BLOCK:
 	{
 		Block* block = currentBlock;
-		//if (createBlock)
-		//{
-		//
-		//	createBlock = false;
-		//	auto name = std::string{ "Block_" } + std::to_string/(Block::counterStraight/++);
-		//	currentBlock = block = CreateBlock(name);
-		//	
-		//}
-		//auto previousBlock = currentBlock;
-		//currentBlock = block;
-		//if (Block::counterStraight == 1)
-		//{
-		//	startBlock = currentBlock;
-		//}
-		//else
-		//{
-		//	previousBlock->blocks.push_back(currentBlock);
-		//}
 		auto scope = tree->As<Scope>();
 		for (auto& statement : scope->expressions)
 		{
@@ -216,7 +200,52 @@ void PrintBlock(Block* block)
 	{
 		std::cout << instr;
 	}
+	std::cout << "[dominators]\n[ ";
+
+	for (auto dominator : block->dom)
+	{
+		if (dominator != block)
+		std::cout << dominator->name << " ";
+	}
+	std::cout << "]" << std::endl;
+
+	if (block->idom)
+	{
+		std::cout << "[immediate dominator] " << block->idom->name << std::endl;
+	}
+
 	//std::cout << std::endl << "------------" << std::endl;
+}
+
+void CFG::TopSort()
+{
+	Bfs(startBlock, [&](Block* block) {tpgSort.push_back(block); });
+}
+
+void CFG::Bfs(Block* start, std::function<void (Block*)> action)
+{
+	std::queue<Block*> blockQueue;
+	std::unordered_set<Block*> visitedBlocks;
+
+	blockQueue.push(startBlock);
+	visitedBlocks.insert(startBlock);
+
+	while (!blockQueue.empty())
+	{
+		auto blockToPrint = blockQueue.front();
+		blockQueue.pop();
+		
+		action(blockToPrint);
+
+		for (auto block : blockToPrint->blocks)
+		{
+			if (visitedBlocks.find(block) == visitedBlocks.end())
+			{
+				blockQueue.push(block);
+				visitedBlocks.insert(block);
+			}
+		}
+	}
 }
 
 void CFG::Debug()
@@ -228,25 +257,7 @@ void CFG::Debug()
 	std::queue<Block*> blockQueue;
 	std::unordered_set<Block*> visitedBlocks;
 
-	blockQueue.push(startBlock);
-	visitedBlocks.insert(startBlock);
-
-	while (!blockQueue.empty())
-	{
-		auto blockToPrint = blockQueue.front(); 
-		blockQueue.pop();
-		PrintBlock(blockToPrint);
-
-		for (auto block : blockToPrint->blocks)
-		{
-			if (visitedBlocks.find(block) == visitedBlocks.end())
-			{
-				blockQueue.push(block);
-				visitedBlocks.insert(block);
-			}
-		}
-
-	}
+	Bfs(startBlock, PrintBlock);
 }
 void CFG::CreateVariable(const Node* tree)
 {
@@ -424,12 +435,105 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	}
 	return {};
 }
+
+void CFG::FindIDoms()
+{
+	// we could use instead of this post order traversal numbers
+	// but that should do?
+	for (Block* b : tpgSort) {
+
+		// Get the strict dominators of b
+		// all dominators except of oneself
+		std::set<Block*> strict_dom = b->dom;
+		strict_dom.erase(b);
+
+
+		for (Block* d : strict_dom) {
+			bool isImmediate = true;
+
+			// Check if d is dominated by any other dominator in strict_dom
+			for (Block* other_d : strict_dom) {
+				if (other_d == d) continue;
+				if (d->dom.find(other_d) != d->dom.end()) {
+					// d is dominated by other_d, so it's not the immediate dominator
+					// if we follow the definition
+					isImmediate = false;
+					break;
+				}
+			}
+
+			if (isImmediate) {
+				b->idom = d;
+				break;  
+			}
+		}
+	}
+}
+
+void CFG::FindDoms()
+{
+	bool isChanged = true;
+
+
+	// Initialize dominator sets
+	for (auto block : tpgSort) {
+		block->dom.insert(block);  // A node dominates itself
+		if (block != startBlock) {
+			for (auto dominator : tpgSort) {
+				block->dom.insert(dominator);  // Initially, all nodes can dominate any other
+			}
+		}
+	}
+
+	// Iterate until the dominator sets stabilize
+	while (isChanged) {
+		isChanged = false;
+
+		for (auto block : tpgSort) {
+			if (block == startBlock) continue;  // Root is its own dominator
+
+			std::set<Block*> newDom;
+
+			for (auto parent : block->parents)
+			{
+				if (newDom.empty()) {
+					newDom = parent->dom;  // First predecessor
+				}
+				else {
+					// Compute the intersection (LCA?????) of dominator sets
+					std::set<Block*> temp;
+					set_intersection(newDom.begin(), newDom.end(),
+						parent->dom.begin(), parent->dom.end(),
+						inserter(temp, temp.begin()));
+					newDom = temp;
+				}
+			}
+			newDom.insert(block);
+
+			// If the dominator set changed, update it
+			if (block->dom != newDom) {
+				block->dom = newDom;
+				isChanged = true;
+			}
+		}
+	}
+}
+
+// the simplest case is for acyclic graph
+// dom (u) = lowest common ancestor (dom v), where v is a incoming neighbour
+
+void CFG::BuildDominatorTree()
+{
+	FindDoms();
+	FindIDoms();
+}
+
 void CFG::ConvertAST(const Node* tree)
 {
 	auto expr = tree->As<Expression>();
 	auto type = tree->type;
 
-	startBlock  = currentBlock= CreateBlock("[block_0]");
+	startBlock = currentBlock = CreateBlock("[block_0]", {});
 	Block::counterStraight++;
 	if (IsStatement(tree))
 	{
