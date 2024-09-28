@@ -55,6 +55,8 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	}
 	cfg.TopSort();
 	cfg.BuildDominatorTree();
+	cfg.BuildDF();
+	//cfg.InsertPhi();
 	cfg.Debug();
 	return {};
 #endif // DEBUG

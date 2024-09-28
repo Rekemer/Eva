@@ -61,6 +61,9 @@ struct Instruction
 	}
 	// for branches 
 	std::vector<Block*> targets;
+
+	// for phi function
+	std::vector<Operand> variables;
 };
 
 
@@ -79,6 +82,9 @@ struct Block
 
 	// immediate dominator
 	Block* idom = nullptr;
+
+	// dominance frontier
+	std::set<Block*> df;
 
 	// next blocks
 	std::vector<Block*> blocks;
@@ -102,6 +108,8 @@ public:
 	void BuildDominatorTree();
 	void ConvertAST(const Node* tree);
 	void TopSort();
+	void BuildDF();
+	void InsertPhi();
 	void Debug();
 private:
 
@@ -129,9 +137,15 @@ private:
 	// whenever we hit condition we create a new block
 	Block* currentBlock = nullptr;
 	Block* startBlock = nullptr;
+	
 	// int is a version
 	std::unordered_map<String, int> globalVariables;
 	std::unordered_map<String, int> localVariables;
+
+	std::unordered_map<String, std::vector<Block*>> globalAssigned;
+	std::unordered_map<String, std::vector<Block*>> localAssigned;
+
+
 	std::unordered_map<std::string, Block > graph;
 
 	

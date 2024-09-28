@@ -6,6 +6,8 @@
 #include <queue>
 #include <unordered_set>
 
+//https://www.cs.cornell.edu/courses/cs6120/2023fa/lesson/6/
+
 std::ostream& operator<<(std::ostream& os, const Instruction& v)
 {
 	os << v.result.name << " = ";
@@ -89,10 +91,6 @@ void CFG::ConvertStatementAST(const Node* tree)
 		break;
 	}
 	case TokenType::DECLARE:
-	{
-		CreateVariable(tree);
-		break;
-	}
 	case TokenType::EQUAL:
 	{
 		CreateVariable(tree);
@@ -214,7 +212,72 @@ void PrintBlock(Block* block)
 		std::cout << "[immediate dominator] " << block->idom->name << std::endl;
 	}
 
+	if (block->df.size() > 0)
+	{
+		std::cout << "[dominance frontier] ";
+		for (auto b : block->df)
+		{
+			std::cout << b->name;
+		}
+		std::cout << std::endl;
+	}
+
 	//std::cout << std::endl << "------------" << std::endl;
+}
+
+void CFG::InsertPhi()
+{
+	// placing stage
+	for (auto v : localAssigned)
+	{
+		// because one block can be in multiple dominance frontiers
+		// we need to track whether the phi is placed already
+		std::unordered_set<Block*> hasAlready;
+		// we will update our workList hence a copy
+		std::queue<Block*> workList;
+		for (auto b : v.second)
+		{
+			workList.push(b);
+		}
+
+		while (!workList.empty())
+		{
+			auto block = workList.front();
+			workList.pop();
+			for (auto blockDf : block->df)
+			{
+				if (hasAlready.find(blockDf) == hasAlready.end())
+				{
+					hasAlready.insert(blockDf);
+					auto str = v.first;
+					std::string name = str.GetRaw();
+					auto instr = Instruction{ TokenType::PHI ,{},{},Operand{name}};
+					blockDf->instructions.insert(blockDf->instructions.begin(), instr);
+
+					//since we have actually just added a variable to the new node
+					// we need to update our block
+					workList.push(blockDf);
+				}
+			}
+		}
+	}
+	// renaming stage
+
+
+}
+void CFG::BuildDF()
+{
+	for (Block* b : tpgSort) {
+		if (b->parents.size() >= 2) {
+			for (Block* p : b->parents) {
+				Block* runner = p;
+				while (runner != b->idom) {
+					runner->df.insert(b);
+					runner = runner->idom;
+				}
+			}
+		}
+	}
 }
 
 void CFG::TopSort()
@@ -265,19 +328,21 @@ void CFG::CreateVariable(const Node* tree)
 	// left is variable
 	auto left = expr->left->As<Expression>();
 	auto name = left->value.AsString();
-	int version = -1;
+	int version = 0;
 	// get a version of a variable
 	// local variable
 	if (left->depth > 0)
 	{
-		version = GetVersion(localVariables, *name);
+		//version = GetVersion(localVariables, *name);
+		localAssigned[*name].push_back(currentBlock);
 	}
 	// global variable
 	else
 	{
-		version = GetVersion(globalVariables, *name);
+		//version = GetVersion(globalVariables, *name);
+		globalAssigned[*name].push_back(currentBlock);
 	}
-	assert(version != -1);
+	//assert(version != -1);
 	std::stringstream ss;
 	ss << std::string(name->GetRaw());
 	ss << "_";
@@ -285,7 +350,7 @@ void CFG::CreateVariable(const Node* tree)
 	Operand resOp{ ss.str() ,false,version };
 	auto rightOp = ConvertExpressionAST(expr->right.get());
 
-	auto instruction = Instruction{ tree->type,{},rightOp,resOp };
+	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
 	currentBlock->instructions.push_back(instruction);
 
 }
@@ -294,7 +359,8 @@ Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 {
 	auto left = ConvertExpressionAST(expr->left.get());
 	auto right = ConvertExpressionAST(expr->right.get());
-	auto version = GetTempVersion();
+	//auto version = GetTempVersion();
+	auto version = 0;
 	std::stringstream resultName;
 	resultName << "t_";
 	resultName << version;
