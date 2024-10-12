@@ -6,6 +6,7 @@
 #include<ostream>
 #include<set>
 #include<functional>
+#include<stack>
 struct Operand
 {
 	std::string name;
@@ -41,6 +42,12 @@ struct Operand
 	{
 
 	}
+
+	bool isVariable()
+	{
+		if (isConstant) return false;
+		return name != "null" && version != -1;
+	}
 };
 
 
@@ -73,11 +80,14 @@ struct Block
 	std::string name;
 	
 	std::vector<Instruction> instructions;
+	std::vector<int> phiInstructionIndexes;
 	
 	// for building dominator trees
 	std::vector<Block*> parents;
+	// children in dominator tree
+	std::vector<Block*> dominatorChildren;
 
-	// blocks that dominate curret block
+	// blocks that dominate current block
 	std::set<Block*> dom;
 
 	// immediate dominator
@@ -86,7 +96,7 @@ struct Block
 	// dominance frontier
 	std::set<Block*> df;
 
-	// next blocks
+	// next blocks - children
 	std::vector<Block*> blocks;
 	// number of block - number of node in graph
 	static inline int counterStraight = 0;
@@ -112,7 +122,8 @@ public:
 	void InsertPhi();
 	void Debug();
 private:
-
+	int NewName(std::string& name);
+	void Rename(Block* b);
 	void FindDoms();
 	void FindIDoms();
 
@@ -139,15 +150,16 @@ private:
 	Block* startBlock = nullptr;
 	
 	// int is a version
-	std::unordered_map<String, int> globalVariables;
-	std::unordered_map<String, int> localVariables;
+	std::unordered_map<std::string, int> variableCounterGlobal;
+	std::unordered_map<std::string, int> variableCounterLocal;
 
 	std::unordered_map<String, std::vector<Block*>> globalAssigned;
 	std::unordered_map<String, std::vector<Block*>> localAssigned;
 
 
 	std::unordered_map<std::string, Block > graph;
-
+	// for renaming stage
+	std::unordered_map<std::string, std::stack<int>> variableStack;
 	
 
 	// topologically sorted graph

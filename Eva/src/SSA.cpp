@@ -10,10 +10,19 @@
 
 std::ostream& operator<<(std::ostream& os, const Instruction& v)
 {
-	os << v.result.name << " = ";
-	if (v.operLeft.name != "null") os << v.operLeft.name << " ";
+	os << v.result.name << "_" <<  v.result.version << " = ";
+	if (v.operLeft.name != "null") os << v.operLeft.name << "_" << v.operLeft.version;
 	os << tokenToString(v.instrType) << " ";
-	if (v.operRight.name != "null") os << v.operRight.name << " ";
+	if (v.instrType == TokenType::PHI)
+	{
+		os << "( ";
+		for (auto& param : v.variables)
+		{
+			os << param.name << "_" << param.version << ", ";
+		}
+		os << ") ";
+	}
+	if (v.operRight.name != "null") os << v.operRight.name << "_" << v.operRight.version;
 	if (v.targets.size() > 0)
 	{
 		for (auto block : v.targets)
@@ -82,6 +91,7 @@ int GetVersion(std::unordered_map<String, int>& map, String& name)
 
 void CFG::ConvertStatementAST(const Node* tree)
 {
+	if (!tree) return;
 	auto type = tree->type;
 	auto expr = tree->As<Expression>();
 	switch (type)
@@ -113,7 +123,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto valueCondition = ConvertExpressionAST(condition);
 		auto parentBlock = currentBlock;
 		
-		
+		//Instruction branch;
+		auto branchInstr = Instruction{ TokenType::BRANCH,{},{valueCondition},{} };
 
 		createBlock = false;
 		
@@ -123,34 +134,36 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto then = CreateBlock(thenBlockName.str(), { parentBlock });
 
 		currentBlock = then;
+		auto thenBranch = flows->As<Expression>()->right.get();
 		std::stringstream mergeName;
 		mergeName << "[merge_" << Block::counterMerge << "]";
-		ConvertStatementAST(flows->As<Expression>()->right.get());
+		ConvertStatementAST(thenBranch);
 		currentBlock->instructions.
 			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
 		
 		parentBlock->blocks.push_back(then);
+		branchInstr.targets.push_back(then);
 		// handle elif cases
 
 		// else
+		auto elseBranch = flows->As<Expression>()->left.get();
 		std::stringstream elseBlockName;
 		elseBlockName << "[else_" << std::to_string(Block::counterElse++) << "]";
 		auto els = CreateBlock(elseBlockName.str(), { parentBlock });
 		currentBlock = els;
-		ConvertStatementAST(flows->As<Expression>()->left.get());
+		ConvertStatementAST(elseBranch);
 		currentBlock->instructions.
 			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
 		
 		parentBlock->blocks.push_back(els);
-
-		//Instruction branch;
-		auto branchInstr = Instruction{ TokenType::BRANCH,{},{valueCondition},{} };
-		
-		branchInstr.targets.push_back(then);
 		branchInstr.targets.push_back(els);
 
-		parentBlock->instructions.push_back(branchInstr);
+		
+		
+		
+	
 
+		parentBlock->instructions.push_back(branchInstr);
 
 		auto merge = CreateBlock(mergeName.str(), {then,els});
 		// phi function
@@ -224,6 +237,88 @@ void PrintBlock(Block* block)
 
 	//std::cout << std::endl << "------------" << std::endl;
 }
+int CFG::NewName(std::string& name)
+{
+	auto version = variableCounterLocal[name]++;
+	variableStack[name].push(version);
+	return version;
+}
+
+void CFG::Rename(Block* b)
+{
+
+	// update result of phi
+	for (auto index : b->phiInstructionIndexes)
+	{
+		auto& phi = b->instructions[index];
+		phi.result.version = NewName(phi.result.name);
+	}
+
+	// update each operation
+	for (auto& instr : b->instructions)
+	{
+		if (instr.instrType == TokenType::PHI) continue;
+		if (instr.operLeft.isVariable())
+		{
+			instr.operLeft.version = variableStack[instr.operLeft.name].top();
+		}
+		if (instr.operRight.isVariable())
+		{
+			instr.operRight.version = variableStack[instr.operRight.name].top();
+		}
+		instr.result.version = NewName(instr.result.name);
+	}
+	// update phi parametrs
+	for (auto child : b->blocks)
+	{
+		for (auto index : child->phiInstructionIndexes)
+		{
+			auto& phi = child->instructions[index];
+			auto& varName = phi.result.name;
+			if (variableStack[varName].size() > 0)
+			{
+				// we cannot simply iterate over stack
+				// because the parents of merge node 
+				// have not been proccesed yet
+				auto parent = std::find(child->parents.begin(), child->parents.end(), b);
+				if (parent == child->parents.end())
+				{
+					assert(false && "parent is not found!? ");
+				}
+				auto index = std::distance(child->parents.begin(),parent);
+				phi.variables[index].version = variableStack[varName].top();
+				phi.variables[index].name = varName;
+			}
+
+		}
+	}
+
+	for (auto s : b->dominatorChildren)
+	{
+		Rename(s);
+	}
+
+	// Pop variable versions for variables defined in this block
+	for (auto it = b->instructions.rbegin(); it != b->instructions.rend(); ++it)
+	{
+		if (it->variables.size() > 0) continue;
+
+		if (!it->result.isVariable())
+		{
+			auto& varName = it->result.name;
+			variableStack[varName].pop();
+		}
+	}
+
+
+	for (auto index : b->phiInstructionIndexes)
+	{
+		auto& phi = b->instructions[index];
+		variableStack[phi.result.name].pop();
+	}
+	return;
+
+}
 
 void CFG::InsertPhi()
 {
@@ -240,6 +335,7 @@ void CFG::InsertPhi()
 			workList.push(b);
 		}
 
+		// blocks that define v variable
 		while (!workList.empty())
 		{
 			auto block = workList.front();
@@ -249,11 +345,14 @@ void CFG::InsertPhi()
 				if (hasAlready.find(blockDf) == hasAlready.end())
 				{
 					hasAlready.insert(blockDf);
-					auto str = v.first;
+					auto& str = v.first;
 					std::string name = str.GetRaw();
+					// Operand{name} is result  -  x = phi x x x x 
 					auto instr = Instruction{ TokenType::PHI ,{},{},Operand{name}};
+					auto potentialChanges = blockDf->parents.size();
+					instr.variables.resize(potentialChanges);
 					blockDf->instructions.insert(blockDf->instructions.begin(), instr);
-
+					blockDf->phiInstructionIndexes.push_back(0);
 					//since we have actually just added a variable to the new node
 					// we need to update our block
 					workList.push(blockDf);
@@ -262,7 +361,7 @@ void CFG::InsertPhi()
 		}
 	}
 	// renaming stage
-
+	Rename(startBlock);
 
 }
 void CFG::BuildDF()
@@ -334,6 +433,7 @@ void CFG::CreateVariable(const Node* tree)
 	if (left->depth > 0)
 	{
 		//version = GetVersion(localVariables, *name);
+		variableCounterLocal[name->GetRaw()] = 0;
 		localAssigned[*name].push_back(currentBlock);
 	}
 	// global variable
@@ -345,8 +445,8 @@ void CFG::CreateVariable(const Node* tree)
 	//assert(version != -1);
 	std::stringstream ss;
 	ss << std::string(name->GetRaw());
-	ss << "_";
-	ss << std::to_string(version);
+	//ss << "_";
+	//ss << std::to_string(version);
 	Operand resOp{ ss.str() ,false,version };
 	auto rightOp = ConvertExpressionAST(expr->right.get());
 
@@ -362,8 +462,8 @@ Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 	//auto version = GetTempVersion();
 	auto version = 0;
 	std::stringstream resultName;
-	resultName << "t_";
-	resultName << version;
+	resultName << "t";
+	//resultName << version;
 	auto res = Operand{ resultName.str(),false,version };
 
 	Instruction instr{ type,left,right,res };
@@ -592,6 +692,14 @@ void CFG::BuildDominatorTree()
 {
 	FindDoms();
 	FindIDoms();
+
+	for (auto block : tpgSort) {
+		if (block->idom != nullptr) {
+			block->idom->dominatorChildren.push_back(block);
+		}
+	}
+
+
 }
 
 void CFG::ConvertAST(const Node* tree)
