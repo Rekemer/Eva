@@ -5,6 +5,7 @@
 #include "VirtualMachine.h"
 #include "AST.h"
 #include "SSA.h"
+#define SSA 0 
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
 	
@@ -45,7 +46,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 
 	}
 
-#if 1
+#if SSA
 	CFG cfg;
 	cfg.vm = &vm;
 	for (auto& tree : trees)
@@ -61,11 +62,14 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	return {};
 #endif // DEBUG
 
-	
+#if SSA
+	vm.GenerateBytecodeCFG(cfg);
+#else
 	for (auto& tree : trees)
 	{
-		vm.GenerateBytecode(tree.GetTree());
+		vm.GenerateBytecodeAST(tree.GetTree());
 	}
+#endif
 	#if DEBUG
 	Print(tree.GetTree());
 	#endif // DEBUG

@@ -6,8 +6,9 @@
 #include <cassert>
 #include <algorithm>
 #include <sstream>
-#include"TokenConversion.h"
+#include "TokenConversion.h"
 #include "Local.h"
+#include "SSA.h"
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.back().As<type>();\
@@ -227,7 +228,17 @@ void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	//scopes.pop_back();
 	//assert(stackSim.m_StackPtr >= 0);
 }
-
+ValueType VirtualMachine::GetGlobalType(String& str)
+{
+	auto entry = globalVariablesTypes.Get(str.GetStringView());
+	if (!entry->key) assert(false && "global variable is undefined or used without declaration");
+	return entry->value.type;
+}
+ValueType VirtualMachine::GetLocalType(String& str)
+{
+	Entry* entry = currentScope->GetType(str);
+	return entry->value.type;
+}
 ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expression* expr)
 {
 	// global
@@ -237,8 +248,8 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		auto str = expr->value.AsString();
 		currentFunc->constants.emplace_back(str);
 		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-		auto entry = globalVariablesTypes.Get(str->GetStringView());
-		return entry->value.type;
+		auto type = GetGlobalType(*str);
+		return type;
 	}
 	// local
 	else if (expr->depth > 0)
@@ -253,16 +264,18 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		//assert(index > 0 && "wrong index of local variable");
 		currentFunc->opCode.push_back(index);
 
-		Entry* entry = currentScope->GetType(*str);
-
-		if (entry->key == nullptr)
-		{
-			std::stringstream ss;
-			ss << "ERROR[" << (expr->line) << "]: " <<
-				"The name " << str->GetRaw() << " is used but not declared " << std::endl;
-			throw std::exception{ss.str().c_str()};
-		}
-		return entry->value.type;
+		auto type = GetLocalType(*str);
+		return type;
+		//Entry* entry = currentScope->GetType(*str);
+		//
+		////if (entry->key == nullptr)
+		////{
+		////	std::stringstream ss;
+		////	ss << "ERROR[" << (expr->line) << "]: " <<
+		////		"The name " << str->GetRaw() << " is used but not declared " << std::endl;
+		////	throw std::exception{ss.str().c_str()};
+		////}
+		//return entry->value.type;
 	}
 }
 
@@ -289,7 +302,7 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 }
 int VirtualMachine::GenerateLoopCondition(const Node* node)
 {
-	Generate(node);
+	GenerateAST(node);
 	auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
 	currentFunc->opCode.push_back((uint8_t)InCode::POP);
 	return indexJumpFalse;
@@ -351,7 +364,7 @@ ValueType VirtualMachine::GetVariableType(const String* name, int depthOfDeclara
 		return globalVariablesTypes.Get(name->GetStringView())->value.type;
 	}
 }
-ValueType VirtualMachine::Generate(const Node * tree)
+ValueType VirtualMachine::GenerateAST(const Node * tree)
 {
 		 if (!tree) return ValueType::NIL;
 		 auto expr = static_cast<const Expression*>(tree);
@@ -378,9 +391,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 currentScope->prevScope = prevScope;
 			 for (auto& arg : func->arguments)
 			 {
-				 Generate(arg.get());
+				 GenerateAST(arg.get());
 			 }
-			 Generate(func->body.get());
+			 GenerateAST(func->body.get());
 			 auto type = globalVariablesTypes.Get(func->name->GetStringView())->value.type;
 			 ClearLocal();
 			 currentScope = prevScope;
@@ -397,7 +410,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::RETURN:
 		 {
-			 auto value = Generate(exprLeft);
+			 auto value = GenerateAST(exprLeft);
 			 currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
 			 break;
 		 }
@@ -413,7 +426,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 for (auto i = 0; i < call->args.size(); i++)
 			 {
 				 auto& arg = call->args[i];
-				 auto argType = Generate(arg.get());
+				 auto argType = GenerateAST(arg.get());
 				 auto declType = funcValue->argTypes[i];
 				 CastWithDeclared(argType,declType);
 
@@ -441,7 +454,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 			 for (auto& expression : block->expressions)
 			 {
-				 Generate(expression.get());
+				 GenerateAST(expression.get());
 			 }
 			 // once we finish block, we must clear the stack
 			 ClearScope(currentScope, currentScope->stack, currentFunc->opCode);
@@ -449,9 +462,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::PLUS:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
 			 
 			 if (left == right && left == ValueType::STRING)
@@ -466,7 +479,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::PLUS_PLUS:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 DETERMINE_OP_TYPE(left, INCREMENT);
 			 SetVariable(currentFunc->opCode, exprLeft);
 			 return expr->value.type;
@@ -474,7 +487,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::MINUS_MINUS:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 DETERMINE_OP_TYPE(left, DECREMENT);
 			 SetVariable(currentFunc->opCode, exprLeft);
 			 return expr->value.type;
@@ -482,20 +495,20 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::STAR:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
 			 return DetermineOpTypeRet(expr->value.type, InCode::MULTIPLY,currentFunc);
 			 break;
 		 }
 		 case TokenType::MINUS:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 if (tree->As<Expression>()->right.get())
 			 {
 				 CAST_INT_FLOAT(left, expr->value.type);
-				 auto right = Generate(tree->As<Expression>()->right.get());
+				 auto right = GenerateAST(tree->As<Expression>()->right.get());
 				 CAST_INT_FLOAT(right, expr->value.type);
 				 return DetermineOpTypeRet(expr->value.type, InCode::SUBSTRACT, currentFunc);
 			 }
@@ -509,18 +522,18 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::SLASH:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
 			 return DetermineOpTypeRet(expr->value.type, InCode::DIVIDE, currentFunc);
 			 break;
 		 }
 		 case TokenType::PERCENT:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT(left);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT(right);
 			 currentFunc->opCode.push_back((uint8_t)InCode::DIVIDE_PERCENT);
 			 return ValueType::INT;
@@ -565,18 +578,18 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 }
 		 case TokenType::GREATER:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
 			 DETERMINE_BOOL(left, right, GREATER);
 			 return ValueType::BOOL;
 			 }
 		 case TokenType::GREATER_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
 			 DETERMINE_BOOL(left, right, LESS);
 			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
@@ -584,15 +597,15 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		}
 		 case TokenType::EQUAL_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			 return ValueType::BOOL;
 		}
 		 case TokenType::BANG_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
 			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
 			 return ValueType::BOOL;
@@ -600,7 +613,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 case TokenType::DECLARE:
 		 {
 			 // declaring a variable
-			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 			 assert(tree->As<Expression>()->left.get() != nullptr);
 			 auto str = exprLeft->value.AsString();
 			 auto declType = GetVariableType(str.get(), exprLeft->depth);
@@ -620,8 +633,19 @@ ValueType VirtualMachine::Generate(const Node * tree)
 		 {
 			 // declaring a variable
 			 assert(tree->As<Expression>()->left.get() != nullptr);
-			 auto declType = Generate(tree->As<Expression>()->left.get());
-			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 auto left = tree->As<Expression>()->left.get()->As<Expression>();
+			 ValueType declType = ValueType::NIL;
+			 if (left->depth == 0)
+			 {
+				 declType = GetGlobalType(*left->value.AsString());
+			 }
+			 else
+			 {
+				 declType = GetLocalType(*left->value.AsString());
+			 }
+			 assert(declType != ValueType::NIL);
+			 //auto declType = GenerateAST(tree->As<Expression>()->left.get());
+			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 
 			 CastWithDeclared(expressionType, declType);
 			 SetVariable(currentFunc->opCode, exprLeft);
@@ -629,8 +653,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 		 case TokenType::PLUS_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
-			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
+			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 
 			 CastWithDeclared(expressionType, left);
 
@@ -642,8 +666,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 		 case TokenType::STAR_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
-			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
+			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 
 
 			 CastWithDeclared(expressionType, left);
@@ -657,8 +681,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 		 case TokenType::SLASH_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
-			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
+			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 
 
 			 CastWithDeclared(expressionType, left);
@@ -672,8 +696,8 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 		 case TokenType::MINUS_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
-			 auto expressionType = Generate(tree->As<Expression>()->right.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
+			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 
 
 			 CastWithDeclared(expressionType, left);
@@ -687,9 +711,9 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 		 case TokenType::LESS_EQUAL:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
 			 DETERMINE_BOOL(left, right, GREATER);
 			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
@@ -697,36 +721,36 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 }
 		 case TokenType::LESS:
 		 {
-			 auto left = Generate(tree->As<Expression>()->left.get());
+			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = Generate(tree->As<Expression>()->right.get());
+			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
 			 DETERMINE_BOOL(left, right, LESS);
 			 return ValueType::BOOL;
 			 }
 		 case TokenType::AND:
 		 {
-			 Generate(tree->As<Expression>()->left.get());
+			 GenerateAST(tree->As<Expression>()->left.get());
 			 // check if it is false then we just ignore second operand
 			 // and leave the value on stack
 			 auto indexFalse = JumpIfFalse(currentFunc->opCode);
 			 // remove the value because we didn't jump
 			 // the whole and is dependent on second operand
 			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			 Generate(tree->As<Expression>()->right.get());
+			 GenerateAST(tree->As<Expression>()->right.get());
 			 currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
 			 return ValueType::BOOL;
 			 }
 		 case TokenType::OR:
 		 {
-			 Generate(tree->As<Expression>()->left.get());
+			 GenerateAST(tree->As<Expression>()->left.get());
 			 auto indexFalse = JumpIfFalse(currentFunc->opCode);
 			 // if it is true we get to jump
 			 auto jump = Jump(currentFunc->opCode);
 
 			 currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
 
-			 Generate(tree->As<Expression>()->right.get());
+			 GenerateAST(tree->As<Expression>()->right.get());
 			 // the first is true- just skip second operand
 			 currentFunc->opCode.push_back((uint8_t)InCode::OR);
 			 currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, jump) + 1;
@@ -735,28 +759,28 @@ ValueType VirtualMachine::Generate(const Node * tree)
 
 		 case TokenType::BANG:
 		 {
-			 Generate(tree->As<Expression>()->left.get());
+			 GenerateAST(tree->As<Expression>()->left.get());
 			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
 			 return ValueType::BOOL;
 			 }
 		 case TokenType::PRINT:
 		 {
-			 Generate(tree->As<Expression>()->left.get());
+			 GenerateAST(tree->As<Expression>()->left.get());
 			 currentFunc->opCode.push_back((uint8_t)InCode::PRINT);
 			 return ValueType::NIL;
 			 }
 		 case TokenType::IF:
 		 {
-			 Generate(tree->As<Expression>()->left.get());
+			 GenerateAST(tree->As<Expression>()->left.get());
 			 auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
 
 			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			 Generate(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
+			 GenerateAST(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
 			 auto indexJump = Jump(currentFunc->opCode);
 			 currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
 			 // else branch
 			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
-			 Generate(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
+			 GenerateAST(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
 			 // once we execute then branch we need to skip else bytecode
 			 // without -1 because we need index of next bytecode, not previous one
 			 currentFunc->opCode[indexJump] = currentFunc->opCode.size() - indexJump;
@@ -773,7 +797,7 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 auto prevSizeBreak = BeginBreak();
 
 			 auto body = tree->As<Expression>()->right.get();
-			 Generate(body);
+			 GenerateAST(body);
 			 auto jump = JumpBack(currentFunc->opCode);
 			 // jumping backwards
 			 currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
@@ -795,17 +819,17 @@ ValueType VirtualMachine::Generate(const Node * tree)
 			 currentScope->prevScope = prevScope;
 
 
-			 Generate(forNode->init.get());
+			 GenerateAST(forNode->init.get());
 			 auto firstIteration = Jump(currentFunc->opCode);
 			 auto startLoopIndex = currentFunc->opCode.size();
 
 			 BeginContinue(startLoopIndex);
 			 auto prevSizeBreak = BeginBreak();
 
-			 Generate(forNode->action.get());
+			 GenerateAST(forNode->action.get());
 			 auto indexJumpFalse = GenerateLoopCondition(forNode->condition.get());
 			 currentFunc->opCode[firstIteration] = CalculateJumpIndex(currentFunc->opCode, firstIteration) + 1;
-			 Generate(forNode->body.get());
+			 GenerateAST(forNode->body.get());
 			 EndContinue();
 
 			 auto jump = JumpBack(currentFunc->opCode);
@@ -1278,12 +1302,19 @@ size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t base
 	return nextToCurrentCallFrame - 1;
 
 }
-void VirtualMachine::GenerateBytecode(const Node const* node)
+
+void VirtualMachine::GenerateBytecodeCFG(const CFG& cfg)
+{
+	currentFunc = globalFunc.get();
+
+}
+
+void VirtualMachine::GenerateBytecodeAST(const Node const* node)
 {
 	currentFunc = globalFunc.get();
 	try
 	{
-		Generate(node);
+		GenerateAST(node);
 	}
 	catch (const std::exception& e)
 	{

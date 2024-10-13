@@ -26,6 +26,7 @@ struct Node;
 struct Expression;
 struct Scope;
 struct StackSim;
+class CFG;
 class VirtualMachine
 {
 public:
@@ -39,7 +40,8 @@ public:
 
 	}
 	void Execute();
-	void GenerateBytecode(const Node const* node);
+	void GenerateBytecodeCFG(const CFG& cfg);
+	void GenerateBytecodeAST(const Node const* node);
 	const std::vector<ValueContainer>& GetStack() { return vmStack; };
 	std::shared_ptr<String> AllocateString(const char* ptr, size_t size);
 	std::shared_ptr<String> AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1);
@@ -48,8 +50,10 @@ public:
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	~VirtualMachine();
-	ValueType Generate(const Node* tree);
 private:
+	ValueType GenerateAST(const Node* tree);
+
+
 	void ClearScope(const Scope* scope, StackSim& stackSim,
 		std::vector<Bytecode>& opCode);
 	void CastWithDeclared(ValueType assignedType, ValueType declared);
@@ -62,6 +66,10 @@ private:
 	void SetVariable(std::vector<Bytecode>& opCode,
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
+
+	ValueType GetLocalType(String& str);
+	ValueType GetGlobalType(String& str);
+
 	ValueType GetVariableType(const String* name, int depthOfDeclaration);
 	// returns index to be patchd for a jump if loop is finished
 	int GenerateLoopCondition(const Node* node);
@@ -84,7 +92,6 @@ private:
 	int nextToCurrentCallFrame = 0;
 	bool m_Panic = false;
 	bool m_IsSameOrder = false;
-	
 	// if we hit break or continue we should know where to jump
 	// we need stack because there can be loops in loops
 	std::stack<int> m_StartLoopIndexes;

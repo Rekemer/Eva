@@ -8,6 +8,12 @@
 
 //https://www.cs.cornell.edu/courses/cs6120/2023fa/lesson/6/
 
+//An operation is critical if it sets return values for the procedure,
+//it is an input/output statement, 
+//or it affects the value in a storage location that may be accessible 
+//from outside the current procedure
+
+
 std::ostream& operator<<(std::ostream& os, const Instruction& v)
 {
 	os << v.result.name << "_" <<  v.result.version << " = ";
@@ -299,10 +305,11 @@ void CFG::Rename(Block* b)
 	}
 
 	// Pop variable versions for variables defined in this block
+
 	for (auto it = b->instructions.rbegin(); it != b->instructions.rend(); ++it)
 	{
 		if (it->variables.size() > 0) continue;
-
+	
 		if (!it->result.isVariable())
 		{
 			auto& varName = it->result.name;
