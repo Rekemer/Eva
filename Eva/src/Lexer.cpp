@@ -12,7 +12,7 @@ bool IsDigit(const char  symbol)
 };
 bool IsCharacter(const char  c)
 {
-	return  c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z';
+	return  c >= 'A' && c <= 'Z' || c >= 'a' && c <= 'z' || c == '_';
 }
 bool Lexer::IsPartOfVariable(const char c)
 {

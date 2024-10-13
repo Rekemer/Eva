@@ -5,7 +5,7 @@
 #include "VirtualMachine.h"
 #include "AST.h"
 #include "SSA.h"
-#define SSA 0 
+#define SSA 1 
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
 	

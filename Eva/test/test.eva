@@ -1,15 +1,18 @@
 //Print "sd";
+
+d_g :=0;
+//c_g :=0;
 {
-//  a: int = 1;
-//  a++;
-//  a = 5;
-//  b:int = a;
-//  c:int = 2;
-//  {
-//	 a := 5;
-//	 b:int =a;
-//	 c:int = 2;
-//  }
+  a: int = 1;
+  a++;
+  a = 5;
+  b:int = a;
+  c:int = 2;
+  {
+	 a := 5;
+	 b:int =a;
+	 c:int = 2;
+  }
   // SSA form 
   // t = 4 + 1;
   // t1 = 2 + t;
@@ -26,7 +29,9 @@ else
 d = 10;
 }
  Print d;
- //c = 5;
+ c = 5;
+ Print c;
+
 
 }
 

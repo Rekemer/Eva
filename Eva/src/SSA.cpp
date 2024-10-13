@@ -70,6 +70,8 @@ bool CFG::IsStatement(const Node* node)
 	case TokenType::RETURN:
 	case TokenType::WHILE:
 	case TokenType::BLOCK:
+	case TokenType::DECLARE:
+	case TokenType::EQUAL:
 		return true;
 	default:
 		break;

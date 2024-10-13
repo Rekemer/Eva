@@ -1,15 +1,17 @@
 #pragma once
-#include"String.hpp"
+#include "String.hpp"
 #include <vector>
 #include <unordered_map>
 #include "Tokens.h"
-#include<ostream>
-#include<set>
-#include<functional>
-#include<stack>
+#include <ostream>
+#include <set>
+#include <functional>
+#include <stack>
+#include "Value.h"
 struct Operand
 {
 	std::string name;
+	ValueContainer value;
 	bool isConstant;
 	int version;
 
@@ -145,9 +147,11 @@ private:
 private:
 	bool createBlock = true;
 	int tempVersion = 0;
+public:
 	// whenever we hit condition we create a new block
 	Block* currentBlock = nullptr;
 	Block* startBlock = nullptr;
+private:
 	
 	// int is a version
 	std::unordered_map<std::string, int> variableCounterGlobal;

@@ -23,6 +23,7 @@ struct CallFrame
 };
 class AST;
 struct Node;
+struct Block;
 struct Expression;
 struct Scope;
 struct StackSim;
@@ -52,6 +53,7 @@ public:
 	~VirtualMachine();
 private:
 	ValueType GenerateAST(const Node* tree);
+	void GenerateCFG(const Block* block);
 
 
 	void ClearScope(const Scope* scope, StackSim& stackSim,
@@ -67,8 +69,8 @@ private:
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
 
-	ValueType GetLocalType(String& str);
-	ValueType GetGlobalType(String& str);
+	ValueType GetLocalType(String& str, const Expression* const node);
+	ValueType GetGlobalType(String& str, const Expression* const node);
 
 	ValueType GetVariableType(const String* name, int depthOfDeclaration);
 	// returns index to be patchd for a jump if loop is finished

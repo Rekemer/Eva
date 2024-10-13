@@ -171,6 +171,7 @@ TEST_CASE("variable declared and cast value to type")
 
 
 }
+
 TEST_CASE("equal operations on variables")
 {
 	SUBCASE("+=")
@@ -840,5 +841,48 @@ TEST_CASE("constant folding")
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<bool>("check", true, ValueType::BOOL, vm);
 		CHECK(isPass);
+	}
+}
+
+TEST_CASE("assign  variables")
+{
+	SUBCASE("=")
+	{
+		auto a = R"(
+
+	d_g :=0;
+	c_g :=0;
+	{
+		  a: int = 1;
+		  a++;
+		  a = 5;
+		  b:int = a;
+		  c:int = 2;
+		  {
+			 a := 5;
+			 b:int =a;
+			 c:int = 2;
+		  }
+		   d := 6;
+		  d = 2 ;
+		check := false;
+		if (check)
+		{
+		d = 5;
+		}
+		else 
+		{
+		d = 10;
+		}
+		 c = 5;
+		d_g = d;
+		c_g = c;
+		
+	}
+)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("d_g", 10, ValueType::INT, vm) && CheckVariable<int>("c_g", 5, ValueType::INT, vm);
+		CHECK(isPass);
+
 	}
 }

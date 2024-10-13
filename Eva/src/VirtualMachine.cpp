@@ -228,15 +228,28 @@ void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	//scopes.pop_back();
 	//assert(stackSim.m_StackPtr >= 0);
 }
-ValueType VirtualMachine::GetGlobalType(String& str)
+ValueType VirtualMachine::GetGlobalType(String& str,const Expression* const expr)
 {
 	auto entry = globalVariablesTypes.Get(str.GetStringView());
-	if (!entry->key) assert(false && "global variable is undefined or used without declaration");
+	if (entry->key == nullptr)
+	{
+		std::stringstream ss;
+		ss << "ERROR[" << (expr->line) << "]: " <<
+			"The name " << str.GetRaw() << " is used but not declared " << std::endl;
+		throw std::exception{ ss.str().c_str() };
+	}
 	return entry->value.type;
 }
-ValueType VirtualMachine::GetLocalType(String& str)
+ValueType VirtualMachine::GetLocalType(String& str,const Expression* const expr)
 {
 	Entry* entry = currentScope->GetType(str);
+	if (entry->key == nullptr)
+	{
+		std::stringstream ss;
+		ss << "ERROR[" << (expr->line) << "]: " <<
+			"The name " << str.GetRaw() << " is used but not declared " << std::endl;
+		throw std::exception{ ss.str().c_str() };
+	}
 	return entry->value.type;
 }
 ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expression* expr)
@@ -248,7 +261,7 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		auto str = expr->value.AsString();
 		currentFunc->constants.emplace_back(str);
 		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-		auto type = GetGlobalType(*str);
+		auto type = GetGlobalType(*str,expr);
 		return type;
 	}
 	// local
@@ -264,18 +277,8 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		//assert(index > 0 && "wrong index of local variable");
 		currentFunc->opCode.push_back(index);
 
-		auto type = GetLocalType(*str);
+		auto type = GetLocalType(*str,expr);
 		return type;
-		//Entry* entry = currentScope->GetType(*str);
-		//
-		////if (entry->key == nullptr)
-		////{
-		////	std::stringstream ss;
-		////	ss << "ERROR[" << (expr->line) << "]: " <<
-		////		"The name " << str->GetRaw() << " is used but not declared " << std::endl;
-		////	throw std::exception{ss.str().c_str()};
-		////}
-		//return entry->value.type;
 	}
 }
 
@@ -635,16 +638,16 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 assert(tree->As<Expression>()->left.get() != nullptr);
 			 auto left = tree->As<Expression>()->left.get()->As<Expression>();
 			 ValueType declType = ValueType::NIL;
+			 // should not we invoke GetVariableType?
 			 if (left->depth == 0)
 			 {
-				 declType = GetGlobalType(*left->value.AsString());
+				 declType = GetGlobalType(*left->value.AsString(),left);
 			 }
 			 else
 			 {
-				 declType = GetLocalType(*left->value.AsString());
+				 declType = GetLocalType(*left->value.AsString(),left);
 			 }
 			 assert(declType != ValueType::NIL);
-			 //auto declType = GenerateAST(tree->As<Expression>()->left.get());
 			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 
 			 CastWithDeclared(expressionType, declType);
@@ -1303,10 +1306,156 @@ size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t base
 
 }
 
+void VirtualMachine::GenerateCFG(const Block* block)
+{
+	for (const auto& instr : block->instructions)
+	{
+		auto type = instr.instrType;
+
+		switch (type)
+		{
+		case TokenType::LEFT_PAREN:
+			break;
+		case TokenType::RIGHT_PAREN:
+			break;
+		case TokenType::LEFT_BRACE:
+			break;
+		case TokenType::RIGHT_BRACE:
+			break;
+		case TokenType::COMMA:
+			break;
+		case TokenType::DOT:
+			break;
+		case TokenType::DOUBLE_DOT:
+			break;
+		case TokenType::MINUS:
+			break;
+		case TokenType::PLUS:
+			break;
+		case TokenType::COLON:
+			break;
+		case TokenType::SEMICOLON:
+			break;
+		case TokenType::SLASH:
+			break;
+		case TokenType::STAR:
+			break;
+		case TokenType::PERCENT:
+			break;
+		case TokenType::BANG:
+			break;
+		case TokenType::BANG_EQUAL:
+			break;
+		case TokenType::EQUAL:
+			break;
+		case TokenType::EQUAL_EQUAL:
+			break;
+		case TokenType::PLUS_EQUAL:
+			break;
+		case TokenType::MINUS_EQUAL:
+			break;
+		case TokenType::SLASH_EQUAL:
+			break;
+		case TokenType::STAR_EQUAL:
+			break;
+		case TokenType::GREATER:
+			break;
+		case TokenType::GREATER_EQUAL:
+			break;
+		case TokenType::LESS:
+			break;
+		case TokenType::LESS_EQUAL:
+			break;
+		case TokenType::PLUS_PLUS:
+			break;
+		case TokenType::MINUS_MINUS:
+			break;
+		case TokenType::IDENTIFIER:
+			break;
+		case TokenType::INT_LITERAL:
+			break;
+		case TokenType::FLOAT_LITERAL:
+			break;
+		case TokenType::STRING_LITERAL:
+			break;
+		case TokenType::ERROR:
+			break;
+		case TokenType::END:
+			break;
+		case TokenType::AND:
+			break;
+		case TokenType::CLASS:
+			break;
+		case TokenType::ELSE:
+			break;
+		case TokenType::FALSE:
+			break;
+		case TokenType::CONTINUE:
+			break;
+		case TokenType::BREAK:
+			break;
+		case TokenType::FOR:
+			break;
+		case TokenType::FUN:
+			break;
+		case TokenType::IF:
+			break;
+		case TokenType::ELIF:
+			break;
+		case TokenType::NIL:
+			break;
+		case TokenType::OR:
+			break;
+		case TokenType::PRINT:
+			break;
+		case TokenType::RETURN:
+			break;
+		case TokenType::SUPER:
+			break;
+		case TokenType::THIS:
+			break;
+		case TokenType::TRUE:
+			break;
+		case TokenType::VAR:
+			break;
+		case TokenType::WHILE:
+			break;
+		case TokenType::STRING_TYPE:
+			break;
+		case TokenType::FLOAT_TYPE:
+			break;
+		case TokenType::INT_TYPE:
+			break;
+		case TokenType::BOOL_TYPE:
+			break;
+		case TokenType::BLOCK:
+			break;
+		case TokenType::DEDUCE:
+			break;
+		case TokenType::DECLARE:
+			break;
+		case TokenType::JUMP:
+			break;
+		case TokenType::BRANCH:
+			break;
+		case TokenType::PHI:
+			break;
+		default:
+			break;
+		}
+	}
+
+
+	for (auto child : block->blocks)
+	{
+		GenerateCFG(child);
+	}
+}
+
 void VirtualMachine::GenerateBytecodeCFG(const CFG& cfg)
 {
 	currentFunc = globalFunc.get();
-
+	GenerateCFG(cfg.startBlock);
 }
 
 void VirtualMachine::GenerateBytecodeAST(const Node const* node)
