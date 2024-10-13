@@ -1,4 +1,4 @@
-#include "String.hpp"
+#include <string>
 #include <cstring>
 #include <iostream>
 
@@ -54,7 +54,10 @@ bool String::operator==(const char* str)
 {
 	return strcmp(m_Data.get(), str) == 0;
 }
-
+bool String::operator!=(const char* str)
+{
+	return !(*this == str);
+}
 bool String::AreEqual(const char* str, size_t size, const char* str2, size_t size2)
 {
 	if (size != size2) return false;

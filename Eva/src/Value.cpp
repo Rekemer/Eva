@@ -1,7 +1,7 @@
 #include "Value.h"
 #include <cassert>
 #include "Object.h"
-#include "String.hpp"
+#include <string>
 #include "Function.h"
 #include "VirtualMachine.h"
 
@@ -28,19 +28,20 @@ switch (valueType)
 ValueContainer::ValueContainer(const ValueContainer& v)
 {
 	type = v.type;
-	if (v.type == ValueType::STRING)
-	{
-		as = std::make_shared<String>(*v.AsString());
-	}
-	else as = v.as;
+	as = v.as;
+	//if (v.type == ValueType::STRING)
+	//{
+	//	as = std::make_shared<String>(*v.AsString());
+	//}
+	//else as = v.as;
 };
 
 void ValueContainer::UpdateType(ValueType type)
 {
-	if (type == ValueType::STRING)
-	{
-		as = std::make_shared<String>();
-	}
+	//if (type == ValueType::STRING)
+	//{
+	//	as = std::make_shared<String>();
+	//}
 	this->type = type;
 	
 }
@@ -116,7 +117,7 @@ ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContaine
 	}
 
 	case ValueType::STRING:
-		return ValueContainer{ vm.AddStrings(v1.AsString(),v2.AsString()) };
+		return ValueContainer{ v1.AsString() + v2.AsString()};
 		break;
 	case ValueType::BOOL:
 	case ValueType::FUNCTION:
@@ -181,7 +182,7 @@ ValueContainer ValueContainer::Equal(const ValueContainer& v1, const ValueContai
 {
 	if (v1.type == v2.type  && v1.type == ValueType::STRING)
 	{
-		return ValueContainer { *v1.AsString() == *v2.AsString() };
+		return ValueContainer { v1.AsString() == v2.AsString() };
 	}
 	OP(v1, v2, == );
 }
@@ -193,21 +194,22 @@ ValueContainer::ValueContainer(ValueType v)
 	{
 		as = std::make_shared<Func>();
 	}
-	else if (v == ValueType::STRING)
+	/*else if (v == ValueType::STRING)
 	{
 		as = std::make_shared<String>();
-	}
+	}*/
 }
 ValueContainer& ValueContainer::operator = (const ValueContainer& v)
 {
 	if (this == &v) return *this;
 	type = v.type;
-	if (v.type == ValueType::STRING )
-	{
-
-		as = std::make_shared<String>(*v.AsString());
-	}
-	else as = v.as;
+	as = v.as;
+	//if (v.type == ValueType::STRING )
+	//{
+	//
+	//	as = std::make_shared<String>(v.AsString());
+	//}
+	//else as = v.as;
 }
 
 
@@ -236,13 +238,13 @@ std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 	case  ValueType::STRING:
 	{
 		auto str = v.AsString();
-		os << *str;
+		os << str;
 		break;
 	}
 	case  ValueType::FUNCTION:
 	{
 		auto name =v.AsFunc()->name;
-		os << *name;
+		os << name;
 		break;
 	}
 	default:

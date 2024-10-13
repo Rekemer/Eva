@@ -103,7 +103,7 @@ private:
 
 	void BindValue(Iterator& currentToken, Node* variable);
 
-	void AddLocal(String& name, int currentScopeDepth)
+	void AddLocal(std::string& name, int currentScopeDepth)
 	{
 		auto endIterator = currentScope->stack.locals.begin() + currentScope->stack.m_StackPtr;
 		auto iter = std::find_if(currentScope->stack.locals.begin(), endIterator, [&](auto& local)

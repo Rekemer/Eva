@@ -1,8 +1,8 @@
 #pragma once
-#include "String.hpp"
 #include "Value.h"
 #include <vector>
 #include <utility>
+#include <string>
 // FHV-1a
 static uint32_t HashString(const char* key, int length) {
 	uint32_t hash = 2166136261u;
@@ -15,21 +15,26 @@ static uint32_t HashString(const char* key, int length) {
 
 struct Entry
 {
-	std::shared_ptr<String> key = nullptr;
+	std::string key = "";
 	ValueContainer value;
+	bool IsInit()
+	{
+		return key != "";
+	}
 };
 
 inline bool IsTombstone(Entry* entry)
 {
-	return entry->key == nullptr && entry->value.As<bool>() == true;
+	return !entry->IsInit() && entry->value.As<bool>() == true;
+	//return entry->IsInit();
 }
 inline bool IsSet(Entry* entry)
 {
-	return entry != nullptr && entry->key != nullptr;
+	return entry != nullptr && entry->IsInit() ;
 }
 inline bool IsNotSet(Entry* entry)
 {
-	return entry->key == nullptr && entry->value.type == ValueType::NIL;
+	return !entry->IsInit() && entry->value.type == ValueType::NIL;
 }
 
 
@@ -146,7 +151,7 @@ public:
 	void Add(const Entry& entry);
 	bool IsExist(std::string_view key) const;
 	template<class... Arg>
-	Entry* Add(std::string_view key, Arg... value)
+	Entry* Add(const std::string& key, Arg... value)
 	{
 		auto loadFactor = static_cast<float>(m_EntriesAmount) / m_Size;
 		// resize array
@@ -162,9 +167,9 @@ public:
 
 			for (int i = 0; i < m_Size/2; i++)
 			{
-				if (oldData[i].key != nullptr)
+				if (oldData[i].IsInit())
 				{
-					auto retrievedEntry = FindEntry(m_Data.get(), oldData[i].key->GetRaw(), m_Size);
+					auto retrievedEntry = FindEntry(m_Data.get(), oldData[i].key, m_Size);
 					retrievedEntry->key = oldData[i].key;
 					retrievedEntry->value = oldData[i].value;
 					m_EntriesAmount++;
@@ -178,7 +183,7 @@ public:
 			m_EntriesAmount++;
 		}
 
-		retrievedEntry->key = std::make_shared<String>(key.data(), key.size());
+		retrievedEntry->key = key;
 		retrievedEntry->value = ValueContainer{ value... };
 		return retrievedEntry;
 	}

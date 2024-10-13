@@ -1,6 +1,6 @@
 #include"Lexer.h"
 #include <iostream>
-#include"String.hpp"
+#include <string>
 #include"VirtualMachine.h"
 #include <cassert>
 
@@ -35,6 +35,11 @@ void Lexer::Error(const char* msg, size_t line)
 	std::cout << "Lexer Error [" << line << "] " << msg  << std::endl;
 }
 
+bool AreEqual(const char* str, size_t size, const char* str2, size_t size2)
+{
+	if (size != size2) return false;
+	return !static_cast<bool>(strncmp(str, str2, size));
+}
 
 bool IsMatch(const char* str, size_t strSize, TokenType type) {
 
@@ -69,42 +74,42 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 		return false; 
 
 	case TokenType::RETURN:
-		return strSize == 6 && String::AreEqual(str, strSize, "return", 6);
+		return strSize == 6 && AreEqual(str, strSize, "return", 6);
 	case TokenType::FUN:
-		return strSize == 3 && String::AreEqual(str, strSize, "fun", 3);
+		return strSize == 3 && AreEqual(str, strSize, "fun", 3);
 
 	case TokenType::STRING_TYPE:
-		return strSize == 6 && String::AreEqual(str, strSize, "String", 6);
+		return strSize == 6 && AreEqual(str, strSize, "String", 6);
 
 	case TokenType::FALSE:
-		return strSize == 5 && String::AreEqual(str, strSize, "false", 5);
+		return strSize == 5 && AreEqual(str, strSize, "false", 5);
 
 	case TokenType::TRUE:
-		return strSize == 4 && String::AreEqual(str, strSize, "true", 4);
+		return strSize == 4 && AreEqual(str, strSize, "true", 4);
 	case TokenType::CONTINUE:
-		return strSize == 8 && String::AreEqual(str, strSize, "continue", 8);
+		return strSize == 8 && AreEqual(str, strSize, "continue", 8);
 	case TokenType::BREAK:
-		return strSize == 5 && String::AreEqual(str, strSize, "break", 5);
+		return strSize == 5 && AreEqual(str, strSize, "break", 5);
 	case TokenType::PRINT:
-		return strSize == 5 && String::AreEqual(str, strSize, "Print", 5);
+		return strSize == 5 && AreEqual(str, strSize, "Print", 5);
 	case TokenType::IF:
-		return strSize == 2 && String::AreEqual(str, strSize, "if", 2);
+		return strSize == 2 && AreEqual(str, strSize, "if", 2);
 	case TokenType::ELIF:
-		return strSize == 4 && String::AreEqual(str, strSize, "elif", 4);
+		return strSize == 4 && AreEqual(str, strSize, "elif", 4);
 	case TokenType::ELSE:
-		return strSize == 4 && String::AreEqual(str, strSize, "else", 4);
+		return strSize == 4 && AreEqual(str, strSize, "else", 4);
 	case TokenType::WHILE:
-		return strSize == 5 && String::AreEqual(str, strSize, "while", 5);
+		return strSize == 5 && AreEqual(str, strSize, "while", 5);
 	case TokenType::FOR:
-		return strSize == 3 && String::AreEqual(str, strSize, "for", 3);
+		return strSize == 3 && AreEqual(str, strSize, "for", 3);
 	case TokenType::INT_TYPE:
-		return strSize == 3 && String::AreEqual(str, strSize, "int", 3);
+		return strSize == 3 && AreEqual(str, strSize, "int", 3);
 
 	case TokenType::FLOAT_TYPE:
-		return strSize == 5 && String::AreEqual(str, strSize, "float", 5);
+		return strSize == 5 && AreEqual(str, strSize, "float", 5);
 
 	case TokenType::BOOL_TYPE:
-		return strSize == 4 && String::AreEqual(str, strSize, "bool", 4);
+		return strSize == 4 && AreEqual(str, strSize, "bool", 4);
 	default:
 		return false;
 	}
@@ -216,7 +221,7 @@ void Lexer::ParseString(VirtualMachine& vm)
 		if (Peek() =='\"')
 		{
 			auto size = static_cast<size_t>(currentSymbol - startSymbol);
-			auto obj = vm.AllocateString(startSymbol,size);
+			auto obj = std::string{ startSymbol, size };
 			tokens.push_back(CreateToken(TokenType::STRING_LITERAL, ValueContainer{ obj }, currentLine));
 			Eat();
 		}
@@ -556,7 +561,7 @@ void Lexer::ParseDeclaration(VirtualMachine& vm)
 				return;
 			}
 		}
-		auto variableName = vm.AllocateString(startSymbol,size);
+		auto variableName = std::string{ startSymbol, size };
 		tokens.push_back(CreateToken(TokenType::IDENTIFIER, ValueContainer{ variableName }, currentLine));
 	}
 	startSymbol = currentSymbol;

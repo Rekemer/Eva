@@ -68,11 +68,11 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 int offset)
  {
 	 auto str = currentToken->value.AsString();
-	 globalTypes.Add(str->GetStringView(), type);
+	 globalTypes.Add(str, type);
 	 // define global variable
-	 table.Add(str->GetStringView(), type);
+	 table.Add(str, type);
 	 // to note global that variable is declared, so that in value it can be used
-	 auto variableName = table.Add(str->GetStringView(), ValueContainer{})->key;
+	 auto variableName = table.Add(str, ValueContainer{})->key;
 	 // it will initialize node with the name of a variable
 	 node->left = LogicalOr(currentToken);
 
@@ -84,10 +84,10 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
  {
 	 auto str = currentToken->value.AsString();
 	 scopeDeclarations.top()++;
-	 AddLocal(*str, scopeDepth);
+	 AddLocal(str, scopeDepth);
 	 node->left = LogicalOr(currentToken);
 
-	 currentScope->types.Add(str->GetStringView(), type);
+	 currentScope->types.Add(str, type);
 	 currentToken += offset;
  }
  std::unique_ptr<Node> AST::UnaryOpPrefix( Iterator&  currentToken)
@@ -166,8 +166,8 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	{	
 		auto str = currentToken->value.AsString();
 		auto& globalTable = vm->GetGlobals();
-		auto entry = globalTable.Get(str->GetStringView());
-		auto isGlobal = entry->key != nullptr;
+		auto entry = globalTable.Get(str);
+		auto isGlobal = entry->IsInit();
 
 		if ((currentToken + 1)->type == TokenType::LEFT_PAREN)
 		{
@@ -204,7 +204,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			// if local scope then read global or local
 			if (scopeDepth > 0)
 			{
-				auto [isLocalDeclared, index] = currentScope->IsLocalExist(*str,scopeDepth);
+				auto [isLocalDeclared, index] = currentScope->IsLocalExist(str,scopeDepth);
 				
 				if (isLocalDeclared)
 				{
@@ -224,7 +224,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 				{
 					m_Panic = true;
 					std::cout << "ERROR[" << (currentToken)->line << "]: " <<
-						"The name " << *str << " is used but not declared " << std::endl;
+						"The name " << str << " is used but not declared " << std::endl;
 				}
 			}
 			// if scope == 0 then can read only global
@@ -238,7 +238,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			{
 				m_Panic = true;
 				std::cout << "ERROR[" << (currentToken)->line << "]: " <<
-					"The name " << *str << " is used but not declared " << std::endl;
+					"The name " << str << " is used but not declared " << std::endl;
 			}
 
 		}
@@ -405,7 +405,7 @@ void Print(const Expression* tree, int level) {
 	 auto function = std::make_unique<FunctionNode>();
 	 auto& globalVariables = vm->GetGlobals();
 	 auto& globalTypes = vm->GetGlobalsType();
-	 auto funcValue = globalVariables.Add(name->GetStringView(), LiteralToType(TokenType::FUN))
+	 auto funcValue = globalVariables.Add(name, LiteralToType(TokenType::FUN))
 		 ->value.AsFunc();
 	 function->name = name;
 	 function->type = TokenType::FUN;
@@ -434,12 +434,12 @@ void Print(const Expression* tree, int level) {
 	 if (currentToken->type != TokenType::COLON)
 	 {
 		// void function
-		globalTypes.Add(function->name->GetStringView(), ValueType::NIL);
+		globalTypes.Add(function->name, ValueType::NIL);
 	 }
 	 else
 	 {
 		Error(TokenType::COLON,currentToken,"Function must declare return type");
-		globalTypes.Add(function->name->GetStringView(), LiteralToType(currentToken->type));
+		globalTypes.Add(function->name, LiteralToType(currentToken->type));
 		currentToken++;
 	 }
 	 function->body = EatBlock(currentToken);
@@ -448,7 +448,7 @@ void Print(const Expression* tree, int level) {
 	 for (auto& arg : function->arguments)
 	 {
 		 auto expr = arg->As<Expression>()->left->As<Expression>();
-		 auto name = expr->value.AsString()->GetStringView();
+		 auto name = expr->value.AsString();
 		 auto entry = function->paramScope.types.Get(name);
 		 body->types.Add(name, entry->value.type);
 	 }
@@ -458,17 +458,17 @@ void Print(const Expression* tree, int level) {
  std::unique_ptr<Node> AST::DeclareVariable(Iterator& currentToken)
  {
 	 auto& table = vm->GetGlobals();
-	 auto& globalsType = vm->GetGlobalsType();
+	 auto& globalsType = vm->GetGlobalsType(); 
 
-	 auto str = *currentToken->value.AsString();
+	 auto str =currentToken->value.AsString();
 	 auto declaredType = (currentToken + 2)->type;
 	 auto isEqualSign = (currentToken + 3)->type == TokenType::EQUAL;
-	 auto entry = table.Get(str.GetStringView());
+	 auto entry = table.Get(str);
 	 auto [isType, type] = IsVariableType(declaredType);
 	 auto node = std::make_unique<Expression>();
 	 node->type = TokenType::DECLARE;
 	 node->depth = scopeDepth;
-	 if (entry->key == nullptr && scopeDepth == 0)
+	 if (!entry->IsInit() && scopeDepth == 0)
 	 {
 		 node->line = currentToken->line;
 
@@ -886,14 +886,14 @@ void Print(const Expression* tree, int level) {
 	 
 	 if (isVariable && isDeclaration)
 	 {	
-		 auto name = currentToken->value.AsString()->GetStringView();
+		 auto name = currentToken->value.AsString();
 		 auto check = isDeclarared(name);
 		 if (check) return {};
 		 return DeclareVariable(currentToken);
 	 }
 	 else if (isFunc)
 	 {	
-		 auto name = (currentToken+1)->value.AsString()->GetStringView();
+		 auto name = (currentToken+1)->value.AsString();
 		 auto check = isDeclarared(name);
 		 if (check) return {};
 		 return DeclareFunction(currentToken);
@@ -1299,7 +1299,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		auto call = static_cast<Call*>(node);
 
 		auto& globals = vm.GetGlobals();
-		auto funcValue = globals.Get(call->name->GetStringView())
+		auto funcValue = globals.Get(call->name)
 			->value.AsFunc();
 
 		for ( auto i = 0; i < call->args.size(); i++)
@@ -1322,10 +1322,10 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			// with the the type of parameters
 			
 		}
-		auto name = call->name->GetStringView();
+		auto name = call->name;
 		auto entry = vm.GetGlobalsType().Get(name);
 		std::stringstream ss;
-		assert(entry->key != nullptr);
+		assert(entry->IsInit());
 		return TypeToLiteral(entry->value.type);
 	}
 	if (node->type == TokenType::RETURN)
@@ -1341,9 +1341,9 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	if (node->type == TokenType::FUN)
 	{
 		auto fun = static_cast<FunctionNode*>(node);
-		auto entry = vm.GetGlobalsType().Get(fun->name->GetStringView());
+		auto entry = vm.GetGlobalsType().Get(fun->name);
 		auto actualType = TypeCheck(fun->body.get(), vm);
-		assert(entry->key != nullptr);
+		assert(entry->IsInit());
 		if (entry->value.type != ValueType::NIL)
 		{
 			auto declaredType = TypeToLiteral(entry->value.type);
@@ -1483,8 +1483,8 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 				//}
 				for (auto scope : currentScopes)
 				{
-					if (!scope->types.IsExist(str->GetStringView())) continue;
-					entry = scope->types.Get(str->GetStringView());
+					if (!scope->types.IsExist(str)) continue;
+					entry = scope->types.Get(str);
 				}
 				assert(entry != nullptr);
 				entry->value.UpdateType(LiteralToType(childType1));
@@ -1492,7 +1492,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			else
 			{
 				auto str = leftChild->value.AsString();
-				auto entry = globalsType.Get(str->GetStringView());
+				auto entry = globalsType.Get(str);
 				entry->value.UpdateType(LiteralToType(childType1));
 			}
 
@@ -1515,15 +1515,15 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			//}
 			for (auto scope : currentScopes)
 			{
-				if (!scope->types.IsExist(str->GetStringView())) continue;
-				entry = scope->types.Get(str->GetStringView());
+				if (!scope->types.IsExist(str)) continue;
+				entry = scope->types.Get(str);
 			}
 			assert(entry != nullptr);
 			return TypeToLiteral(entry->value.type);
 		}
 		auto str = expr->value.AsString();
-		auto entry = globalsType.Get(str->GetStringView());
-		assert(entry->key != nullptr);
+		auto entry = globalsType.Get(str);
+		assert(entry->IsInit());
 		return TypeToLiteral(entry->value.type);
 	}
 	bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::MINUS_MINUS

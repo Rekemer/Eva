@@ -1,5 +1,5 @@
 #pragma once
-#include"String.hpp"
+#include <string>
 #include<array>
 #include<vector>
 
@@ -7,7 +7,7 @@ struct Scope;
 struct Local
 {
 	int depth;
-	String name;
+	std::string name;
 };
 struct StackSim
 {
@@ -17,10 +17,10 @@ struct StackSim
 	int m_StackPtr = 0;
 	std::string_view LastLocal()
 	{
-		return locals[m_StackPtr - 1].name.GetStringView();
+		return locals[m_StackPtr - 1].name;
 	}
 
-	std::tuple<bool, int> IsLocalExist(String& name, size_t scope)
+	std::tuple<bool, int> IsLocalExist(std::string& name, size_t scope)
 	{
 		auto temp = m_StackPtr - 1;
 		while (temp >= 0)

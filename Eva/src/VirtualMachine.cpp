@@ -2,7 +2,7 @@
 #include "Incode.h"
 #include "AST.h"
 #include "Debug.h"
-#include "String.hpp"
+#include <string>
 #include <cassert>
 #include <algorithm>
 #include <sstream>
@@ -228,26 +228,26 @@ void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	//scopes.pop_back();
 	//assert(stackSim.m_StackPtr >= 0);
 }
-ValueType VirtualMachine::GetGlobalType(String& str,const Expression* const expr)
+ValueType VirtualMachine::GetGlobalType(std::string& str,const Expression* const expr)
 {
-	auto entry = globalVariablesTypes.Get(str.GetStringView());
-	if (entry->key == nullptr)
+	auto entry = globalVariablesTypes.Get(str);
+	if (!entry->IsInit())
 	{
 		std::stringstream ss;
 		ss << "ERROR[" << (expr->line) << "]: " <<
-			"The name " << str.GetRaw() << " is used but not declared " << std::endl;
+			"The name " << str << " is used but not declared " << std::endl;
 		throw std::exception{ ss.str().c_str() };
 	}
 	return entry->value.type;
 }
-ValueType VirtualMachine::GetLocalType(String& str,const Expression* const expr)
+ValueType VirtualMachine::GetLocalType(std::string& str,const Expression* const expr)
 {
 	Entry* entry = currentScope->GetType(str);
-	if (entry->key == nullptr)
+	if (!entry->IsInit())
 	{
 		std::stringstream ss;
 		ss << "ERROR[" << (expr->line) << "]: " <<
-			"The name " << str.GetRaw() << " is used but not declared " << std::endl;
+			"The name " << str << " is used but not declared " << std::endl;
 		throw std::exception{ ss.str().c_str() };
 	}
 	return entry->value.type;
@@ -261,7 +261,7 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		auto str = expr->value.AsString();
 		currentFunc->constants.emplace_back(str);
 		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-		auto type = GetGlobalType(*str,expr);
+		auto type = GetGlobalType(str,expr);
 		return type;
 	}
 	// local
@@ -271,13 +271,13 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
-		auto [isDeclared,index] = currentScope->IsLocalExist(*str, expr->depth);
+		auto [isDeclared,index] = currentScope->IsLocalExist(str, expr->depth);
 	
 		currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
 		//assert(index > 0 && "wrong index of local variable");
 		currentFunc->opCode.push_back(index);
 
-		auto type = GetLocalType(*str,expr);
+		auto type = GetLocalType(str,expr);
 		return type;
 	}
 }
@@ -297,7 +297,7 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	}
 	else
 	{
-		auto [isDeclared, index] = currentScope->IsLocalExist(*str, expression->depth);
+		auto [isDeclared, index] = currentScope->IsLocalExist(str, expression->depth);
 		currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
 		assert(index != -1);
 		currentFunc->opCode.push_back(index);
@@ -338,7 +338,7 @@ void VirtualMachine::PatchBreak(int prevSizeBreak)
 		m_BreakIndexes.pop();
 	}
 }
-ValueType VirtualMachine::GetVariableType(const String* name, int depthOfDeclaration)
+ValueType VirtualMachine::GetVariableType ( std::string& name, int depthOfDeclaration)
 {
 	if (depthOfDeclaration > 0)
 	{
@@ -346,7 +346,7 @@ ValueType VirtualMachine::GetVariableType(const String* name, int depthOfDeclara
 		auto currentDepth = currentScope->depth;
 		if (currentDepth == depthOfDeclaration)
 		{
-			entry = currentScope->types.Get(name->GetStringView());
+			entry = currentScope->types.Get(name);
 		}
 		else
 		{
@@ -357,14 +357,14 @@ ValueType VirtualMachine::GetVariableType(const String* name, int depthOfDeclara
 				prevScope = prevScope->prevScope;
 				diff--;
 			}
-			entry = prevScope->types.Get(name->GetStringView());
+			entry = prevScope->types.Get(name);
 		}
-		if (entry->key != nullptr) return entry->value.type;
+		if (entry->IsInit()) return entry->value.type;
 		assert(false && "could not get type of variable");
 	}
 	else
 	{
-		return globalVariablesTypes.Get(name->GetStringView())->value.type;
+		return globalVariablesTypes.Get(name)->value.type;
 	}
 }
 ValueType VirtualMachine::GenerateAST(const Node * tree)
@@ -380,11 +380,11 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 		 {
 			 auto func = static_cast<const FunctionNode*>(tree);
 			 functionNames.push_back(func->name);
-			 auto funcValue = globalVariables.Get(func->name->GetStringView())->
+			 auto funcValue = globalVariables.Get(func->name)->
 				 value.AsFunc();
 
 			 funcValue->name = func->name;
-			 if (*func->name == "main")
+			 if (func->name == "main")
 			 {
 				 mainFunc = funcValue.get();
 			 }
@@ -397,7 +397,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 				 GenerateAST(arg.get());
 			 }
 			 GenerateAST(func->body.get());
-			 auto type = globalVariablesTypes.Get(func->name->GetStringView())->value.type;
+			 auto type = globalVariablesTypes.Get(func->name)->value.type;
 			 ClearLocal();
 			 currentScope = prevScope;
 			 //currentScope->stack.currentScopes.pop_back();
@@ -425,7 +425,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
 			 currentFunc->constants.emplace_back((call->name));
 			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			 auto funcValue = globalVariables.Get(call->name->GetStringView())->value.AsFunc();
+			 auto funcValue = globalVariables.Get(call->name)->value.AsFunc();
 			 for (auto i = 0; i < call->args.size(); i++)
 			 {
 				 auto& arg = call->args[i];
@@ -436,7 +436,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 }
 			 currentFunc->opCode.push_back((uint8_t)InCode::CALL);
 			 currentFunc->opCode.push_back(call->args.size());
-			 auto type = globalVariablesTypes.Get(call->name->GetStringView())->value.type;
+			 auto type = globalVariablesTypes.Get(call->name)->value.type;
 			 if (type == ValueType::NIL)
 			 {
 				 currentFunc->opCode.push_back((uint8_t)InCode::POP);
@@ -619,7 +619,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 			 assert(tree->As<Expression>()->left.get() != nullptr);
 			 auto str = exprLeft->value.AsString();
-			 auto declType = GetVariableType(str.get(), exprLeft->depth);
+			 auto declType = GetVariableType(str, exprLeft->depth);
 			 CastWithDeclared(expressionType, declType);
 
 
@@ -641,11 +641,11 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 // should not we invoke GetVariableType?
 			 if (left->depth == 0)
 			 {
-				 declType = GetGlobalType(*left->value.AsString(),left);
+				 declType = GetGlobalType(left->value.AsString(),left);
 			 }
 			 else
 			 {
-				 declType = GetLocalType(*left->value.AsString(),left);
+				 declType = GetLocalType(left->value.AsString(),left);
 			 }
 			 assert(declType != ValueType::NIL);
 			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
@@ -873,31 +873,31 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 }
 
 
-std::shared_ptr<String> VirtualMachine::AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1) 
-{
-	auto raw1 = s->GetRaw();
-	auto raw2 = s1->GetRaw();
-	auto newSize = s->GetSize() + s1->GetSize();
-	auto newString = new char[newSize + 1];
-	strcpy(newString, raw1);
-	strcat(newString, raw2);
-	auto res = AllocateString(newString, newSize);
-	// should move instead of  copy at the constructor of string
-	delete[] newString;
-	return res;
-
-}
-
-std::shared_ptr<String> VirtualMachine::AllocateString(const char* ptr, size_t size)
-{
-	if (internalStrings.IsExist(std::string_view{ ptr,size }))
-	{
-		auto str = internalStrings.Get(std::string_view{ ptr,size });
-		return (str->key);
-	}
-	auto* entry = internalStrings.Add(std::string_view{ptr,size});
-	return (entry->key);
-}
+//std::shared_ptr<String> VirtualMachine::AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1) 
+//{
+//	auto raw1 = s->GetRaw();
+//	auto raw2 = s1->GetRaw();
+//	auto newSize = s->GetSize() + s1->GetSize();
+//	auto newString = new char[newSize + 1];
+//	strcpy(newString, raw1);
+//	strcat(newString, raw2);
+//	auto res = AllocateString(newString, newSize);
+//	// should move instead of  copy at the constructor of string
+//	delete[] newString;
+//	return res;
+//
+//}
+//
+//std::shared_ptr<String> VirtualMachine::AllocateString(const char* ptr, size_t size)
+//{
+//	if (internalStrings.IsExist(std::string_view{ ptr,size }))
+//	{
+//		auto str = internalStrings.Get(std::string_view{ ptr,size });
+//		return (str->key);
+//	}
+//	auto* entry = internalStrings.Add(std::string_view{ptr,size});
+//	return (entry->key);
+//}
 
 
 void VirtualMachine::ClearLocal()
@@ -928,36 +928,36 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	{
 		auto str = a.AsString();
 		auto str2 = b.AsString();
-		return *str == *str2;
+		return str == str2;
 	}
 	assert(false && "cannot compare the values of different type");
 	return false;
 }
-void VirtualMachine::CollectStrings() 
-{
-
-
-	//auto a = internalStrings.Get(std::string_view{"Hello, New Year!", 16});
-	//internalStrings.Print();
-	
-	//for (HashTable::Iterator i = internalStrings.begin(); i != internalStrings.end(); i++)
-	//{
-	//	std::cout << *i->key << std::endl;
-	//}
-	
-	for (auto& entry : internalStrings)
-	{
-		if (entry.key.use_count() == 1)
-		{
-			std::cout << "CLEANED " << *entry.key << std::endl;
-			entry.key.reset();
-		}
-		else
-		{
-			//std::cout << *entry.key << std::endl;
-		}
-	}
-}
+//void VirtualMachine::CollectStrings() 
+//{
+//
+//
+//	//auto a = internalStrings.Get(std::string_view{"Hello, New Year!", 16});
+//	//internalStrings.Print();
+//	
+//	//for (HashTable::Iterator i = internalStrings.begin(); i != internalStrings.end(); i++)
+//	//{
+//	//	std::cout << *i->key << std::endl;
+//	//}
+//	
+//	for (auto& entry : internalStrings)
+//	{
+//		if (entry.key.use_count() == 1)
+//		{
+//			std::cout << "CLEANED " << *entry.key << std::endl;
+//			entry.key.reset();
+//		}
+//		else
+//		{
+//			//std::cout << *entry.key << std::endl;
+//		}
+//	}
+//}
 
 void VirtualMachine::Execute()
 {
@@ -969,8 +969,8 @@ void VirtualMachine::Execute()
 	Debug(globalFunc->opCode, globalFunc->constants,globalVariables);
 	for (auto& name : functionNames)
 	{
-		std::cout << "FUNCTION: " << *name << std::endl;
-		auto func= globalVariables.Get(name->GetStringView())->value.AsFunc();
+		std::cout << "FUNCTION: " << name << std::endl;
+		auto func= globalVariables.Get(name)->value.AsFunc();
 		Debug(func->opCode, func->constants,globalVariables);
 	}
 	#endif
@@ -990,7 +990,7 @@ void VirtualMachine::Execute()
 		// check if there are strings to be freed
 		// it doesn't have to be here, only for debugging
 		// usually memory is freed when we want to allocate new memory
-		CollectStrings();
+		//CollectStrings();
 		auto inst = frame->function->opCode[frame->ip++];
 
 		switch (static_cast<InCode>(inst))
@@ -1045,7 +1045,8 @@ void VirtualMachine::Execute()
 			vmStack.pop_back(); 
 			auto v2 = vmStack.back().AsString();
 			vmStack.pop_back(); 
-			auto newString = VirtualMachine::AddStrings(v2,v);
+			//auto newString = VirtualMachine::AddStrings(v2,v);
+			auto newString = v2 + v;
 			vmStack.push_back(ValueContainer{ newString }); \
 
 			break;
@@ -1223,7 +1224,7 @@ void VirtualMachine::Execute()
 		case InCode::GET_GLOBAL_VAR:
 		{	
 			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
-			auto string = (nameOfVariable.AsString())->GetStringView();
+			auto string = nameOfVariable.AsString();
 			auto entry = globalVariables.Get(string);
 			vmStack.push_back(entry->value);
 			break;
@@ -1232,7 +1233,7 @@ void VirtualMachine::Execute()
 		{	
 			auto& value = vmStack.back();
 			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
-			auto string = (nameOfVariable.AsString())->GetStringView();
+			auto string = nameOfVariable.AsString();
 			auto entry = globalVariables.Get(string);
 			entry->value = value;
 			vmStack.pop_back();

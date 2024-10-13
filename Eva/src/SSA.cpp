@@ -15,20 +15,23 @@
 
 
 std::ostream& operator<<(std::ostream& os, const Instruction& v)
-{
-	os << v.result.name << "_" <<  v.result.version << " = ";
-	if (v.operLeft.name != "null") os << v.operLeft.name << "_" << v.operLeft.version;
+{	
+	auto& resValue = v.result.value;
+	auto& leftValue = v.operLeft.value;
+	auto& rightValue = v.operRight.value;
+	os << resValue << "_" <<  v.result.version << " = ";
+	if ((leftValue.AsString()) != "null") os << leftValue << "_" << v.operLeft.version;
 	os << tokenToString(v.instrType) << " ";
 	if (v.instrType == TokenType::PHI)
 	{
 		os << "( ";
 		for (auto& param : v.variables)
 		{
-			os << param.name << "_" << param.version << ", ";
+			os << param.value << "_" << param.version << ", ";
 		}
 		os << ") ";
 	}
-	if (v.operRight.name != "null") os << v.operRight.name << "_" << v.operRight.version;
+	if ((rightValue.AsString()) != "null") os << rightValue << "_" << v.operRight.version;
 	if (v.targets.size() > 0)
 	{
 		for (auto block : v.targets)
@@ -50,7 +53,7 @@ bool CFG::IsStatement(const Node* node)
 	{
 		// we need to check whether is returns any value
 		auto call = node->As<Call>();
-		auto type = vm->GetGlobalsType().Get(call->name->GetStringView())->value.type;
+		auto type = vm->GetGlobalsType().Get(call->name)->value.type;
 		if (type == ValueType::NIL)
 		{
 			return true;
@@ -85,7 +88,7 @@ Block* CFG::CreateBlock(const std::string& name, std::vector<Block*> parents)
 	block->parents = parents;
 	return block;
 }
-int GetVersion(std::unordered_map<String, int>& map, String& name)
+int GetVersion(std::unordered_map<std::string, int>& map, std::string& name)
 {
 	int version = -1;
 	auto iter = map.find(name);
@@ -146,8 +149,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 		std::stringstream mergeName;
 		mergeName << "[merge_" << Block::counterMerge << "]";
 		ConvertStatementAST(thenBranch);
+		
+		ValueContainer name = ValueContainer{ mergeName.str()};
+		Operand mergeOperand = { name, false, -1 };
 		currentBlock->instructions.
-			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
+			push_back(Instruction{ TokenType::JUMP,{},mergeOperand,{}});
 		
 		parentBlock->blocks.push_back(then);
 		branchInstr.targets.push_back(then);
@@ -161,7 +167,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock = els;
 		ConvertStatementAST(elseBranch);
 		currentBlock->instructions.
-			push_back(Instruction{ TokenType::JUMP,{},{mergeName.str()},{}});
+			push_back(Instruction{ TokenType::JUMP,{},mergeOperand,{}});
 		
 		parentBlock->blocks.push_back(els);
 		branchInstr.targets.push_back(els);
@@ -259,7 +265,7 @@ void CFG::Rename(Block* b)
 	for (auto index : b->phiInstructionIndexes)
 	{
 		auto& phi = b->instructions[index];
-		phi.result.version = NewName(phi.result.name);
+		phi.result.version = NewName(phi.result.value.AsString());
 	}
 
 	// update each operation
@@ -268,13 +274,13 @@ void CFG::Rename(Block* b)
 		if (instr.instrType == TokenType::PHI) continue;
 		if (instr.operLeft.isVariable())
 		{
-			instr.operLeft.version = variableStack[instr.operLeft.name].top();
+			instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top();
 		}
 		if (instr.operRight.isVariable())
 		{
-			instr.operRight.version = variableStack[instr.operRight.name].top();
+			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
 		}
-		instr.result.version = NewName(instr.result.name);
+		instr.result.version = NewName(instr.result.value.AsString());
 	}
 	// update phi parametrs
 	for (auto child : b->blocks)
@@ -282,8 +288,8 @@ void CFG::Rename(Block* b)
 		for (auto index : child->phiInstructionIndexes)
 		{
 			auto& phi = child->instructions[index];
-			auto& varName = phi.result.name;
-			if (variableStack[varName].size() > 0)
+			auto& varName = phi.result;
+			if (variableStack[varName.value.AsString()].size() > 0)
 			{
 				// we cannot simply iterate over stack
 				// because the parents of merge node 
@@ -294,8 +300,8 @@ void CFG::Rename(Block* b)
 					assert(false && "parent is not found!? ");
 				}
 				auto index = std::distance(child->parents.begin(),parent);
-				phi.variables[index].version = variableStack[varName].top();
-				phi.variables[index].name = varName;
+				phi.variables[index].version = variableStack[varName.value.AsString()].top();
+				phi.variables[index].value= varName.value;
 			}
 
 		}
@@ -314,7 +320,7 @@ void CFG::Rename(Block* b)
 	
 		if (!it->result.isVariable())
 		{
-			auto& varName = it->result.name;
+			auto varName = it->result.value.AsString();
 			variableStack[varName].pop();
 		}
 	}
@@ -323,7 +329,7 @@ void CFG::Rename(Block* b)
 	for (auto index : b->phiInstructionIndexes)
 	{
 		auto& phi = b->instructions[index];
-		variableStack[phi.result.name].pop();
+		variableStack[phi.result.value.AsString()].pop();
 	}
 	return;
 
@@ -354,10 +360,9 @@ void CFG::InsertPhi()
 				if (hasAlready.find(blockDf) == hasAlready.end())
 				{
 					hasAlready.insert(blockDf);
-					auto& str = v.first;
-					std::string name = str.GetRaw();
-					// Operand{name} is result  -  x = phi x x x x 
-					auto instr = Instruction{ TokenType::PHI ,{},{},Operand{name}};
+					auto name = v.first;
+										// Operand{name} is result  -  x = phi x x x x 
+					auto instr = Instruction{ TokenType::PHI ,{},{},Operand{ValueContainer{name},false,-1} };
 					auto potentialChanges = blockDf->parents.size();
 					instr.variables.resize(potentialChanges);
 					blockDf->instructions.insert(blockDf->instructions.begin(), instr);
@@ -442,21 +447,16 @@ void CFG::CreateVariable(const Node* tree)
 	if (left->depth > 0)
 	{
 		//version = GetVersion(localVariables, *name);
-		variableCounterLocal[name->GetRaw()] = 0;
-		localAssigned[*name].push_back(currentBlock);
+		variableCounterLocal[name] = 0;
+		localAssigned[name].push_back(currentBlock);
 	}
 	// global variable
 	else
 	{
 		//version = GetVersion(globalVariables, *name);
-		globalAssigned[*name].push_back(currentBlock);
+		globalAssigned[name].push_back(currentBlock);
 	}
-	//assert(version != -1);
-	std::stringstream ss;
-	ss << std::string(name->GetRaw());
-	//ss << "_";
-	//ss << std::to_string(version);
-	Operand resOp{ ss.str() ,false,version };
+	Operand resOp{ ValueContainer{name},false,-1 };
 	auto rightOp = ConvertExpressionAST(expr->right.get());
 
 	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
@@ -473,7 +473,7 @@ Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 	std::stringstream resultName;
 	resultName << "t";
 	//resultName << version;
-	auto res = Operand{ resultName.str(),false,version };
+	auto res = Operand{ ValueContainer{resultName.str()} ,false,version};
 
 	Instruction instr{ type,left,right,res };
 	currentBlock->instructions.push_back(instr);
@@ -490,8 +490,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 
 	case TokenType::IDENTIFIER:
 	{
-		auto value = expr->value.AsString();
-		Operand op{ value->GetRaw(),false,0 };
+		Operand op{ expr->value,false,0 };
 		return op;
 		break;
 	}

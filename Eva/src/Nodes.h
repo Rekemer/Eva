@@ -1,6 +1,6 @@
 #pragma once
 #include "Tokens.h"
-#include "String.hpp"
+#include <string>
 #include <memory>
 #include <vector>
 #include "HashTable.h"
@@ -72,7 +72,7 @@ struct Scope : public Node
 	Scope& operator=(Scope&&) = default;
 	int popAmount = 0;
 
-	std::tuple<bool, int> IsLocalExist(String& name, int scopeDepth)
+	std::tuple<bool, int> IsLocalExist(std::string& name, int scopeDepth)
 	{
 		auto tmpScope = this;
 		bool isLocalDeclared = false;
@@ -95,14 +95,14 @@ struct Scope : public Node
 		return { false, - 1 };
 	}
 
-	Entry* GetType(String& str)
+	Entry* GetType(std::string& str)
 	{
 		Entry* entry = nullptr;
 		auto tmpScope = this;
 		while (tmpScope != nullptr)
 		{
-			entry = tmpScope->types.Get(str.GetStringView());
-			if (entry->key) break;
+			entry = tmpScope->types.Get(str);
+			if (entry->IsInit()) break;
 			tmpScope = tmpScope->prevScope;
 		}
 		return entry;
@@ -121,11 +121,11 @@ struct FunctionNode : public Node
 {
 	Scope paramScope;
 	std::unique_ptr<Node> body;
-	std::shared_ptr<String> name;
+	std::string name;
 	std::vector<std::unique_ptr<Node>> arguments;
 };
 struct Call : public Node
 {
-	std::shared_ptr<String> name;
+	std::string name;
 	std::vector<std::unique_ptr<Node>> args;
 };

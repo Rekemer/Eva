@@ -1,5 +1,5 @@
 #pragma once
-#include "String.hpp"
+#include <string>
 #include <vector>
 #include <unordered_map>
 #include "Tokens.h"
@@ -10,45 +10,25 @@
 #include "Value.h"
 struct Operand
 {
-	std::string name;
 	ValueContainer value;
-	bool isConstant;
 	int version;
+	bool isConstant = false;
 
-	Operand(std::string& name ) : name{ name },
-		isConstant{ false },
-		version{ -1 }
+	Operand(const ValueContainer& value, bool isConstant, int version) : value{ value},
+		version{ -1 },
+		isConstant{ isConstant }
 	{
 
 	}
 
-	Operand() : name{"null"},
-		isConstant{false},
-		version{-1}
-	{
-
-	}
-
-	Operand(const std::string& name, bool isConstant, int version) : 
-		name{ name }, 
-		isConstant{ isConstant }, 
-		version{ version }
-	{
-
-	}
-
-	Operand(const char* name, bool isConstant, int version) :
-		name{ name },
-		isConstant{ isConstant },
-		version{ version }
+	Operand() : version{-1}
 	{
 
 	}
 
 	bool isVariable()
 	{
-		if (isConstant) return false;
-		return name != "null" && version != -1;
+		return value.type == ValueType::STRING && version != -1;
 	}
 };
 
@@ -157,8 +137,8 @@ private:
 	std::unordered_map<std::string, int> variableCounterGlobal;
 	std::unordered_map<std::string, int> variableCounterLocal;
 
-	std::unordered_map<String, std::vector<Block*>> globalAssigned;
-	std::unordered_map<String, std::vector<Block*>> localAssigned;
+	std::unordered_map<std::string, std::vector<Block*>> globalAssigned;
+	std::unordered_map<std::string, std::vector<Block*>> localAssigned;
 
 
 	std::unordered_map<std::string, Block > graph;

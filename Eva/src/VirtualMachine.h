@@ -44,8 +44,8 @@ public:
 	void GenerateBytecodeCFG(const CFG& cfg);
 	void GenerateBytecodeAST(const Node const* node);
 	const std::vector<ValueContainer>& GetStack() { return vmStack; };
-	std::shared_ptr<String> AllocateString(const char* ptr, size_t size);
-	std::shared_ptr<String> AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1);
+	//std::shared_ptr<String> AllocateString(const char* ptr, size_t size);
+	//std::shared_ptr<String> AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1);
 
 	void ClearLocal();
 	HashTable& GetGlobals() { return globalVariables; };
@@ -59,7 +59,7 @@ private:
 	void ClearScope(const Scope* scope, StackSim& stackSim,
 		std::vector<Bytecode>& opCode);
 	void CastWithDeclared(ValueType assignedType, ValueType declared);
-	void CollectStrings();
+	//void CollectStrings();
 	void BeginContinue(int startLoopIndex);
 	int BeginBreak();
 	void EndContinue();
@@ -69,10 +69,10 @@ private:
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
 
-	ValueType GetLocalType(String& str, const Expression* const node);
-	ValueType GetGlobalType(String& str, const Expression* const node);
+	ValueType GetLocalType(std::string& str, const Expression* const node);
+	ValueType GetGlobalType(std::string& str, const Expression* const node);
 
-	ValueType GetVariableType(const String* name, int depthOfDeclaration);
+	ValueType GetVariableType(std::string& name, int depthOfDeclaration);
 	// returns index to be patchd for a jump if loop is finished
 	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
@@ -85,7 +85,7 @@ private:
 	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
 	
 	std::vector<ValueContainer> vmStack;
-	std::vector<std::shared_ptr<String>> functionNames;
+	std::vector<std::string> functionNames;
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;

@@ -129,7 +129,6 @@
     </ClCompile>
     <ClCompile Include="..\Eva\src\Object.cpp" />
     <ClCompile Include="..\Eva\src\SSA.cpp" />
-    <ClCompile Include="..\Eva\src\String.cpp" />
     <ClCompile Include="..\Eva\src\Tokens.cpp" />
     <ClCompile Include="..\Eva\src\Value.cpp" />
     <ClCompile Include="..\Eva\src\VirtualMachine.cpp" />

@@ -9,7 +9,7 @@ void HashTable::Delete(std::string_view key)
 
 void HashTable::MakeTombstone(Entry* entry)
 {
-	entry->key = nullptr;
+	entry->key = "";
 	entry->value = true;
 }
 
@@ -26,7 +26,7 @@ void HashTable::Print()
 		auto data = &m_Data[index];
 		if (IsSet(data))
 		{
-			std::cout << *data->key << std::endl;
+			std::cout << data->key << std::endl;
 		}
 		index +=1;
 	}
@@ -48,11 +48,9 @@ Entry* HashTable::FindEntry(Entry* data, std::string_view key, int amountOfData)
 	while (true)
 	{
 		auto* entry = (data + index);
-		
 		if (IsSet(entry))
 		{
-			bool isSameKey = String::AreEqual(entry->key->GetRaw(),
-				entry->key->GetSize(), key.data(), key.size());
+			bool isSameKey = entry->key == key;
 			if (isSameKey)
 			{
 				return entry;
@@ -60,7 +58,7 @@ Entry* HashTable::FindEntry(Entry* data, std::string_view key, int amountOfData)
 		}
 
 
-		if (entry->key == nullptr && tombstone == nullptr)
+		if (!entry->IsInit() && tombstone == nullptr)
 		{
 			return &data[index];
 		}

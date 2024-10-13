@@ -2,9 +2,10 @@
 #include<memory>
 #include <variant>
 #include <cassert>
+#include <string>
 #include<ostream>
 //#include"Object.h"
-//#include"String.hpp"
+//#include <string>
 //#include"Function.h"
 
 // could be a template?
@@ -41,8 +42,7 @@ public:
 		else if constexpr (std::is_same_v<T, float>) {
 			type = ValueType::FLOAT;
 		}
-		else if constexpr (std::is_same_v<T, std::shared_ptr<String>> ||
-			std::is_same_v<T, std::shared_ptr<const String>>) {
+		else if constexpr (std::is_same_v<T, std::string>) {
 			type = ValueType::STRING;
 		}
 		else if constexpr (std::is_same_v<T, bool>) {
@@ -103,9 +103,9 @@ public:
 	U AsRef() {
 		return std::get<T>(as);
 	}
-	std::shared_ptr<String> AsString() const
+	std::string AsString() const
 	{
-		return std::get<std::shared_ptr<String>>(as);
+		return std::get<std::string>(as);
 	}
 	std::shared_ptr<Func> AsFunc() const
 	{
@@ -115,5 +115,5 @@ private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
 
-	std::variant<bool, float, int, std::shared_ptr<String>,std::shared_ptr<Func>> as;
+	std::variant<bool, float, int, std::string,std::shared_ptr<Func>> as;
 };
