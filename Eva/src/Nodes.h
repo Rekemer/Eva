@@ -72,30 +72,35 @@ struct Scope : public Node
 	Scope& operator=(Scope&&) = default;
 	int popAmount = 0;
 
-	std::tuple<bool, int> IsLocalExist(std::string& name, int scopeDepth)
+	std::tuple<bool, int, int > IsLocalExist(std::string& name, int scopeDepth)
 	{
 		auto tmpScope = this;
 		bool isLocalDeclared = false;
 		auto localIndex = -1;
+		auto currentScope = scopeDepth;
 		while (tmpScope != nullptr)
 		{
 			auto [exist, index] = tmpScope->stack.IsLocalExist(name, scopeDepth);
 			if (exist)
 			{
+
 				isLocalDeclared = true;
 				localIndex = index;
+				currentScope = tmpScope->depth; 
 				break;
 			}
+			
 			tmpScope = tmpScope->prevScope;
 		}
 		if (isLocalDeclared)
 		{
-			return { isLocalDeclared,localIndex};
+			assert(currentScope >= 0);
+			return { isLocalDeclared,localIndex,currentScope };
 		}
-		return { false, - 1 };
+		return { false, - 1, 0 };
 	}
 
-	Entry* GetType(std::string& str)
+	Entry* GetType(const std::string& str)
 	{
 		Entry* entry = nullptr;
 		auto tmpScope = this;

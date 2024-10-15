@@ -5,6 +5,9 @@
 #include <cassert>
 #include <queue>
 #include <unordered_set>
+#include <format>
+
+
 
 //https://www.cs.cornell.edu/courses/cs6120/2023fa/lesson/6/
 
@@ -20,7 +23,7 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 	auto& leftValue = v.operLeft.value;
 	auto& rightValue = v.operRight.value;
 	os << resValue << "_" <<  v.result.version << " = ";
-	if ((leftValue.AsString()) != "null") os << leftValue << "_" << v.operLeft.version;
+	if (leftValue.type != ValueType::NIL && leftValue.AsString() != "null") os << leftValue << "_" << v.operLeft.version;
 	os << tokenToString(v.instrType) << " ";
 	if (v.instrType == TokenType::PHI)
 	{
@@ -31,7 +34,7 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 		}
 		os << ") ";
 	}
-	if ((rightValue.AsString()) != "null") os << rightValue << "_" << v.operRight.version;
+	if (rightValue.type != ValueType::NIL && rightValue.AsString() != "null") os << rightValue << "_" << v.operRight.version;
 	if (v.targets.size() > 0)
 	{
 		for (auto block : v.targets)
@@ -100,6 +103,11 @@ int GetVersion(std::unordered_map<std::string, int>& map, std::string& name)
 	return version;
 }
 
+Operand NullOperand()
+{
+	return Operand{ ValueContainer {std::string{"null"}},false,-1 };
+};
+
 void CFG::ConvertStatementAST(const Node* tree)
 {
 	if (!tree) return;
@@ -133,16 +141,13 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto condition = expr->left.get();
 		auto valueCondition = ConvertExpressionAST(condition);
 		auto parentBlock = currentBlock;
-		
 		//Instruction branch;
-		auto branchInstr = Instruction{ TokenType::BRANCH,{},{valueCondition},{} };
-
+		auto branchInstr = Instruction{ TokenType::BRANCH,{},{valueCondition},NullOperand()};
+		
 		createBlock = false;
 		
 		// then
-		std::stringstream thenBlockName;
-		thenBlockName << "[then_" <<  std::to_string(Block::counterThen++) << "]";
-		auto then = CreateBlock(thenBlockName.str(), { parentBlock });
+		auto then = CreateBlock(std::format("[then_{}]", std::to_string(Block::counterThen++)), {parentBlock});
 
 		currentBlock = then;
 		auto thenBranch = flows->As<Expression>()->right.get();
@@ -151,9 +156,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 		ConvertStatementAST(thenBranch);
 		
 		ValueContainer name = ValueContainer{ mergeName.str()};
-		Operand mergeOperand = { name, false, -1 };
+		Operand mergeOperand = { name, false, LABEL_VERSION };
 		currentBlock->instructions.
-			push_back(Instruction{ TokenType::JUMP,{},mergeOperand,{}});
+			push_back(Instruction{ TokenType::JUMP,{},mergeOperand, NullOperand()});
 		
 		parentBlock->blocks.push_back(then);
 		branchInstr.targets.push_back(then);
@@ -167,7 +172,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock = els;
 		ConvertStatementAST(elseBranch);
 		currentBlock->instructions.
-			push_back(Instruction{ TokenType::JUMP,{},mergeOperand,{}});
+			push_back(Instruction{ TokenType::JUMP,{},mergeOperand,NullOperand ()});
 		
 		parentBlock->blocks.push_back(els);
 		branchInstr.targets.push_back(els);
@@ -251,7 +256,7 @@ void PrintBlock(Block* block)
 
 	//std::cout << std::endl << "------------" << std::endl;
 }
-int CFG::NewName(std::string& name)
+int CFG::NewName(const std::string& name)
 {
 	auto version = variableCounterLocal[name]++;
 	variableStack[name].push(version);
@@ -538,7 +543,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::FALSE:
 	{
 		auto value = expr->value.As<bool>();
-		auto str = value ? "true" : "false";
+		std::string str = value ? "true" : "false";
 		Operand op{ str,true,0 };
 		return op;
 		break;

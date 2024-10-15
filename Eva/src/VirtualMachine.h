@@ -69,10 +69,10 @@ private:
 		const Expression* expression);
 	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
 
-	ValueType GetLocalType(std::string& str, const Expression* const node);
-	ValueType GetGlobalType(std::string& str, const Expression* const node);
+	ValueType GetLocalType(const std::string& str, const Expression* const node);
+	ValueType GetGlobalType(const std::string& str, const Expression* const node);
 
-	ValueType GetVariableType(std::string& name, int depthOfDeclaration);
+	ValueType GetVariableType(const std::string& name, int depthOfDeclaration);
 	// returns index to be patchd for a jump if loop is finished
 	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);

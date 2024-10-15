@@ -8,6 +8,9 @@
 #include <functional>
 #include <stack>
 #include "Value.h"
+
+const int LABEL_VERSION = -2;
+const int NOT_INIT_VERSION = -1;
 struct Operand
 {
 	ValueContainer value;
@@ -15,20 +18,20 @@ struct Operand
 	bool isConstant = false;
 
 	Operand(const ValueContainer& value, bool isConstant, int version) : value{ value},
-		version{ -1 },
+		version{ NOT_INIT_VERSION },
 		isConstant{ isConstant }
 	{
 
 	}
 
-	Operand() : version{-1}
+	Operand() : version{ NOT_INIT_VERSION }
 	{
 
 	}
 
 	bool isVariable()
 	{
-		return value.type == ValueType::STRING && version != -1;
+		return value.type == ValueType::STRING && isConstant == false && version != LABEL_VERSION;
 	}
 };
 
@@ -104,7 +107,7 @@ public:
 	void InsertPhi();
 	void Debug();
 private:
-	int NewName(std::string& name);
+	int NewName(const std::string& name);
 	void Rename(Block* b);
 	void FindDoms();
 	void FindIDoms();

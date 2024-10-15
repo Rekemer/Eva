@@ -29,15 +29,6 @@ vmStack.push_back(ValueContainer{v2 operation v});\
 while(false)
 
 
-InCode m_SameOrderOp;
-ValueType m_SameOrderType;
-
-ValueType Strongest(ValueType v, ValueType v1)
-{
-	if (v == ValueType::FLOAT) return ValueType::FLOAT;
-	if (v1 == ValueType::FLOAT) return ValueType::FLOAT;
-	return ValueType::INT;
-}
 ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 {
 	switch (op)
@@ -228,7 +219,7 @@ void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	//scopes.pop_back();
 	//assert(stackSim.m_StackPtr >= 0);
 }
-ValueType VirtualMachine::GetGlobalType(std::string& str,const Expression* const expr)
+ValueType VirtualMachine::GetGlobalType(const std::string& str,const Expression* const expr)
 {
 	auto entry = globalVariablesTypes.Get(str);
 	if (!entry->IsInit())
@@ -240,7 +231,7 @@ ValueType VirtualMachine::GetGlobalType(std::string& str,const Expression* const
 	}
 	return entry->value.type;
 }
-ValueType VirtualMachine::GetLocalType(std::string& str,const Expression* const expr)
+ValueType VirtualMachine::GetLocalType(const std::string& str,const Expression* const expr)
 {
 	Entry* entry = currentScope->GetType(str);
 	if (!entry->IsInit())
@@ -271,7 +262,7 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 		// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
-		auto [isDeclared,index] = currentScope->IsLocalExist(str, expr->depth);
+		auto [isDeclared,index,_] = currentScope->IsLocalExist(str, expr->depth);
 	
 		currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
 		//assert(index > 0 && "wrong index of local variable");
@@ -297,7 +288,7 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	}
 	else
 	{
-		auto [isDeclared, index] = currentScope->IsLocalExist(str, expression->depth);
+		auto [isDeclared, index,_] = currentScope->IsLocalExist(str, expression->depth);
 		currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
 		assert(index != -1);
 		currentFunc->opCode.push_back(index);
@@ -338,7 +329,7 @@ void VirtualMachine::PatchBreak(int prevSizeBreak)
 		m_BreakIndexes.pop();
 	}
 }
-ValueType VirtualMachine::GetVariableType ( std::string& name, int depthOfDeclaration)
+ValueType VirtualMachine::GetVariableType (const  std::string& name, int depthOfDeclaration)
 {
 	if (depthOfDeclaration > 0)
 	{
@@ -637,16 +628,16 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 // declaring a variable
 			 assert(tree->As<Expression>()->left.get() != nullptr);
 			 auto left = tree->As<Expression>()->left.get()->As<Expression>();
-			 ValueType declType = ValueType::NIL;
+			 auto declType = GetVariableType(left->value.AsString(), left->depth);
 			 // should not we invoke GetVariableType?
-			 if (left->depth == 0)
-			 {
-				 declType = GetGlobalType(left->value.AsString(),left);
-			 }
-			 else
-			 {
-				 declType = GetLocalType(left->value.AsString(),left);
-			 }
+			 //if (left->depth == 0)
+			 //{
+			//	 declType = GetGlobalType(left->value.AsString(),left);
+			 //}
+			 //else
+			 //{
+			//	 declType = GetLocalType(left->value.AsString(),left);
+			 //}
 			 assert(declType != ValueType::NIL);
 			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 

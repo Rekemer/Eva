@@ -204,7 +204,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 			// if local scope then read global or local
 			if (scopeDepth > 0)
 			{
-				auto [isLocalDeclared, index] = currentScope->IsLocalExist(str,scopeDepth);
+				auto [isLocalDeclared, index, scopeDepthChecked] = currentScope->IsLocalExist(str,scopeDepth);
 				
 				if (isLocalDeclared)
 				{
@@ -212,7 +212,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 
 					auto variableName = currentToken->value.AsString();
 					node->value = ValueContainer(variableName);
-					node->depth = scopeDepth;
+					node->depth = scopeDepthChecked;
 				}
 				else if (isGlobal)
 				{
@@ -422,8 +422,7 @@ void Print(const Expression* tree, int level) {
 		 auto name = currentScope->stack.LastLocal();
 		 auto declaredType = currentScope->types.Get(name)->value.type;
 		 funcValue->argTypes.push_back(declaredType);
-		 //auto type = currentScope->
-
+		 
 		 function->arguments.push_back(std::move(arg));
 		 if (currentToken->type != TokenType::RIGHT_PAREN)
 		 {
@@ -1524,6 +1523,7 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		auto str = expr->value.AsString();
 		auto entry = globalsType.Get(str);
 		assert(entry->IsInit());
+
 		return TypeToLiteral(entry->value.type);
 	}
 	bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::MINUS_MINUS
