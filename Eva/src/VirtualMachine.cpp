@@ -534,26 +534,13 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 break;
 		 }
 		 case TokenType::INT_LITERAL:
-		 {
-			 currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			 currentFunc->constants.push_back(ValueContainer{ expr->value });
-			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			 return ValueType::INT;
-		 }
 		 case TokenType::FLOAT_LITERAL:
-		 {
-			 currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			 currentFunc->constants.push_back(ValueContainer{ expr->value });
-			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			 return ValueType::FLOAT;
-		 }
 		 case TokenType::STRING_LITERAL:
 		 {
 			 currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			 // might copy because vector can reallocate
-			 currentFunc->constants.emplace_back(expr->value);
+			 currentFunc->constants.push_back(ValueContainer{ expr->value });
 			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-			 return ValueType::STRING;
+			 return LiteralToType(tree->type);
 		 }
 		 case TokenType::IDENTIFIER:
 		 {
@@ -765,10 +752,13 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 }
 		 case TokenType::IF:
 		 {
+			 // condition
 			 GenerateAST(tree->As<Expression>()->left.get());
 			 auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
-
 			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 
+			 
+			 // then
 			 GenerateAST(tree->As<Expression>()->right.get()->As<Expression>()->right.get());
 			 auto indexJump = Jump(currentFunc->opCode);
 			 currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
@@ -778,7 +768,6 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 // once we execute then branch we need to skip else bytecode
 			 // without -1 because we need index of next bytecode, not previous one
 			 currentFunc->opCode[indexJump] = currentFunc->opCode.size() - indexJump;
-
 			 break;
 			 }
 		 case TokenType::WHILE:
@@ -1365,10 +1354,13 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		case TokenType::IDENTIFIER:
 			break;
 		case TokenType::INT_LITERAL:
-			break;
 		case TokenType::FLOAT_LITERAL:
-			break;
 		case TokenType::STRING_LITERAL:
+		{
+			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
+			currentFunc->constants.push_back(ValueContainer{  });
+			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+		}
 			break;
 		case TokenType::ERROR:
 			break;

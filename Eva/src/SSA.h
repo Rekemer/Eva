@@ -18,7 +18,7 @@ struct Operand
 	bool isConstant = false;
 
 	Operand(const ValueContainer& value, bool isConstant, int version) : value{ value},
-		version{ NOT_INIT_VERSION },
+		version{ version },
 		isConstant{ isConstant }
 	{
 
@@ -107,12 +107,14 @@ public:
 	void InsertPhi();
 	void Debug();
 private:
+	Block* CreateBranchBlock(Block* parentBlock, Instruction& branchInstr, Node* flows, const std::string& BlockName);
 	int NewName(const std::string& name);
 	void Rename(Block* b);
 	void FindDoms();
 	void FindIDoms();
 
 	void CreateVariable(const Node* tree);
+	void CreateVariableFrom(const Node* tree, const Operand& rightOp);
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
 	bool IsStatement(const Node* node);
@@ -128,7 +130,6 @@ private:
 	void Bfs(Block* start, std::function<void(Block*)> action);
 
 private:
-	bool createBlock = true;
 	int tempVersion = 0;
 public:
 	// whenever we hit condition we create a new block

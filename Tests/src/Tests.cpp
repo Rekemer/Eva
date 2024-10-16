@@ -687,7 +687,7 @@ TEST_CASE("if statTment")
 		auto isPass = CheckVariable<int>("a", 115, ValueType::INT, vm);
 		CHECK(isPass);
 	}
-	SUBCASE(" if elif else")
+	SUBCASE(" if elif else else taken")
 	{
 		auto a = R"(a: int = 105;
 					if a == 101
@@ -708,6 +708,29 @@ TEST_CASE("if statTment")
 					)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<int>("a", 125, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE(" if elif else elif taken")
+	{
+		auto a = R"(a: int = 102;
+					if a == 101
+					{
+						a++;
+					}
+					elif a == 102 
+					{
+						a+=5;
+					}
+					elif a == 103 {
+						a +=10;		
+					} 
+					else
+					{
+						a +=20;		
+					} 
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 107, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 }

@@ -1,11 +1,11 @@
-#define DEBUG 0
 #include "Compile.h"
 #include  <iostream>
 #include "Lexer.h"
 #include "VirtualMachine.h"
 #include "AST.h"
 #include "SSA.h"
-#define SSA 0 
+#define DEBUG 0
+#define SSA 0
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
 	

@@ -42,7 +42,8 @@ public:
 		else if constexpr (std::is_same_v<T, float>) {
 			type = ValueType::FLOAT;
 		}
-		else if constexpr (std::is_same_v<T, std::string>) {
+		else if constexpr (std::is_same_v<T, std::string> 
+			|| std::is_same_v<T, const char*>) {
 			type = ValueType::STRING;
 		}
 		else if constexpr (std::is_same_v<T, bool>) {

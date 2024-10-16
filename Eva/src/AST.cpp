@@ -382,7 +382,7 @@ void Print(const Expression* tree, int level) {
 		 auto parent = std::make_unique<Expression>();
 		 parent->type = operation;
 		 parent->line = currentToken->line;
-		 parent->left = LogicalOr((currentToken));
+		 parent->left = LogicalOr(currentToken);
 		 currentToken++;
 		 parent->right = LogicalOr(currentToken);
 		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
@@ -1058,18 +1058,26 @@ void Print(const Expression* tree, int level) {
 	 // right child is the then and else branches
 	 // right right is then
 	 // right left  is else
+	 
+
+	// [ifnode]
+	//	 /     \
+// [condition] [flows]
+		//	   /    \
+		//	 [else][then]
+
 	 else if (currentToken->type == TokenType::IF)
 	 {
 		 auto ifnode = EatIf(currentToken);
-		 auto tmpNode = ifnode.get();
-		 auto expr = static_cast<Expression*>(tmpNode);
-		 auto right = static_cast<Expression*>(expr->right.get());
+		 auto expr = static_cast<Expression*>(ifnode.get());
+		 auto flows = static_cast<Expression*>(expr->right.get());
 		 // check elif blocks
 		 while (currentToken->type == TokenType::ELIF)
 		 {
 			 auto elifnode = EatIf(currentToken);
-			 right->left = std::move(elifnode);
-			 tmpNode = right->left.get();
+			 flows->left = std::move(elifnode);
+			 flows = flows->left->AsMut<Expression>()->
+				 right->AsMut<Expression>();
 
 		 }
 		 
@@ -1080,7 +1088,7 @@ void Print(const Expression* tree, int level) {
 			 BeginBlock();
 			 auto elseScope = EatBlock(currentToken);
 			 EndBlock();
-			 right->left = std::move(elseScope);
+			 flows->left = std::move(elseScope);
 		 }
 		 return ifnode;
 	 }

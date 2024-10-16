@@ -16,15 +16,23 @@
 //or it affects the value in a storage location that may be accessible 
 //from outside the current procedure
 
-
+void PrintValue(std::ostream& os, const ValueContainer& v, int version, bool IsConstant)
+{
+	if (IsConstant || version == LABEL_VERSION)
+	{
+		os << v;
+		return;
+	}
+	os << v << "_" << version;
+}
 std::ostream& operator<<(std::ostream& os, const Instruction& v)
 {	
 	auto& resValue = v.result.value;
 	auto& leftValue = v.operLeft.value;
 	auto& rightValue = v.operRight.value;
 	os << resValue << "_" <<  v.result.version << " = ";
-	if (leftValue.type != ValueType::NIL && leftValue.AsString() != "null") os << leftValue << "_" << v.operLeft.version;
-	os << tokenToString(v.instrType) << " ";
+	if (leftValue.type != ValueType::NIL && leftValue.AsString() != "null") PrintValue(os, leftValue, v.operLeft.version, v.operLeft.isConstant);
+	os << " " << tokenToString(v.instrType) << " ";
 	if (v.instrType == TokenType::PHI)
 	{
 		os << "( ";
@@ -34,7 +42,7 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 		}
 		os << ") ";
 	}
-	if (rightValue.type != ValueType::NIL && rightValue.AsString() != "null") os << rightValue << "_" << v.operRight.version;
+	if (rightValue.type != ValueType::NIL && rightValue.AsString() != "null") PrintValue(os, rightValue, v.operRight.version, v.operRight.isConstant);
 	if (v.targets.size() > 0)
 	{
 		for (auto block : v.targets)
@@ -108,119 +116,26 @@ Operand NullOperand()
 	return Operand{ ValueContainer {std::string{"null"}},false,-1 };
 };
 
-void CFG::ConvertStatementAST(const Node* tree)
+
+Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branchInstr, Node* block, const std::string& BlockName)
 {
-	if (!tree) return;
-	auto type = tree->type;
-	auto expr = tree->As<Expression>();
-	switch (type)
-	{
-	case TokenType::LEFT_PAREN:
-	{
-		break;
-	}
-	case TokenType::DECLARE:
-	case TokenType::EQUAL:
-	{
-		CreateVariable(tree);
-		break;
-	}
-	case TokenType::ELSE:
-	{
-		assert(false && "we should be here");
-		break;
-	}
-	case TokenType::CONTINUE:
-	case TokenType::BREAK:
-	case TokenType::FOR:
-	case TokenType::FUN:
-	case TokenType::IF:
-	{
-		auto flows = expr->right.get();
-		// we need to convert the condition
-		auto condition = expr->left.get();
-		auto valueCondition = ConvertExpressionAST(condition);
-		auto parentBlock = currentBlock;
-		//Instruction branch;
-		auto branchInstr = Instruction{ TokenType::BRANCH,{},{valueCondition},NullOperand()};
-		
-		createBlock = false;
-		
-		// then
-		auto then = CreateBlock(std::format("[then_{}]", std::to_string(Block::counterThen++)), {parentBlock});
+	auto then = CreateBlock(BlockName, { parentBlock });
 
-		currentBlock = then;
-		auto thenBranch = flows->As<Expression>()->right.get();
-		std::stringstream mergeName;
-		mergeName << "[merge_" << Block::counterMerge << "]";
-		ConvertStatementAST(thenBranch);
-		
-		ValueContainer name = ValueContainer{ mergeName.str()};
-		Operand mergeOperand = { name, false, LABEL_VERSION };
-		currentBlock->instructions.
-			push_back(Instruction{ TokenType::JUMP,{},mergeOperand, NullOperand()});
-		
-		parentBlock->blocks.push_back(then);
-		branchInstr.targets.push_back(then);
-		// handle elif cases
+	currentBlock = then;
+	ConvertStatementAST(block);
 
-		// else
-		auto elseBranch = flows->As<Expression>()->left.get();
-		std::stringstream elseBlockName;
-		elseBlockName << "[else_" << std::to_string(Block::counterElse++) << "]";
-		auto els = CreateBlock(elseBlockName.str(), { parentBlock });
-		currentBlock = els;
-		ConvertStatementAST(elseBranch);
-		currentBlock->instructions.
-			push_back(Instruction{ TokenType::JUMP,{},mergeOperand,NullOperand ()});
-		
-		parentBlock->blocks.push_back(els);
-		branchInstr.targets.push_back(els);
+	auto mergeName = std::format("[merge{}]", std::to_string(Block::counterMerge));
+	ValueContainer name = ValueContainer{ mergeName };
+	Operand mergeOperand = { name, false, LABEL_VERSION };
+	currentBlock->instructions.
+		push_back(Instruction{ TokenType::JUMP,{},mergeOperand, NullOperand() });
 
-		
-		
-		
-	
-
-		parentBlock->instructions.push_back(branchInstr);
-
-		auto merge = CreateBlock(mergeName.str(), {then,els});
-		// phi function
-
-		then->blocks.push_back(merge);
-		els->blocks.push_back(merge);
-		
-		currentBlock = merge;
-
-		break;
-	}
-	case TokenType::ELIF:
-
-	case TokenType::PRINT:
-	{
-		auto value  = ConvertExpressionAST(expr->left.get());
-		Instruction instr{ type,{},value,{} };
-		currentBlock->instructions.push_back(instr);
-		break;
-	}
-	case TokenType::RETURN:
-	case TokenType::WHILE:
-	case TokenType::BLOCK:
-	{
-		Block* block = currentBlock;
-		auto scope = tree->As<Scope>();
-		for (auto& statement : scope->expressions)
-		{
-			ConvertStatementAST(statement.get());
-		}
-		break;
-	}
-	case TokenType::DEDUCE:
-		assert(false && "not all types are deduced");
-	default:
-		break;
-	}
+	parentBlock->blocks.push_back(then);
+	branchInstr.targets.push_back(then);
+	return then;
 }
+
+
 
 void PrintBlock(Block* block)
 {
@@ -276,7 +191,12 @@ void CFG::Rename(Block* b)
 	// update each operation
 	for (auto& instr : b->instructions)
 	{
-		if (instr.instrType == TokenType::PHI) continue;
+		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP) continue;
+		if (instr.instrType == TokenType::BRANCH)
+		{
+			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
+			continue;
+		}
 		if (instr.operLeft.isVariable())
 		{
 			instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top();
@@ -446,19 +366,15 @@ void CFG::CreateVariable(const Node* tree)
 	// left is variable
 	auto left = expr->left->As<Expression>();
 	auto name = left->value.AsString();
-	int version = 0;
-	// get a version of a variable
 	// local variable
 	if (left->depth > 0)
 	{
-		//version = GetVersion(localVariables, *name);
 		variableCounterLocal[name] = 0;
 		localAssigned[name].push_back(currentBlock);
 	}
 	// global variable
 	else
 	{
-		//version = GetVersion(globalVariables, *name);
 		globalAssigned[name].push_back(currentBlock);
 	}
 	Operand resOp{ ValueContainer{name},false,-1 };
@@ -469,20 +385,188 @@ void CFG::CreateVariable(const Node* tree)
 
 }
 
+void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
+{
+	auto expr = tree->As<Expression>();
+	// left is variable
+	auto left = expr->left->As<Expression>();
+	auto name = left->value.AsString();
+	// local variable
+	if (left->depth > 0)
+	{
+		variableCounterLocal[name] = 0;
+		localAssigned[name].push_back(currentBlock);
+	}
+	// global variable
+	else
+	{
+		globalAssigned[name].push_back(currentBlock);
+	}
+	Operand resOp{ ValueContainer{name},false,-1 };
+
+	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
+	currentBlock->instructions.push_back(instruction);
+
+}
+
 Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 {
 	auto left = ConvertExpressionAST(expr->left.get());
 	auto right = ConvertExpressionAST(expr->right.get());
-	//auto version = GetTempVersion();
-	auto version = 0;
-	std::stringstream resultName;
-	resultName << "t";
-	//resultName << version;
-	auto res = Operand{ ValueContainer{resultName.str()} ,false,version};
-
+	auto res = Operand{ ValueContainer{ "t"} ,false,0};
 	Instruction instr{ type,left,right,res };
 	currentBlock->instructions.push_back(instr);
 	return res;
+}
+
+void CFG::ConvertStatementAST(const Node* tree)
+{
+	auto GetOpFromComplexAssignment = [](TokenType assignment)
+		{
+			switch (assignment)
+			{
+			case TokenType::MINUS_EQUAL:
+				return TokenType::MINUS;
+			case TokenType::PLUS_EQUAL:
+				return TokenType::PLUS;
+			case TokenType::SLASH_EQUAL:
+				return TokenType::SLASH;
+			case TokenType::STAR_EQUAL:
+				return TokenType::STAR;
+			default:
+				assert(false);
+				break;
+			}
+		};
+	if (!tree) return;
+	auto type = tree->type;
+	auto expr = tree->As<Expression>();
+	switch (type)
+	{
+	case TokenType::LEFT_PAREN:
+	{
+		break;
+	}
+	case TokenType::DECLARE:
+	case TokenType::EQUAL:
+	{
+		CreateVariable(tree);
+		break;
+	}
+	case TokenType::MINUS_EQUAL:
+	case TokenType::PLUS_EQUAL:
+	case TokenType::SLASH_EQUAL:
+	case TokenType::STAR_EQUAL:
+	{
+		auto rightOperand = BinaryInstr(tree->As<Expression>(), GetOpFromComplexAssignment(type));
+		CreateVariableFrom(tree, rightOperand);
+		break;
+	}
+	case TokenType::PLUS_PLUS:
+	case TokenType::MINUS_MINUS:
+	{
+		assert(false);
+		break;
+	}
+	case TokenType::CONTINUE:
+	case TokenType::BREAK:
+	case TokenType::FOR:
+	case TokenType::FUN:
+	case TokenType::IF:
+	{
+		auto flows = expr->right.get();
+		auto thenBranch = flows->As<Expression>()->right.get();
+		// we need to convert the condition
+		auto condition = expr->left.get();
+		auto valueCondition = ConvertExpressionAST(condition);
+		auto parentBlock = currentBlock;
+		//Instruction branch;
+
+		parentBlock->instructions.push_back(
+			Instruction{ TokenType::BRANCH,{},{valueCondition},NullOperand() }
+		);
+		auto& branchInstr = *(parentBlock->instructions.end() - 1);
+		auto thenBlockName = std::format("[then_{}]", std::to_string(Block::counterThen++));
+		std::vector<Block*> mergeParents;
+		std::vector<Block*> elifBlocks;
+		//// then
+		auto then = CreateBranchBlock(parentBlock, branchInstr, thenBranch, thenBlockName);
+		mergeParents.push_back(then);
+		// handle elif cases
+		bool isElif = flows->As<Expression>()->left.get()->type == TokenType::IF;
+		if (isElif)
+		{
+			auto elifNode = flows->As<Expression>()->left.get();
+			while (elifNode->type != TokenType::BLOCK && elifNode->type == TokenType::IF)
+			{
+				auto elifFlows = elifNode->As<Expression>()->right.get();
+				auto block = elifFlows->As<Expression>()->right.get();
+				auto elifBlockName = std::format("[elif_{}]", std::to_string(Block::counterElif++));
+
+				auto elif = CreateBranchBlock(parentBlock, branchInstr, block, elifBlockName);
+
+				mergeParents.push_back(elif);
+				elifBlocks.push_back(elif);
+
+				elifNode = elifNode->As<Expression>()->right->As<Expression>()->left.get();
+			}
+			flows = elifNode;
+		}
+		else
+		{
+			flows = flows->As<Expression>()->left.get();
+		}
+		assert(flows->type == TokenType::BLOCK);
+		auto elseBranch = flows;
+		auto elseBlockName = std::format("[else_{}]", std::to_string(Block::counterElse++));
+		auto els = CreateBranchBlock(parentBlock, branchInstr, elseBranch, elseBlockName);
+		mergeParents.push_back(els);
+
+
+
+
+
+
+
+		auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge));
+		auto merge = CreateBlock(mergeName, mergeParents);
+		// phi function
+
+		then->blocks.push_back(merge);
+		els->blocks.push_back(merge);
+		for (auto& elif : elifBlocks)
+		{
+			elif->blocks.push_back(merge);
+		}
+		currentBlock = merge;
+
+		break;
+	}
+	case TokenType::PRINT:
+	{
+		auto value = ConvertExpressionAST(expr->left.get());
+		Instruction instr{ type,{},value,{} };
+		currentBlock->instructions.push_back(instr);
+		break;
+	}
+	case TokenType::RETURN:
+	case TokenType::WHILE:
+	case TokenType::BLOCK:
+	{
+		Block* block = currentBlock;
+		auto scope = tree->As<Scope>();
+		for (auto& statement : scope->expressions)
+		{
+			ConvertStatementAST(statement.get());
+		}
+		break;
+	}
+	case TokenType::DEDUCE:
+		assert(false && "not all types are deduced");
+	default:
+		assert(false && "we should not be here");
+		break;
+	}
 }
 
 Operand CFG::ConvertExpressionAST(const Node* tree)
@@ -508,15 +592,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		return res;
 		break;
 	}
-	case TokenType::PLUS_PLUS:
-	{
-		break;
-	}
-	case TokenType::MINUS_MINUS:
-	{
-		break;
-	}
-	
+
 	case TokenType::PERCENT:
 	{
 		break;
@@ -537,6 +613,9 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	}
 	case TokenType::STRING_LITERAL:
 	{
+		auto number = expr->value.As<std::string>();
+		Operand op{ number,true,0 };
+		return op;
 		break;
 	}
 	case TokenType::TRUE:
@@ -549,61 +628,17 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		break;
 	}
 	case TokenType::GREATER:
-	{
-		break;
-	}
 	case TokenType::GREATER_EQUAL:
-	{
-		break;
-	}
 	case TokenType::EQUAL_EQUAL:
-	{
-		break;
-	}
 	case TokenType::BANG_EQUAL:
-	{
-		break;
-	}
-
-	
-	case TokenType::EQUAL:
-	{
-
-		break;
-	}
-	case TokenType::PLUS_EQUAL:
-	{
-		break;
-	}
-	case TokenType::STAR_EQUAL:
-	{
-		break;
-	}
-	case TokenType::SLASH_EQUAL:
-	{
-		break;
-	}
-	case TokenType::MINUS_EQUAL:
-	{
-		break;
-	}
 	case TokenType::LESS_EQUAL:
-	{
-		break;
-	}
 	case TokenType::LESS:
-	{
-		break;
-	}
 	case TokenType::AND:
-	{
-		break;
-	}
 	case TokenType::OR:
 	{
+		return BinaryInstr(tree->As<Expression>(), type);
 		break;
 	}
-
 	case TokenType::BANG:
 	{
 		break;

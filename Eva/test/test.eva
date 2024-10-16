@@ -1,51 +1,43 @@
 //Print "sd";
 
-////d_g :=0;
-////c_g :=0;
-//{
-// // a: int = 1;
-// // a++;
-// // a = 5;
-// // b:int = a;
-// // c:int = 2;
-// // {
-////	 a := 5;
-////	 b:int =a;
-////	 c:int = 2;
-// // }
-//  // SSA form 
-//  // t = 4 + 1;
-//  // t1 = 2 + t;
-//  // d := t1;
-//   d := 6;
-//   //d = 5;
-//check := false;
-//if (check)
-//{
-//d = 5;
-//}
-//else 
-//{
-//d = 10;
-//}
-// //Print d;
-// //c = 5;
-// //Print c;
-//
-//
-//}
+{
+  a: int = 1;
+  a++;
+  a = 5;
+  b:int = a + 2;
+  c:int = 2;
+ // {
+//	 a := 5;
+//	 b:int =a;
+//	 c:int = 2;
+ // }
+  // SSA form 
+  // t = 4 + 1;
+  // t1 = 2 + t;
+  // d := t1;
+   d := 6;
+   //d = 5;
+check := 21;
+if check == 20
+{
+d /= 5;
+}
+elif check == 21
+{
+d *= 10;
+}
+elif check == 22
+{
+d += 11;
+}
+else 
+{
+ d -= 2;
+}
+ //Print d;
+ //c = 5;
+ //Print c;
 
-fun mult (a2: int, b: int) : int
-{
-	return a2*b;
+
 }
-fun foo( a1: int, b : int ) : int 
-{ 
-	return mult(a1,b) + mult(a1,b);
-}
-a_g:= 0;
-fun main() : int
-{
-	a_g = foo(2,2);
-	return 0;
-}
+
