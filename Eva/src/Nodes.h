@@ -71,8 +71,22 @@ struct Scope : public Node
 	Scope(Scope&&) = default;
 	Scope& operator=(Scope&&) = default;
 	int popAmount = 0;
+	void AddLocal(std::string& name, int currentScopeDepth)
+	{
+		auto endIterator = stack.locals.begin() + stack.m_StackPtr;
+		auto iter = std::find_if(stack.locals.begin(), endIterator, [&](auto& local)
+			{
+				return local.name == name && local.depth == currentScopeDepth;
+			});
 
-	std::tuple<bool, int, int > IsLocalExist(std::string& name, int scopeDepth)
+		if (iter != endIterator)
+		{
+			assert(false && "variable already declared in current scope");
+		}
+		stack.locals[stack.m_StackPtr].name = name;
+		stack.locals[stack.m_StackPtr++].depth = currentScopeDepth;
+	}
+	std::tuple<bool, int, int > IsLocalExist(const std::string& name, int scopeDepth)
 	{
 		auto tmpScope = this;
 		bool isLocalDeclared = false;
@@ -111,6 +125,11 @@ struct Scope : public Node
 			tmpScope = tmpScope->prevScope;
 		}
 		return entry;
+	}
+
+	void AddType(const std::string& name, ValueType type)
+	{
+		types.Add(name,type);
 	}
 
 };

@@ -6,6 +6,7 @@
 #include "SSA.h"
 #define DEBUG 0
 #define SSA 0
+#define CONSTANT_FOLD 0
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
 	
@@ -13,14 +14,14 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	VirtualMachine vm;
 	if (!parser.Parse(line, vm)) return { ValueContainer{} ,vm};
 	auto& tokens = parser.GetTokens();
-	#if DEBUG
+#if DEBUG
 	for (auto token : tokens)
 	{
 		std::cout << tokenToString(token.type) << " ";
 	}
 
 	std::cout << "\n";
-	#endif // DEBUG
+#endif // DEBUG
 	std::vector<AST> trees;
 	auto ptr = tokens.begin();
 	bool panic = false;
@@ -41,7 +42,9 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 			panic = true;
 			continue;
 		}
-		//tree.Fold();
+#if CONSTANT_FOLD
+		tree.Fold();
+#endif
 		trees.push_back(std::move( tree));
 
 	}
@@ -49,6 +52,8 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 #if SSA
 	CFG cfg;
 	cfg.vm = &vm;
+	cfg.globalScope = std::make_unique<Scope>();
+	cfg.globalScope->depth = 1;
 	for (auto& tree : trees)
 	{
 		auto node = tree.GetTree();
@@ -59,8 +64,8 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	cfg.BuildDF();
 	cfg.InsertPhi();
 	cfg.Debug();
-	return {};
-#endif // DEBUG
+	//return {};
+#endif 
 
 #if SSA
 	vm.GenerateBytecodeCFG(cfg);

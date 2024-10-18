@@ -1,43 +1,55 @@
 //Print "sd";
 
-{
-  a: int = 1;
-  a++;
-  a = 5;
-  b:int = a + 2;
-  c:int = 2;
- // {
-//	 a := 5;
-//	 b:int =a;
-//	 c:int = 2;
- // }
-  // SSA form 
-  // t = 4 + 1;
-  // t1 = 2 + t;
-  // d := t1;
-   d := 6;
-   //d = 5;
-check := 21;
-if check == 20
-{
-d /= 5;
-}
-elif check == 21
-{
-d *= 10;
-}
-elif check == 22
-{
-d += 11;
-}
-else 
-{
- d -= 2;
-}
- //Print d;
- //c = 5;
- //Print c;
-
-
-}
+//{
+//  a: int = 1;
+//  a++;
+//  a = 5;
+//  b:int = a + 2;
+//  c:int = 2;
+// // {
+////	 a := 5;
+////	 b:int =a;
+////	 c:int = 2;
+// // }
+//  // SSA form 
+//  // t = 4 + 1;
+//  // t1 = 2 + t;
+//  // d := t1;
+//   d := 6;
+//   //d = 5;
+//check := 21;
+//if check == 20
+//{
+//d /= 5;
+//}
+//elif check == 21
+//{
+//d *= 10;
+//}
+//elif check == 22
+//{
+//d += 11;
+//}
+//else 
+//{
+// d -= 2;
+//}
+// //Print d;
+// //c = 5;
+// //Print c;
+//
+//
+//}
+ a := 2;
+ b := 2;
+ e_varr := a  + b ;
+ t_0 := 5;
+ c := a + b;
+ str := "String SSA";
+ e :=5 + 2 * 4/ 4 + 1;
+ Print c;
+ Print e;
+ Print e_varr;
+ Print str;
+ //Print str;
 

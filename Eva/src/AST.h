@@ -103,21 +103,7 @@ private:
 
 	void BindValue(Iterator& currentToken, Node* variable);
 
-	void AddLocal(std::string& name, int currentScopeDepth)
-	{
-		auto endIterator = currentScope->stack.locals.begin() + currentScope->stack.m_StackPtr;
-		auto iter = std::find_if(currentScope->stack.locals.begin(), endIterator, [&](auto& local)
-			{
-				return local.name == name && local.depth == currentScopeDepth;
-			});
-
-		if (iter != endIterator)
-		{
-			assert(false && "variable already declared in current scope");
-		}
-		currentScope->stack.locals[currentScope->stack.m_StackPtr].name = name;
-		currentScope->stack.locals[currentScope->stack.m_StackPtr++].depth = currentScopeDepth;
-	}
+	
 private:
 	// unique_ptr causes slicing 
 	// if std::make_unique<Node>(std::move(*expr))

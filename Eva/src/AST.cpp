@@ -70,7 +70,6 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 auto str = currentToken->value.AsString();
 	 globalTypes.Add(str, type);
 	 // define global variable
-	 table.Add(str, type);
 	 // to note global that variable is declared, so that in value it can be used
 	 auto variableName = table.Add(str, ValueContainer{})->key;
 	 // it will initialize node with the name of a variable
@@ -84,7 +83,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
  {
 	 auto str = currentToken->value.AsString();
 	 scopeDeclarations.top()++;
-	 AddLocal(str, scopeDepth);
+	 currentScope->AddLocal(str, scopeDepth);
 	 node->left = LogicalOr(currentToken);
 
 	 currentScope->types.Add(str, type);

@@ -9,29 +9,35 @@
 #include <stack>
 #include "Value.h"
 
-const int LABEL_VERSION = -2;
-const int NOT_INIT_VERSION = -1;
+const int LABEL_VERSION = -3;
+const int NOT_INIT_VERSION = -2;
+const int NOT_INIT_OPERAND = -1;
+const int IS_TEMP = -4;
 struct Operand
 {
 	ValueContainer value;
 	int version;
 	bool isConstant = false;
-
+	bool isTemp = false;
+	ValueType type = ValueType::NIL;
 	Operand(const ValueContainer& value, bool isConstant, int version) : value{ value},
 		version{ version },
 		isConstant{ isConstant }
 	{
 
 	}
-
-	Operand() : version{ NOT_INIT_VERSION }
+	Operand() : version{ NOT_INIT_OPERAND}
 	{
 
 	}
 
-	bool isVariable()
+	bool isVariable() const
 	{
-		return value.type == ValueType::STRING && isConstant == false && version != LABEL_VERSION;
+		return value.type == ValueType::STRING && isConstant == false && isTemp == false;
+	}
+	bool IsTemp()  const
+	{
+		return isTemp;
 	}
 };
 
@@ -39,6 +45,8 @@ struct Operand
 struct Block;
 struct Instruction 
 {
+	// the value type instruction returns
+	ValueType returnType = ValueType::NIL;
 	TokenType instrType;
 	Operand operLeft;
 	Operand operRight;
@@ -50,6 +58,10 @@ struct Instruction
 		result{ res}
 	{
 
+	}
+	bool IsUnary()
+	{
+		return TokenType::MINUS == instrType && operLeft.version == NOT_INIT_OPERAND && operRight.version != NOT_INIT_OPERAND;
 	}
 	// for branches 
 	std::vector<Block*> targets;
@@ -92,6 +104,7 @@ struct Block
 };
 
 struct Node;
+struct Scope;
 struct Expression;
 class Tree;
 class VirtualMachine;
@@ -113,28 +126,23 @@ private:
 	void FindDoms();
 	void FindIDoms();
 
-	void CreateVariable(const Node* tree);
+	Operand CreateTemp();
+	void CreateVariable(const Node* tree, TokenType type);
 	void CreateVariableFrom(const Node* tree, const Operand& rightOp);
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
 	bool IsStatement(const Node* node);
 	Block* CreateBlock(const std::string& name, std::vector<Block*>  parents);
 	Operand BinaryInstr(const Expression* expr, TokenType type);
-	int GetTempVersion ()
-	{
-		return tempVersion++;
-	};
-
-
+	Operand UnaryInstr(const Expression* expr, TokenType type);
 	//breadth first search
 	void Bfs(Block* start, std::function<void(Block*)> action);
 
-private:
-	int tempVersion = 0;
 public:
 	// whenever we hit condition we create a new block
 	Block* currentBlock = nullptr;
 	Block* startBlock = nullptr;
+	std::unique_ptr<Scope> globalScope;
 private:
 	
 	// int is a version
@@ -144,7 +152,7 @@ private:
 	std::unordered_map<std::string, std::vector<Block*>> globalAssigned;
 	std::unordered_map<std::string, std::vector<Block*>> localAssigned;
 
-
+	int tempVersion = 0;
 	std::unordered_map<std::string, Block > graph;
 	// for renaming stage
 	std::unordered_map<std::string, std::stack<int>> variableStack;

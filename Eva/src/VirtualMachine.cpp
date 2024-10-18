@@ -6,6 +6,7 @@
 #include <cassert>
 #include <algorithm>
 #include <sstream>
+#include <format>
 #include "TokenConversion.h"
 #include "Local.h"
 #include "SSA.h"
@@ -219,56 +220,65 @@ void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	//scopes.pop_back();
 	//assert(stackSim.m_StackPtr >= 0);
 }
-ValueType VirtualMachine::GetGlobalType(const std::string& str,const Expression* const expr)
+ValueType VirtualMachine::GetGlobalType(const std::string& str)
 {
 	auto entry = globalVariablesTypes.Get(str);
 	if (!entry->IsInit())
 	{
-		std::stringstream ss;
-		ss << "ERROR[" << (expr->line) << "]: " <<
-			"The name " << str << " is used but not declared " << std::endl;
-		throw std::exception{ ss.str().c_str() };
+		//std::stringstream ss;
+		//ss << "ERROR[" << (expr->line) << "]: " <<
+		//	"The name " << str << " is used but not declared " << std::endl;
+		auto mes = std::format("The name{} is used but not declared ", str);
+		throw std::exception{ mes.c_str() };
 	}
 	return entry->value.type;
 }
-ValueType VirtualMachine::GetLocalType(const std::string& str,const Expression* const expr)
+ValueType VirtualMachine::GetLocalType(const std::string& str)
 {
 	Entry* entry = currentScope->GetType(str);
 	if (!entry->IsInit())
 	{
-		std::stringstream ss;
-		ss << "ERROR[" << (expr->line) << "]: " <<
-			"The name " << str << " is used but not declared " << std::endl;
-		throw std::exception{ ss.str().c_str() };
+		//std::stringstream ss;
+		//ss << "ERROR[" << (expr->line) << "]: " <<
+		//	"The name " << str << " is used but not declared " << std::endl;
+		auto mes = std::format("The name{} is used but not declared ", str);
+		throw std::exception{ mes.c_str() };
 	}
 	return entry->value.type;
 }
-ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expression* expr)
+void GenerateGlobalGet(Func* currentFunc, const std::string& str)
+{
+	currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+	currentFunc->constants.emplace_back(str);
+	currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+}
+void GenerateLocalGet(Scope* currentScope, Func* currentFunc, const std::string& str,int depth)
+{
+	// check if it does exsist
+		// maybe we should move it to ast tree, but the indexing will get 
+		// compilcated since we don't know in indexing how much scopes we have passed
+	auto [isDeclared, index, _] = currentScope->IsLocalExist(str, depth);
+
+	currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
+	//assert(index > 0 && "wrong index of local variable");
+	currentFunc->opCode.push_back(index);
+
+}
+ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode,const std::string& name, const int depth)
 {
 	// global
-	if (expr->depth == 0)
+	auto& str = name;
+	if (depth == 0)
 	{
-		currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
-		auto str = expr->value.AsString();
-		currentFunc->constants.emplace_back(str);
-		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-		auto type = GetGlobalType(str,expr);
+		GenerateGlobalGet(currentFunc, str);
+		auto type = GetGlobalType(str);
 		return type;
 	}
 	// local
-	else if (expr->depth > 0)
+	else if (depth > 0)
 	{
-		auto str = expr->value.AsString();
-		// check if it does exsist
-		// maybe we should move it to ast tree, but the indexing will get 
-		// compilcated since we don't know in indexing how much scopes we have passed
-		auto [isDeclared,index,_] = currentScope->IsLocalExist(str, expr->depth);
-	
-		currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
-		//assert(index > 0 && "wrong index of local variable");
-		currentFunc->opCode.push_back(index);
-
-		auto type = GetLocalType(str,expr);
+		GenerateLocalGet(currentScope,currentFunc, str,depth);
+		auto type = GetLocalType(str);
 		return type;
 	}
 }
@@ -276,11 +286,11 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode, const Expre
 
 
 
-void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression* expression)
+void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode, const std::string& name, int depth)
 {
-	assert(expression != nullptr);
-	auto str = expression->value.AsString();;
-	if (expression->depth == 0)
+	
+	auto& str = name;
+	if (depth == 0)
 	{
 		currentFunc->constants.emplace_back(str);
 		currentFunc->opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
@@ -288,7 +298,7 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode,const Expression*
 	}
 	else
 	{
-		auto [isDeclared, index,_] = currentScope->IsLocalExist(str, expression->depth);
+		auto [isDeclared, index,_] = currentScope->IsLocalExist(str, depth);
 		currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
 		assert(index != -1);
 		currentFunc->opCode.push_back(index);
@@ -358,6 +368,13 @@ ValueType VirtualMachine::GetVariableType (const  std::string& name, int depthOf
 		return globalVariablesTypes.Get(name)->value.type;
 	}
 }
+void VirtualMachine::GenerateConstant(const ValueContainer& v)
+{
+	currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
+	currentFunc->constants.push_back(v);
+	currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+}
+
 ValueType VirtualMachine::GenerateAST(const Node * tree)
 {
 		 if (!tree) return ValueType::NIL;
@@ -475,7 +492,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 		 {
 			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 DETERMINE_OP_TYPE(left, INCREMENT);
-			 SetVariable(currentFunc->opCode, exprLeft);
+			 assert(exprLeft != nullptr);
+			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 			 return expr->value.type;
 			 break;
 		 }
@@ -483,7 +501,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 		 {
 			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 DETERMINE_OP_TYPE(left, DECREMENT);
-			 SetVariable(currentFunc->opCode, exprLeft);
+			 assert(exprLeft != nullptr);
+			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 			 return expr->value.type;
 			 break;
 		 }
@@ -537,14 +556,12 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 		 case TokenType::FLOAT_LITERAL:
 		 case TokenType::STRING_LITERAL:
 		 {
-			 currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			 currentFunc->constants.push_back(ValueContainer{ expr->value });
-			 currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+			 GenerateConstant(expr->value);
 			 return LiteralToType(tree->type);
 		 }
 		 case TokenType::IDENTIFIER:
 		 {
-			 auto type = GetVariable(currentFunc->opCode, expr);
+			 auto type = GetVariable(currentFunc->opCode, expr->value.AsString(),expr->depth);
 			 return type;
 		 }
 		 case TokenType::TRUE:
@@ -616,20 +633,13 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 assert(tree->As<Expression>()->left.get() != nullptr);
 			 auto left = tree->As<Expression>()->left.get()->As<Expression>();
 			 auto declType = GetVariableType(left->value.AsString(), left->depth);
-			 // should not we invoke GetVariableType?
-			 //if (left->depth == 0)
-			 //{
-			//	 declType = GetGlobalType(left->value.AsString(),left);
-			 //}
-			 //else
-			 //{
-			//	 declType = GetLocalType(left->value.AsString(),left);
-			 //}
 			 assert(declType != ValueType::NIL);
 			 auto expressionType = GenerateAST(tree->As<Expression>()->right.get());
 
 			 CastWithDeclared(expressionType, declType);
-			 SetVariable(currentFunc->opCode, exprLeft);
+
+			 assert(exprLeft != nullptr);
+			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 			 break;
 			 }
 		 case TokenType::PLUS_EQUAL:
@@ -642,7 +652,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 
 			 DETERMINE_OP_TYPE(left, ADD);
 
-			 SetVariable(currentFunc->opCode, exprLeft);
+			 assert(exprLeft != nullptr);
+			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 			 return exprLeft->value.type;
 			 }
 		 case TokenType::STAR_EQUAL:
@@ -656,7 +667,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 
 			 DETERMINE_OP_TYPE(left, MULTIPLY);
 
-			 SetVariable(currentFunc->opCode, exprLeft);
+			 assert(exprLeft != nullptr);
+			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 
 			 return exprLeft->value.type;
 			 }
@@ -672,7 +684,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 DETERMINE_OP_TYPE(left, DIVIDE);
 
 
-			 SetVariable(currentFunc->opCode, exprLeft);
+			 assert(exprLeft != nullptr);
+			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 			 return exprLeft->value.type;
 			 }
 		 case TokenType::MINUS_EQUAL:
@@ -686,8 +699,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 
 			 DETERMINE_OP_TYPE(left, SUBSTRACT);
 
-
-			 SetVariable(currentFunc->opCode, exprLeft);
+			 assert(exprLeft != nullptr);
+			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 			 return exprLeft->value.type;
 			 }
 		 case TokenType::LESS_EQUAL:
@@ -1287,8 +1300,53 @@ size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t base
 
 }
 
+
+
+void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrType)
+{
+	auto type = operand.value.type;
+	if (operand.isConstant)
+	{
+		GenerateConstant(operand.value);
+	}
+	else
+	{
+		std::string name = operand.value.AsString();
+
+		if (operand.IsTemp())
+		{
+			name += "_" + std::to_string(operand.version);
+			GenerateLocalGet(currentScope, currentFunc, name, 1);
+			//GetVariable(currentFunc->opCode, name, 1);
+		}
+		else
+		{
+			GenerateGlobalGet(currentFunc, name);
+			//GetVariable(currentFunc->opCode, name, 0);
+		}
+	}
+	CAST_INT_FLOAT(type, instrType);
+}
+
 void VirtualMachine::GenerateCFG(const Block* block)
 {
+	auto tokenToInCodeOp = [](TokenType type)
+		{
+			switch (type)
+			{
+			case TokenType::STAR:
+				return InCode::MULTIPLY;
+			case TokenType::PLUS:
+				return InCode::ADD;
+			case TokenType::MINUS:
+				return InCode::SUBSTRACT;
+			case TokenType::SLASH:
+				return InCode::DIVIDE;
+			default:
+				assert(false);
+				break;
+			}
+		};
 	for (const auto& instr : block->instructions)
 	{
 		auto type = instr.instrType;
@@ -1311,15 +1369,29 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			break;
 		case TokenType::MINUS:
 			break;
+		case TokenType::SLASH:
+		case TokenType::STAR:
 		case TokenType::PLUS:
+		{
+			ValueType left = instr.operLeft.type, right = instr.operRight.type;
+			
+			GenerateCFGOperand(instr.operLeft,instr.returnType);
+			GenerateCFGOperand(instr.operRight,instr.returnType);
+			
+			
+			if (left == right && left == ValueType::STRING)
+			{
+				currentFunc->opCode.push_back((Bytecode)InCode::ADD_STRING);
+			}
+			else
+			{
+				DetermineOpTypeRet(instr.returnType, tokenToInCodeOp(type), currentFunc);
+			}
 			break;
+		}
 		case TokenType::COLON:
 			break;
 		case TokenType::SEMICOLON:
-			break;
-		case TokenType::SLASH:
-			break;
-		case TokenType::STAR:
 			break;
 		case TokenType::PERCENT:
 			break;
@@ -1327,17 +1399,50 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			break;
 		case TokenType::BANG_EQUAL:
 			break;
+		case TokenType::DECLARE:
 		case TokenType::EQUAL:
+		{
+			// we can have only one operand in our case, either a variable or constant
+			auto res = instr.result;
+			//const auto& varName = res.value.AsString() +"_" + std::to_string(res.version);
+			const auto& varName = res.value.AsString();
+			auto declType = res.type;
+			assert(declType != ValueType::NIL);
+			auto& assigned = instr.operRight;
+			auto expressionType = assigned.type;
+			if (assigned.isConstant)
+			{
+				GenerateConstant(assigned.value);
+			}
+			else
+			{
+				std::string name = assigned.value.AsString();
+				if (assigned.IsTemp())
+				{
+					name +=   "_" + std::to_string(assigned.version);
+					GenerateLocalGet(currentScope, currentFunc, name, 1);
+					//GetVariable(currentFunc->opCode, name, 1);
+				}
+				else
+				{
+					GenerateGlobalGet(currentFunc,name);
+					//GetVariable(currentFunc->opCode, name, 0);
+				}
+			}
+			assert(expressionType != ValueType::NIL);
+			CastWithDeclared(expressionType, declType);
+			if (res.IsTemp())
+			{
+				SetVariable(currentFunc->opCode, varName, 1);
+			}
+			else
+			{
+				SetVariable(currentFunc->opCode, varName, 0);
+			}
 			break;
+		}
+
 		case TokenType::EQUAL_EQUAL:
-			break;
-		case TokenType::PLUS_EQUAL:
-			break;
-		case TokenType::MINUS_EQUAL:
-			break;
-		case TokenType::SLASH_EQUAL:
-			break;
-		case TokenType::STAR_EQUAL:
 			break;
 		case TokenType::GREATER:
 			break;
@@ -1347,20 +1452,9 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			break;
 		case TokenType::LESS_EQUAL:
 			break;
-		case TokenType::PLUS_PLUS:
-			break;
 		case TokenType::MINUS_MINUS:
 			break;
 		case TokenType::IDENTIFIER:
-			break;
-		case TokenType::INT_LITERAL:
-		case TokenType::FLOAT_LITERAL:
-		case TokenType::STRING_LITERAL:
-		{
-			currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-			currentFunc->constants.push_back(ValueContainer{  });
-			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-		}
 			break;
 		case TokenType::ERROR:
 			break;
@@ -1391,7 +1485,28 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		case TokenType::OR:
 			break;
 		case TokenType::PRINT:
+		{
+			auto& argument = instr.operRight;
+			if (argument.isConstant)
+			{
+				GenerateConstant(argument.value);
+			}
+			else
+			{
+				auto argName = argument.value.AsString();
+				if (argument.IsTemp())
+				{
+					argName += "_" + std::to_string(argument.version);
+					GetVariable(currentFunc->opCode, argName, 1);
+				}
+				else
+				{
+					GetVariable(currentFunc->opCode, argName, 0);
+				}
+			}
+			currentFunc->opCode.push_back((uint8_t)InCode::PRINT);
 			break;
+		}
 		case TokenType::RETURN:
 			break;
 		case TokenType::SUPER:
@@ -1416,8 +1531,6 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			break;
 		case TokenType::DEDUCE:
 			break;
-		case TokenType::DECLARE:
-			break;
 		case TokenType::JUMP:
 			break;
 		case TokenType::BRANCH:
@@ -1425,6 +1538,7 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		case TokenType::PHI:
 			break;
 		default:
+			assert(false);
 			break;
 		}
 	}
@@ -1439,6 +1553,7 @@ void VirtualMachine::GenerateCFG(const Block* block)
 void VirtualMachine::GenerateBytecodeCFG(const CFG& cfg)
 {
 	currentFunc = globalFunc.get();
+	currentScope = cfg.globalScope.get();
 	GenerateCFG(cfg.startBlock);
 }
 

@@ -27,6 +27,7 @@ struct Block;
 struct Expression;
 struct Scope;
 struct StackSim;
+struct Operand;
 class CFG;
 class VirtualMachine
 {
@@ -50,11 +51,13 @@ public:
 	void ClearLocal();
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
+	ValueType GetGlobalType(const std::string& str );
 	~VirtualMachine();
 private:
 	ValueType GenerateAST(const Node* tree);
 	void GenerateCFG(const Block* block);
-
+	void GenerateConstant(const ValueContainer& v);
+	void GenerateCFGOperand(const Operand& operand, ValueType instrType);
 
 	void ClearScope(const Scope* scope, StackSim& stackSim,
 		std::vector<Bytecode>& opCode);
@@ -66,11 +69,10 @@ private:
 	size_t CallFunction(Func* func, size_t argumentCount, size_t baseIndex);
 	void PatchBreak(int prevSizeBreak);
 	void SetVariable(std::vector<Bytecode>& opCode,
-		const Expression* expression);
-	ValueType GetVariable(std::vector<Bytecode>& opCode, const Expression* expression);
+		const std::string& name, int depth);
+	ValueType GetVariable(std::vector<Bytecode>& opCode, const std::string& name, int depth);
 
-	ValueType GetLocalType(const std::string& str, const Expression* const node);
-	ValueType GetGlobalType(const std::string& str, const Expression* const node);
+	ValueType GetLocalType(const std::string& str );
 
 	ValueType GetVariableType(const std::string& name, int depthOfDeclaration);
 	// returns index to be patchd for a jump if loop is finished

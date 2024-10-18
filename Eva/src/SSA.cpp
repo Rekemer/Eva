@@ -31,7 +31,7 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 	auto& leftValue = v.operLeft.value;
 	auto& rightValue = v.operRight.value;
 	os << resValue << "_" <<  v.result.version << " = ";
-	if (leftValue.type != ValueType::NIL && leftValue.AsString() != "null") PrintValue(os, leftValue, v.operLeft.version, v.operLeft.isConstant);
+	if (leftValue.type != ValueType::NIL ) PrintValue(os, leftValue, v.operLeft.version, v.operLeft.isConstant);
 	os << " " << tokenToString(v.instrType) << " ";
 	if (v.instrType == TokenType::PHI)
 	{
@@ -42,7 +42,7 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 		}
 		os << ") ";
 	}
-	if (rightValue.type != ValueType::NIL && rightValue.AsString() != "null") PrintValue(os, rightValue, v.operRight.version, v.operRight.isConstant);
+	if (rightValue.type != ValueType::NIL ) PrintValue(os, rightValue, v.operRight.version, v.operRight.isConstant);
 	if (v.targets.size() > 0)
 	{
 		for (auto block : v.targets)
@@ -113,7 +113,7 @@ int GetVersion(std::unordered_map<std::string, int>& map, std::string& name)
 
 Operand NullOperand()
 {
-	return Operand{ ValueContainer {std::string{"null"}},false,-1 };
+	return Operand{ ValueContainer {std::string{"null"}},false,NOT_INIT_VERSION };
 };
 
 
@@ -188,24 +188,41 @@ void CFG::Rename(Block* b)
 		phi.result.version = NewName(phi.result.value.AsString());
 	}
 
+	auto& types = vm->GetGlobalsType();
 	// update each operation
 	for (auto& instr : b->instructions)
 	{
-		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP) continue;
+		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ) continue;
 		if (instr.instrType == TokenType::BRANCH)
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
 			continue;
 		}
-		if (instr.operLeft.isVariable())
-		{
-			instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top();
-		}
+		
 		if (instr.operRight.isVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
 		}
+		if (!instr.IsUnary())
+		{
+			if (instr.operLeft.isVariable())
+			{
+				instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top();
+			}
+		}
+		
+		if(!instr.result.IsTemp())
 		instr.result.version = NewName(instr.result.value.AsString());
+		if (instr.instrType != TokenType::PRINT)
+		{
+			std::string name;
+			if (instr.result.IsTemp())
+			{
+				name = instr.result.value.AsString() + "_" + std::to_string(instr.result.version);
+				globalScope->AddLocal(name,1);
+			}
+			else name = instr.result.value.AsString();
+		}
 	}
 	// update phi parametrs
 	for (auto child : b->blocks)
@@ -243,7 +260,7 @@ void CFG::Rename(Block* b)
 	{
 		if (it->variables.size() > 0) continue;
 	
-		if (!it->result.isVariable())
+		if (it->result.isVariable())
 		{
 			auto varName = it->result.value.AsString();
 			variableStack[varName].pop();
@@ -287,7 +304,7 @@ void CFG::InsertPhi()
 					hasAlready.insert(blockDf);
 					auto name = v.first;
 										// Operand{name} is result  -  x = phi x x x x 
-					auto instr = Instruction{ TokenType::PHI ,{},{},Operand{ValueContainer{name},false,-1} };
+					auto instr = Instruction{ TokenType::PHI ,{},{},Operand{ValueContainer{name},false,NOT_INIT_VERSION} };
 					auto potentialChanges = blockDf->parents.size();
 					instr.variables.resize(potentialChanges);
 					blockDf->instructions.insert(blockDf->instructions.begin(), instr);
@@ -360,7 +377,7 @@ void CFG::Debug()
 
 	Bfs(startBlock, PrintBlock);
 }
-void CFG::CreateVariable(const Node* tree)
+void CFG::CreateVariable(const Node* tree, TokenType type)
 {
 	auto expr = tree->As<Expression>();
 	// left is variable
@@ -377,10 +394,13 @@ void CFG::CreateVariable(const Node* tree)
 	{
 		globalAssigned[name].push_back(currentBlock);
 	}
-	Operand resOp{ ValueContainer{name},false,-1 };
+	Operand resOp{ ValueContainer{name},false,NOT_INIT_VERSION };
 	auto rightOp = ConvertExpressionAST(expr->right.get());
+	resOp.type = vm->GetGlobalType(name);
 
-	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
+	auto instruction = Instruction{ type,{},rightOp,resOp };
+	
+	instruction.returnType = rightOp.type;
 	currentBlock->instructions.push_back(instruction);
 
 }
@@ -409,12 +429,37 @@ void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 
 }
 
+Operand CFG::CreateTemp()
+{
+	Operand temp{ ValueContainer{ "t"} ,false,tempVersion++};
+	temp.isTemp = true;
+	return temp;
+}
+
+void GiveType(Instruction& instr, Operand& resOp, ValueType type)
+{
+	instr.returnType = type;
+	resOp.type = type;
+}
+
+// create temp because it is separate operation which is stored
+// in temp variable
+Operand CFG::UnaryInstr(const Expression* expr, TokenType type)
+{
+	auto left = ConvertExpressionAST(expr->left.get());
+	auto res = CreateTemp();
+	Instruction instr{ type,{},left,res };
+	GiveType(instr, res, expr->value.type);
+	currentBlock->instructions.push_back(instr);
+	return res;
+}
 Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 {
 	auto left = ConvertExpressionAST(expr->left.get());
 	auto right = ConvertExpressionAST(expr->right.get());
-	auto res = Operand{ ValueContainer{ "t"} ,false,0};
+	auto res = CreateTemp();
 	Instruction instr{ type,left,right,res };
+	GiveType(instr, res, expr->value.type);
 	currentBlock->instructions.push_back(instr);
 	return res;
 }
@@ -450,7 +495,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::DECLARE:
 	case TokenType::EQUAL:
 	{
-		CreateVariable(tree);
+		CreateVariable(tree,type);
 		break;
 	}
 	case TokenType::MINUS_EQUAL:
@@ -545,7 +590,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::PRINT:
 	{
 		auto value = ConvertExpressionAST(expr->left.get());
-		Instruction instr{ type,{},value,{} };
+		Instruction instr{ type,{},value, CreateTemp()};
 		currentBlock->instructions.push_back(instr);
 		break;
 	}
@@ -587,27 +632,30 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::STAR:
 	case TokenType::MINUS:
 	case TokenType::SLASH:
-	{
-		auto res = BinaryInstr(expr,type);
-		return res;
-		break;
-	}
-
 	case TokenType::PERCENT:
 	{
+		Operand res;
+		if (type == TokenType::MINUS && expr->right == nullptr)
+		{
+			res = UnaryInstr(expr, type);
+		}
+		else  res = BinaryInstr(expr, type);
+		return res;
 		break;
 	}
 	case TokenType::INT_LITERAL:
 	{
 		auto number = expr->value.As<int>();
-		Operand op{ std::to_string(number),true,0 };
+		Operand op{ number,true,0 };
+		op.type = ValueType::INT;
 		return op;
 		break;
 	}
 	case TokenType::FLOAT_LITERAL:
 	{
 		auto number = expr->value.As<float>();
-		Operand op{ std::to_string(number),true,0 };
+		Operand op{ number,true,0 };
+		op.type = ValueType::FLOAT;
 		return op;
 		break;
 	}
@@ -615,6 +663,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	{
 		auto number = expr->value.As<std::string>();
 		Operand op{ number,true,0 };
+		op.type = ValueType::STRING;
 		return op;
 		break;
 	}
@@ -624,6 +673,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto value = expr->value.As<bool>();
 		std::string str = value ? "true" : "false";
 		Operand op{ str,true,0 };
+		op.type = ValueType::BOOL;
 		return op;
 		break;
 	}
