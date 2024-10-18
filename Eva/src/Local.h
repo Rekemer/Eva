@@ -20,7 +20,7 @@ struct StackSim
 		return locals[m_StackPtr - 1].name;
 	}
 
-	std::tuple<bool, int> IsLocalExist(const std::string& name, size_t scope)
+	std::tuple<bool, int> IsLocalExist(const std::string& name, size_t scope) const
 	{
 		auto temp = m_StackPtr - 1;
 		while (temp >= 0)

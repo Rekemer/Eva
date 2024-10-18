@@ -40,16 +40,44 @@
 //
 //
 //}
- a := 2;
- b := 2;
- e_varr := a  + b ;
- t_0 := 5;
- c := a + b;
- str := "String SSA";
- e :=5 + 2 * 4/ 4 + 1;
- Print c;
- Print e;
- Print e_varr;
- Print str;
- //Print str;
+//a := 2;
+//b := 2;
+//e_varr := a  + b ;
+//t_0 := 5;
+// c := a - b;
+//str := "String SSA";
+//e :=5 + 2 * 4/ 4 + 1 - 10;
+//mod := 3.0 % 2.3;
+//mod = a % b;
+//mod = 2;
+//Print c;
+//Print mod;
+//Print e;
+//Print e_varr;
+//Print str;
+//Print str;
+//Print mod;
+
+
+{
+	a:= 4;
+	b:= 1;
+	c:= 2;
+	str:= "haha";
+
+	{
+		b:=6;
+		//Print a;
+		//Print b;
+		//Print c;
+		//Print str;
+		{
+			//Print str;
+			//Print b;
+		}
+		Print c;
+	}
+		Print c;
+		Print b;
+}
 

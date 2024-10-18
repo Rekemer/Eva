@@ -1416,6 +1416,13 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		expr->type == TokenType::SLASH_EQUAL ||
 		expr->type == TokenType::MINUS_EQUAL ||
 		expr->type == TokenType::STAR_EQUAL ;
+	if (expr->type == TokenType::PERCENT)
+	{
+
+		// for cfg to init instruction return type
+		expr->value.type = ValueType::INT;
+		return TokenType::INT_LITERAL;
+	}
 	if(areChildren&& isTermOp)
 	{
 

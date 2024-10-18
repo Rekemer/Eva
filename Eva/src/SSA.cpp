@@ -192,7 +192,8 @@ void CFG::Rename(Block* b)
 	// update each operation
 	for (auto& instr : b->instructions)
 	{
-		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ) continue;
+		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
+			instr.instrType == TokenType::BLOCK) continue;
 		if (instr.instrType == TokenType::BRANCH)
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
@@ -211,15 +212,14 @@ void CFG::Rename(Block* b)
 			}
 		}
 		
-		if(!instr.result.IsTemp())
-		instr.result.version = NewName(instr.result.value.AsString());
+		// versioning of temporary varoables is not handled by stack
+		if(!instr.result.IsTemp()) instr.result.version = NewName(instr.result.value.AsString());
 		if (instr.instrType != TokenType::PRINT)
 		{
 			std::string name;
 			if (instr.result.IsTemp())
 			{
 				name = instr.result.value.AsString() + "_" + std::to_string(instr.result.version);
-				globalScope->AddLocal(name,1);
 			}
 			else name = instr.result.value.AsString();
 		}
@@ -377,26 +377,39 @@ void CFG::Debug()
 
 	Bfs(startBlock, PrintBlock);
 }
-void CFG::CreateVariable(const Node* tree, TokenType type)
+
+Operand CFG::InitVariable(const std::string& name, int depth)
 {
-	auto expr = tree->As<Expression>();
-	// left is variable
-	auto left = expr->left->As<Expression>();
-	auto name = left->value.AsString();
-	// local variable
-	if (left->depth > 0)
+	Operand resOp{ ValueContainer{name},false,NOT_INIT_VERSION };
+	if (depth > 0)
 	{
 		variableCounterLocal[name] = 0;
 		localAssigned[name].push_back(currentBlock);
+		auto [isExist, index, depth] = currentScope->IsLocalExist(name, currentScope->depth);
+		assert(isExist);
+		resOp.index = index;
+		resOp.depth = depth;
+		resOp.type = currentScope->GetType(name);
 	}
 	// global variable
 	else
 	{
 		globalAssigned[name].push_back(currentBlock);
+		resOp.type = vm->GetGlobalType(name);
 	}
-	Operand resOp{ ValueContainer{name},false,NOT_INIT_VERSION };
+	return resOp;
+}
+void CFG::CreateVariable(const Node* tree, TokenType type)
+{
+	auto expr = tree->As<Expression>();
+	// left is variable
+	auto left = expr->left->As<Expression>();
+	
+	ValueType typeV = ValueType::NIL;
+	
+	auto resOp = InitVariable(left->value.AsString(), left->depth);
+	
 	auto rightOp = ConvertExpressionAST(expr->right.get());
-	resOp.type = vm->GetGlobalType(name);
 
 	auto instruction = Instruction{ type,{},rightOp,resOp };
 	
@@ -600,10 +613,19 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		Block* block = currentBlock;
 		auto scope = tree->As<Scope>();
+		currentScope = scope;
+
 		for (auto& statement : scope->expressions)
 		{
 			ConvertStatementAST(statement.get());
 		}
+		if (currentScope->prevScope)
+		{
+			currentScope = currentScope->prevScope;
+		}
+		// to know how many times we need to pop
+		Instruction instr{ TokenType::BLOCK,{},Operand{scope->popAmount,false,NOT_INIT_VERSION},{} };
+		currentBlock->instructions.push_back(instr);
 		break;
 	}
 	case TokenType::DEDUCE:
@@ -624,8 +646,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 
 	case TokenType::IDENTIFIER:
 	{
-		Operand op{ expr->value,false,0 };
-		return op;
+		return InitVariable(expr->value.AsString(),expr->depth);
 		break;
 	}
 	case TokenType::PLUS:

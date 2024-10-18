@@ -5,7 +5,7 @@
 #include "AST.h"
 #include "SSA.h"
 #define DEBUG 0
-#define SSA 0
+#define SSA 1
 #define CONSTANT_FOLD 0
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
@@ -52,8 +52,6 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 #if SSA
 	CFG cfg;
 	cfg.vm = &vm;
-	cfg.globalScope = std::make_unique<Scope>();
-	cfg.globalScope->depth = 1;
 	for (auto& tree : trees)
 	{
 		auto node = tree.GetTree();

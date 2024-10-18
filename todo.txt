@@ -60,3 +60,5 @@ this is the way we do it now
 
 a++;
 b:int =a;
+
+Remove substract operation since every our a - b operation is a + (-b);

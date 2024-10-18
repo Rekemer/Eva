@@ -84,6 +84,12 @@ ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 			return ValueType::FLOAT;
 		}
 		break;
+	case InCode::DIVIDE_PERCENT:
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::DIVIDE_PERCENT);
+			return ValueType::INT;
+			break;
+		}
 	default:
 		assert(false && "Unknown operation");
 		return ValueType::NIL;
@@ -198,7 +204,7 @@ void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	int popAmount = scope->popAmount;
 	while (popAmount > 0)
 	{
-		opCode.push_back((uint8_t)InCode::POP);
+		opCode.push_back((Bytecode)InCode::POP);
 		popAmount--;
 	}
 	
@@ -228,41 +234,62 @@ ValueType VirtualMachine::GetGlobalType(const std::string& str)
 		//std::stringstream ss;
 		//ss << "ERROR[" << (expr->line) << "]: " <<
 		//	"The name " << str << " is used but not declared " << std::endl;
-		auto mes = std::format("The name{} is used but not declared ", str);
+		auto mes = std::format("The name {} is used but not declared ", str);
 		throw std::exception{ mes.c_str() };
 	}
 	return entry->value.type;
 }
 ValueType VirtualMachine::GetLocalType(const std::string& str)
 {
-	Entry* entry = currentScope->GetType(str);
-	if (!entry->IsInit())
+	auto  type = currentScope->GetType(str);
+	if (type != ValueType::NIL)
 	{
 		//std::stringstream ss;
 		//ss << "ERROR[" << (expr->line) << "]: " <<
 		//	"The name " << str << " is used but not declared " << std::endl;
-		auto mes = std::format("The name{} is used but not declared ", str);
+		auto mes = std::format("The name {} is used but not declared ", str);
 		throw std::exception{ mes.c_str() };
 	}
-	return entry->value.type;
+	return type;
 }
-void GenerateGlobalGet(Func* currentFunc, const std::string& str)
+void EmitGlobalGet(Func* currentFunc, const std::string& str)
 {
 	currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
 	currentFunc->constants.emplace_back(str);
 	currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 }
+
+void EmitLocalGet(Func* currentFunc,int index)
+{
+	currentFunc->opCode.push_back((Bytecode)InCode::GET_LOCAL_VAR);
+	currentFunc->opCode.push_back(index);
+}
+void EmitLocalSet(Func* currentFunc, int index)
+{
+	currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
+	assert(index != -1);
+	currentFunc->opCode.push_back(index);
+}
+
 void GenerateLocalGet(Scope* currentScope, Func* currentFunc, const std::string& str,int depth)
 {
 	// check if it does exsist
 		// maybe we should move it to ast tree, but the indexing will get 
 		// compilcated since we don't know in indexing how much scopes we have passed
 	auto [isDeclared, index, _] = currentScope->IsLocalExist(str, depth);
+	EmitLocalGet(currentFunc,index);
+}
 
-	currentFunc->opCode.push_back((uint8_t)InCode::GET_LOCAL_VAR);
-	//assert(index > 0 && "wrong index of local variable");
-	currentFunc->opCode.push_back(index);
 
+
+void EmitGet(Func* currentFunc, const Operand& variable)
+{
+	if (variable.depth > 0)
+	{
+		assert(variable.index != -1);
+		EmitLocalGet(currentFunc, variable.index);
+	}
+	else EmitGlobalGet(currentFunc, variable.value.AsString());
 }
 ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode,const std::string& name, const int depth)
 {
@@ -270,13 +297,14 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode,const std::s
 	auto& str = name;
 	if (depth == 0)
 	{
-		GenerateGlobalGet(currentFunc, str);
+		EmitGlobalGet(currentFunc, str);
 		auto type = GetGlobalType(str);
 		return type;
 	}
 	// local
 	else if (depth > 0)
 	{
+		assert(currentScope != nullptr);
 		GenerateLocalGet(currentScope,currentFunc, str,depth);
 		auto type = GetLocalType(str);
 		return type;
@@ -285,6 +313,27 @@ ValueType VirtualMachine::GetVariable(std::vector<Bytecode>& opCode,const std::s
 
 
 
+void GenerateLocalSet(Scope* currentScope, Func* currentFunc, const std::string& str, int depth)
+{
+	assert(currentScope != nullptr);
+	auto [isDeclared, index, _] = currentScope->IsLocalExist(str, depth);
+	
+}
+void EmitGlobalSet(Func* currentFunc, const std::string& str)
+{
+	currentFunc->constants.emplace_back(str);
+	currentFunc->opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
+	currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+}
+void EmitSet(Func* currentFunc, const Operand& variable)
+{
+	if (variable.depth > 0)
+	{
+		assert(variable.index != -1);
+		EmitLocalSet(currentFunc, variable.index);
+	}
+	else EmitGlobalSet(currentFunc, variable.value.AsString());
+}
 
 void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode, const std::string& name, int depth)
 {
@@ -292,16 +341,11 @@ void VirtualMachine::SetVariable(std::vector<Bytecode>& opCode, const std::strin
 	auto& str = name;
 	if (depth == 0)
 	{
-		currentFunc->constants.emplace_back(str);
-		currentFunc->opCode.push_back((uint8_t)InCode::SET_GLOBAL_VAR);
-		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+		EmitGlobalSet(currentFunc,str);
 	}
 	else
 	{
-		auto [isDeclared, index,_] = currentScope->IsLocalExist(str, depth);
-		currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
-		assert(index != -1);
-		currentFunc->opCode.push_back(index);
+		GenerateLocalSet(currentScope, currentFunc, str, depth);
 	}
 }
 int VirtualMachine::GenerateLoopCondition(const Node* node)
@@ -1311,19 +1355,7 @@ void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrT
 	}
 	else
 	{
-		std::string name = operand.value.AsString();
-
-		if (operand.IsTemp())
-		{
-			name += "_" + std::to_string(operand.version);
-			GenerateLocalGet(currentScope, currentFunc, name, 1);
-			//GetVariable(currentFunc->opCode, name, 1);
-		}
-		else
-		{
-			GenerateGlobalGet(currentFunc, name);
-			//GetVariable(currentFunc->opCode, name, 0);
-		}
+		EmitGet(currentFunc,operand);
 	}
 	CAST_INT_FLOAT(type, instrType);
 }
@@ -1342,6 +1374,8 @@ void VirtualMachine::GenerateCFG(const Block* block)
 				return InCode::SUBSTRACT;
 			case TokenType::SLASH:
 				return InCode::DIVIDE;
+			case TokenType::PERCENT:
+				return InCode::DIVIDE_PERCENT;
 			default:
 				assert(false);
 				break;
@@ -1368,10 +1402,18 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		case TokenType::DOUBLE_DOT:
 			break;
 		case TokenType::MINUS:
-			break;
+		{
+			if (instr.IsUnary())
+			{
+				GenerateCFGOperand(instr.operRight, instr.returnType);
+				currentFunc->opCode.push_back((uint8_t)InCode::NEGATE);
+				break;
+			}
+		}
 		case TokenType::SLASH:
 		case TokenType::STAR:
 		case TokenType::PLUS:
+		case TokenType::PERCENT:
 		{
 			ValueType left = instr.operLeft.type, right = instr.operRight.type;
 			
@@ -1392,8 +1434,6 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		case TokenType::COLON:
 			break;
 		case TokenType::SEMICOLON:
-			break;
-		case TokenType::PERCENT:
 			break;
 		case TokenType::BANG:
 			break;
@@ -1417,27 +1457,17 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			else
 			{
 				std::string name = assigned.value.AsString();
-				if (assigned.IsTemp())
+				if (!assigned.IsTemp())
 				{
-					name +=   "_" + std::to_string(assigned.version);
-					GenerateLocalGet(currentScope, currentFunc, name, 1);
-					//GetVariable(currentFunc->opCode, name, 1);
-				}
-				else
-				{
-					GenerateGlobalGet(currentFunc,name);
-					//GetVariable(currentFunc->opCode, name, 0);
+					EmitGet(currentFunc,assigned);
+					
 				}
 			}
 			assert(expressionType != ValueType::NIL);
 			CastWithDeclared(expressionType, declType);
-			if (res.IsTemp())
+			if (!res.IsTemp() && type == TokenType::EQUAL)
 			{
-				SetVariable(currentFunc->opCode, varName, 1);
-			}
-			else
-			{
-				SetVariable(currentFunc->opCode, varName, 0);
+				EmitSet(currentFunc,res);
 			}
 			break;
 		}
@@ -1496,12 +1526,12 @@ void VirtualMachine::GenerateCFG(const Block* block)
 				auto argName = argument.value.AsString();
 				if (argument.IsTemp())
 				{
-					argName += "_" + std::to_string(argument.version);
-					GetVariable(currentFunc->opCode, argName, 1);
+					//argName += "_" + std::to_string(argument.version);
+					//GetVariable(currentFunc->opCode, argName, 1);
 				}
 				else
 				{
-					GetVariable(currentFunc->opCode, argName, 0);
+					EmitGet(currentFunc, argument);
 				}
 			}
 			currentFunc->opCode.push_back((uint8_t)InCode::PRINT);
@@ -1528,6 +1558,13 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		case TokenType::BOOL_TYPE:
 			break;
 		case TokenType::BLOCK:
+		{
+			auto popAmmount = instr.operRight.value.As<int>();
+			for (int i = 0; i < popAmmount; i++)
+			{
+				currentFunc->opCode.push_back((Bytecode)InCode::POP);
+			}
+		}
 			break;
 		case TokenType::DEDUCE:
 			break;
@@ -1553,7 +1590,6 @@ void VirtualMachine::GenerateCFG(const Block* block)
 void VirtualMachine::GenerateBytecodeCFG(const CFG& cfg)
 {
 	currentFunc = globalFunc.get();
-	currentScope = cfg.globalScope.get();
 	GenerateCFG(cfg.startBlock);
 }
 

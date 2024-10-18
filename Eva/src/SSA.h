@@ -19,6 +19,9 @@ struct Operand
 	int version;
 	bool isConstant = false;
 	bool isTemp = false;
+	// local variable index
+	int index = -1;
+	int depth = -1;
 	ValueType type = ValueType::NIL;
 	Operand(const ValueContainer& value, bool isConstant, int version) : value{ value},
 		version{ version },
@@ -59,7 +62,7 @@ struct Instruction
 	{
 
 	}
-	bool IsUnary()
+	bool IsUnary() const
 	{
 		return TokenType::MINUS == instrType && operLeft.version == NOT_INIT_OPERAND && operRight.version != NOT_INIT_OPERAND;
 	}
@@ -128,6 +131,7 @@ private:
 
 	Operand CreateTemp();
 	void CreateVariable(const Node* tree, TokenType type);
+	Operand InitVariable(const std::string& name, int depth);
 	void CreateVariableFrom(const Node* tree, const Operand& rightOp);
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
@@ -142,7 +146,8 @@ public:
 	// whenever we hit condition we create a new block
 	Block* currentBlock = nullptr;
 	Block* startBlock = nullptr;
-	std::unique_ptr<Scope> globalScope;
+	// Scope
+	const Scope* currentScope = nullptr; 
 private:
 	
 	// int is a version

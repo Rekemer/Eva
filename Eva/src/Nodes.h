@@ -86,7 +86,8 @@ struct Scope : public Node
 		stack.locals[stack.m_StackPtr].name = name;
 		stack.locals[stack.m_StackPtr++].depth = currentScopeDepth;
 	}
-	std::tuple<bool, int, int > IsLocalExist(const std::string& name, int scopeDepth)
+	// returns whether exists, local index, and depth of declaration
+	std::tuple<bool, int, int > IsLocalExist(const std::string& name, int scopeDepth) const
 	{
 		auto tmpScope = this;
 		bool isLocalDeclared = false;
@@ -114,7 +115,7 @@ struct Scope : public Node
 		return { false, - 1, 0 };
 	}
 
-	Entry* GetType(const std::string& str)
+	ValueType GetType(const std::string& str) const
 	{
 		Entry* entry = nullptr;
 		auto tmpScope = this;
@@ -124,7 +125,11 @@ struct Scope : public Node
 			if (entry->IsInit()) break;
 			tmpScope = tmpScope->prevScope;
 		}
-		return entry;
+		if (entry->IsInit())
+		{
+			return entry->value.type;
+		}
+		return ValueType::NIL;
 	}
 
 	void AddType(const std::string& name, ValueType type)
