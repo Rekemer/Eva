@@ -85,30 +85,6 @@ ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 			return ValueType::FLOAT;
 		}
 		break;
-	case InCode::LESS:
-		if (type == ValueType::INT)
-		{
-			currentFunc->opCode.push_back((Bytecode)InCode::LESS_INT);
-			return ValueType::INT;
-		}
-		else if (type == ValueType::FLOAT)
-		{
-			currentFunc->opCode.push_back((Bytecode)InCode::LESS_FLOAT);
-			return ValueType::FLOAT;
-		}
-		break;
-	case InCode::GREATER:
-		if (type == ValueType::INT)
-		{
-			currentFunc->opCode.push_back((Bytecode)InCode::GREATER_INT);
-			return ValueType::INT;
-		}
-		else if (type == ValueType::FLOAT)
-		{
-			currentFunc->opCode.push_back((Bytecode)InCode::GREATER_FLOAT);
-			return ValueType::FLOAT;
-		}
-		break;
 	case InCode::DIVIDE_PERCENT:
 		{
 			currentFunc->opCode.push_back((Bytecode)InCode::DIVIDE_PERCENT);
@@ -385,29 +361,7 @@ int VirtualMachine::GenerateLoopCondition(const Node* node)
 	EmitPop(currentFunc->opCode);
 	return indexJumpFalse;
 }
-InCode TokenToInCodeOp (TokenType type)
-	{
-		switch (type)
-		{
-		case TokenType::STAR:
-			return InCode::MULTIPLY;
-		case TokenType::PLUS:
-			return InCode::ADD;
-		case TokenType::MINUS:
-			return InCode::SUBSTRACT;
-		case TokenType::SLASH:
-			return InCode::DIVIDE;
-		case TokenType::PERCENT:
-			return InCode::DIVIDE_PERCENT;
-		case TokenType::LESS:
-			return InCode::LESS;
-		case TokenType::GREATER:
-			return InCode::GREATER;
-		default:
-			assert(false);
-			break;
-		}
-	}
+
 void VirtualMachine::BeginContinue(int startLoopIndex)
 {
 	m_StartLoopIndexes.push(startLoopIndex);
@@ -477,8 +431,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 		 auto expr = static_cast<const Expression*>(tree);
 		 auto exprLeft = static_cast<const Expression*>(tree->As<Expression>()->left.get());
 
-
-		 switch (tree->type)
+		 auto type = tree->type;
+		 switch (type)
 		 {
 		 case TokenType::FUN:
 		 {
@@ -671,39 +625,37 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 return ValueType::BOOL;
 		 }
 		 case TokenType::GREATER:
-		 {
-			 auto left = GenerateAST(tree->As<Expression>()->left.get());
-			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = GenerateAST(tree->As<Expression>()->right.get());
-			 CAST_INT_FLOAT(right, expr->value.type);
-			 DETERMINE_BOOL(left, right, GREATER);
-			 return ValueType::BOOL;
-			 }
 		 case TokenType::GREATER_EQUAL:
 		 {
 			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
-			 DETERMINE_BOOL(left, right, LESS);
-			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 if (type == TokenType::GREATER_EQUAL)
+			 {
+				 DETERMINE_BOOL(left, right, LESS);
+				 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 }
+			 else
+			 {
+				 DETERMINE_BOOL(left, right, GREATER);
+			 }
 			 return ValueType::BOOL;
 		}
 		 case TokenType::EQUAL_EQUAL:
-		 {
-			 auto left = GenerateAST(tree->As<Expression>()->left.get());
-			 auto right = GenerateAST(tree->As<Expression>()->right.get());
-			 currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
-			 return ValueType::BOOL;
-		}
 		 case TokenType::BANG_EQUAL:
 		 {
 			 auto left = GenerateAST(tree->As<Expression>()->left.get());
+			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = GenerateAST(tree->As<Expression>()->right.get());
+			 CAST_INT_FLOAT(right, expr->value.type);
 			 currentFunc->opCode.push_back((uint8_t)InCode::EQUAL_EQUAL);
-			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 if (type == TokenType::BANG_EQUAL)
+			 {
+				 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 }
 			 return ValueType::BOOL;
-		}
+		 }
 		 case TokenType::DECLARE:
 		 {
 			 // declaring a variable
@@ -800,22 +752,21 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 return exprLeft->value.type;
 			 }
 		 case TokenType::LESS_EQUAL:
-		 {
-			 auto left = GenerateAST(tree->As<Expression>()->left.get());
-			 CAST_INT_FLOAT(left, expr->value.type);
-			 auto right = GenerateAST(tree->As<Expression>()->right.get());
-			 CAST_INT_FLOAT(right, expr->value.type);
-			 DETERMINE_BOOL(left, right, GREATER);
-			 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
-			 return ValueType::BOOL;
-			 }
 		 case TokenType::LESS:
 		 {
 			 auto left = GenerateAST(tree->As<Expression>()->left.get());
 			 CAST_INT_FLOAT(left, expr->value.type);
 			 auto right = GenerateAST(tree->As<Expression>()->right.get());
 			 CAST_INT_FLOAT(right, expr->value.type);
-			 DETERMINE_BOOL(left, right, LESS);
+			 if (type == TokenType::LESS_EQUAL)
+			 {
+				 DETERMINE_BOOL(left, right, GREATER);
+				 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+			 }
+			 else
+			 {
+				 DETERMINE_BOOL(left, right, LESS);
+			 }
 			 return ValueType::BOOL;
 			 }
 		 case TokenType::AND:
@@ -1415,7 +1366,25 @@ void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrT
 
 void VirtualMachine::GenerateCFG(Block* block)
 {
-	
+	auto tokenToInCodeOp = [](TokenType type)
+		{
+			switch (type)
+			{
+			case TokenType::STAR:
+				return InCode::MULTIPLY;
+			case TokenType::PLUS:
+				return InCode::ADD;
+			case TokenType::MINUS:
+				return InCode::SUBSTRACT;
+			case TokenType::SLASH:
+				return InCode::DIVIDE;
+			case TokenType::PERCENT:
+				return InCode::DIVIDE_PERCENT;
+			default:
+				assert(false);
+				break;
+			}
+		};
 	for (const auto& instr : block->instructions)
 	{
 		auto type = instr.instrType;
@@ -1437,11 +1406,14 @@ void VirtualMachine::GenerateCFG(Block* block)
 		case TokenType::DOUBLE_DOT:
 			break;
 		case TokenType::MINUS:
+		case TokenType::BANG:
 		{
 			if (instr.IsUnary())
 			{
 				GenerateCFGOperand(instr.operRight, instr.returnType);
-				currentFunc->opCode.push_back((uint8_t)InCode::NEGATE);
+				if (type == TokenType::MINUS)
+				currentFunc->opCode.push_back((Bytecode)InCode::NEGATE);
+				else currentFunc->opCode.push_back((Bytecode)InCode::NEGATE);
 				break;
 			}
 		}
@@ -1463,17 +1435,13 @@ void VirtualMachine::GenerateCFG(Block* block)
 			}
 			else
 			{
-				DetermineOpTypeRet(instr.returnType, TokenToInCodeOp(type), currentFunc);
+				DetermineOpTypeRet(instr.returnType, tokenToInCodeOp(type), currentFunc);
 			}
 			break;
 		}
 		case TokenType::COLON:
 			break;
 		case TokenType::SEMICOLON:
-			break;
-		case TokenType::BANG:
-			break;
-		case TokenType::BANG_EQUAL:
 			break;
 		case TokenType::DECLARE:
 		case TokenType::EQUAL:
@@ -1510,15 +1478,54 @@ void VirtualMachine::GenerateCFG(Block* block)
 		}
 
 		case TokenType::EQUAL_EQUAL:
+		case TokenType::BANG_EQUAL:
+		{
+			GenerateCFGOperand(instr.operLeft, instr.returnType);
+			GenerateCFGOperand(instr.operRight, instr.returnType);
+			currentFunc->opCode.push_back((Bytecode)InCode::EQUAL_EQUAL);
+			if (type == TokenType::BANG_EQUAL)
+			{
+				currentFunc->opCode.push_back((Bytecode)InCode::NOT);
+			}
+		}
 			break;
 		case TokenType::GREATER:
-			break;
 		case TokenType::GREATER_EQUAL:
+		{
+			GenerateCFGOperand(instr.operLeft, instr.returnType);
+			GenerateCFGOperand(instr.operRight, instr.returnType);
+			auto left = instr.operLeft.type;
+			auto right = instr.operRight.type;
+			if (type == TokenType::GREATER_EQUAL)
+			{
+				DETERMINE_BOOL(left, right, LESS);
+				currentFunc->opCode.push_back((Bytecode)InCode::NOT);
+			}
+			else
+			{
+				DETERMINE_BOOL(left, right, GREATER);
+			}
+			break;
+		}
 			break;
 		case TokenType::LESS:
-			break;
 		case TokenType::LESS_EQUAL:
+		{
+			GenerateCFGOperand(instr.operLeft, instr.returnType);
+			GenerateCFGOperand(instr.operRight, instr.returnType);
+			auto left = instr.operLeft.type;
+			auto right= instr.operRight.type;
+			if (type == TokenType::LESS_EQUAL)
+			{
+				DETERMINE_BOOL(left, right, GREATER);
+				currentFunc->opCode.push_back((Bytecode)InCode::NOT);
+			}
+			else
+			{
+				DETERMINE_BOOL(left, right, LESS);
+			}
 			break;
+		}
 		case TokenType::MINUS_MINUS:
 			break;
 		case TokenType::IDENTIFIER:
@@ -1560,13 +1567,7 @@ void VirtualMachine::GenerateCFG(Block* block)
 			}
 			else
 			{
-				auto argName = argument.value.AsString();
-				if (argument.IsTemp())
-				{
-					//argName += "_" + std::to_string(argument.version);
-					//GetVariable(currentFunc->opCode, argName, 1);
-				}
-				else
+				if (!argument.IsTemp())
 				{
 					EmitGet(currentFunc, argument);
 				}

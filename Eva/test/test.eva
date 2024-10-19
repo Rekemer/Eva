@@ -90,7 +90,7 @@
 //	Print d;
 //}
 //
-//a: int = 2.0;
+a: int = 2.0;
 //a+=2.0;
 //Print a;
 //{
@@ -108,22 +108,22 @@
 //Print 2 + 2+ 2+a+a;
 
 
-//if false
-//{
-//	Print a + 2;	
-//}
-//else 
-//{
-//	Print a + 4;	
-//}
-g := 0;
-					a := 0;
-					while a < 5
-					{	
-						a++;
-						if (a % 2 == 1) == true
-						{
-							continue;
-						}
-						g+=a;
-						}
+if false
+{
+	Print a + 2;	
+}
+else 
+{
+	Print a + 4;	
+}
+					//a := 0;
+					//while a < 5
+					//{	
+					//	a++;
+					//	if (a % 2 == 1) == true
+					//	{
+					//		continue;
+					//	}
+					//	g+=a;
+					//}
+Print 2 >= 4.0;

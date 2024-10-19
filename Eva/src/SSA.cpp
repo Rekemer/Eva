@@ -854,7 +854,8 @@ void CFG::ConvertAST(const Node* tree)
 	}
 	else
 	{
-		assert(false && "We are not supposed to have non statement at this level?");
+		ConvertExpressionAST(tree);
+		//assert(false && "We are not supposed to have non statement at this level?");
 	}
 	
 	

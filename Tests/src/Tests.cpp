@@ -9,7 +9,11 @@
 #define LOOPS 1
 #define FUNC 1
 #define VAR 1
-
+#define STRINGS 1
+#define SCOPE 1
+#define DEDUCTION 1
+#define IF 1
+#define CONSTANT_FOLD 1
 
 struct Tables
 {
@@ -53,17 +57,26 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 		CHECK(CompileTest("2+2 ").As<int>() == 4);
 		CHECK(CompileTest("3%2 ").As<int>() == 1);
 		CHECK(CompileTest("true == true").As<bool>() == true);
+		//
 		CHECK(CompileTest("false&&true == true&&true").As<bool>() == false);
 		CHECK(CompileTest("false&&true || true&&true").As<bool>() == true);
 		CHECK(CompileTest("false&&true || true&&false").As<bool>() == false);
 		CHECK(CompileTest("false&&true").As<bool>() == false);
 		CHECK(CompileTest("true&&true").As<bool>() == true);
 		CHECK(CompileTest("true || false").As<bool>() == true);
+		//
 		CHECK(CompileTest("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
 		CHECK(CompileTest("2+2 == 2+1+1 ").As<bool>() == true);
 		CHECK(CompileTest("2+2 < 2+1+1+1 ").As<bool>() == true);
 		CHECK(CompileTest("2+2 <= 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("2+2 >= 2+2 ").As<bool>() == true);
+		
+		CHECK(CompileTest("2.0 >= 2 ").As<bool>() == true);
+		CHECK(CompileTest("2.0 == 2 ").As<bool>() == true);
+		CHECK(CompileTest("2.0 != 2 ").As<bool>() == false);
+		CHECK(CompileTest("2.0 < 4.0 ").As<bool>() == true);
+		CHECK(CompileTest("2 <= 4.0 ").As<bool>() == true);
+		//
 		CHECK(CompileTest("2+5 >= 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
@@ -79,15 +92,17 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 
 #endif // EXPR
 
+#ifdef STRINGS
+	TEST_CASE("testing strings ")
+	{
+		CHECK(CompileTest("\"Helo\" == \"Hello\" ").As<bool>() == false);
+		CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
+		CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
+		CHECK(CompileTest("\"2\" == \"2\" ").As<bool>() == true);
+		CHECK(CompileTest("\"Hello\" == \"Hello\" &&  \"Hello\" == \"Hello\"").As<bool>() ==	true);
+	}
+#endif // STRING
 
-TEST_CASE("testing strings ")
-{
-	CHECK(CompileTest("\"Helo\" == \"Hello\" ").As<bool>() == false);
-	CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
-	CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
-	CHECK(CompileTest("\"2\" == \"2\" ").As<bool>() == true);
-	CHECK(CompileTest("\"Hello\" == \"Hello\" &&  \"Hello\" == \"Hello\"").As<bool>() == true);
-}
 TEST_CASE("testing hash table ")
 {
 	HashTable table;
@@ -236,6 +251,7 @@ TEST_CASE("unary double operations on variables")
 #endif
 
 
+#if SCOPE
 
 TEST_CASE("scope test")
 {
@@ -344,7 +360,48 @@ TEST_CASE("scope test")
 		auto isPass = CheckVariable<float>("a", -29, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
+	SUBCASE("=")
+	{
+		auto a = R"(
+
+		d_g :=0;
+		c_g :=0;
+		{
+			  a: int = 1;
+			  a++;
+			  a = 5;
+			  b:int = a;
+			  c:int = 2;
+			  {
+				 a := 5;
+				 b:int =a;
+				 c:int = 2;
+			  }
+			   d := 6;
+			  d = 2 ;
+			check := false;
+			if (check)
+			{
+			d = 5;
+			}
+			else 
+			{
+			d = 10;
+			}
+			 c = 5;
+			d_g = d;
+			c_g = c;
+			
+		}
+)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("d_g", 10, ValueType::INT, vm) && CheckVariable<int>("c_g", 5, ValueType::INT, vm);
+		CHECK(isPass);
+
+	}
 }
+#endif // 0
+#if DEDUCTION
 TEST_CASE("deduction test")
 {
 	SUBCASE("global deduction scopes")
@@ -375,6 +432,7 @@ TEST_CASE("deduction test")
 	}
 
 }
+#endif
 #if LOOPS
 TEST_CASE("while statement")
 {
@@ -636,6 +694,7 @@ TEST_CASE("loops in loops")
 
 #endif
 
+#if IF
 TEST_CASE("if statTment")
 {
 	SUBCASE("if")
@@ -734,6 +793,7 @@ TEST_CASE("if statTment")
 		CHECK(isPass);
 	}
 }
+#endif // IF
 #if FUNC
 TEST_CASE("functions")
 {
@@ -818,6 +878,8 @@ TEST_CASE("functions")
 }
 
 #endif
+#if CONSTANT_FOLD
+
 TEST_CASE("constant folding")
 {
 	SUBCASE("constant folding all cases")
@@ -854,45 +916,6 @@ TEST_CASE("constant folding")
 	}
 }
 
-TEST_CASE("assign  variables")
-{
-	SUBCASE("=")
-	{
-		auto a = R"(
 
-	d_g :=0;
-	c_g :=0;
-	{
-		  a: int = 1;
-		  a++;
-		  a = 5;
-		  b:int = a;
-		  c:int = 2;
-		  {
-			 a := 5;
-			 b:int =a;
-			 c:int = 2;
-		  }
-		   d := 6;
-		  d = 2 ;
-		check := false;
-		if (check)
-		{
-		d = 5;
-		}
-		else 
-		{
-		d = 10;
-		}
-		 c = 5;
-		d_g = d;
-		c_g = c;
-		
-	}
-)";
-		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<int>("d_g", 10, ValueType::INT, vm) && CheckVariable<int>("c_g", 5, ValueType::INT, vm);
-		CHECK(isPass);
 
-	}
-}
+#endif
