@@ -34,7 +34,7 @@ struct Operand
 
 	}
 
-	bool isVariable() const
+	bool IsVariable() const
 	{
 		return value.type == ValueType::STRING && isConstant == false && isTemp == false;
 	}
@@ -104,6 +104,8 @@ struct Block
 	static inline int counterElse = 0;
 	static inline int counterElif = 0;
 	static inline int counterMerge = 0;
+
+	bool isVisited = false;
 };
 
 struct Node;

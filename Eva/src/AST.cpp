@@ -1299,7 +1299,24 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 {
 	TokenType childType = TokenType::END;
 	TokenType childType1 = TokenType::END;
-	if (node->type == TokenType::IF) return TokenType::END;
+	if (node->type == TokenType::IF)
+	{
+		auto expr = node->As<Expression>();
+		// check condition
+		TypeCheck(expr->left.get(), vm);
+
+		// check then
+		auto then = expr->right->As<Expression>()->right.get();
+		TypeCheck(then, vm);
+		auto els = expr->right->As<Expression>()->left.get();
+		// check else/elif
+		if (els != nullptr)
+		{
+			TypeCheck(els , vm);
+		}
+		return TokenType::END;
+
+	}
 	if (node->type == TokenType::LEFT_PAREN)
 	{
 		auto call = static_cast<Call*>(node);

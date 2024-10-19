@@ -55,7 +55,7 @@ public:
 	~VirtualMachine();
 private:
 	ValueType GenerateAST(const Node* tree);
-	void GenerateCFG(const Block* block);
+	void GenerateCFG(Block* block);
 	void GenerateConstant(const ValueContainer& v);
 	void GenerateCFGOperand(const Operand& operand, ValueType instrType);
 

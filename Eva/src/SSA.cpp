@@ -200,19 +200,19 @@ void CFG::Rename(Block* b)
 	{
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
 			instr.instrType == TokenType::BLOCK) continue;
-		if (instr.instrType == TokenType::BRANCH)
+		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
 			continue;
 		}
 		
-		if (instr.operRight.isVariable())
+		if (instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
 		}
 		if (!instr.IsUnary())
 		{
-			if (instr.operLeft.isVariable())
+			if (instr.operLeft.IsVariable())
 			{
 				instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top();
 			}
@@ -265,8 +265,8 @@ void CFG::Rename(Block* b)
 	for (auto it = b->instructions.rbegin(); it != b->instructions.rend(); ++it)
 	{
 		if (it->variables.size() > 0) continue;
-	
-		if (it->result.isVariable())
+		if (it->instrType == TokenType::JUMP) continue;
+		if (it->result.IsVariable())
 		{
 			auto varName = it->result.value.AsString();
 			variableStack[varName].pop();
@@ -711,8 +711,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::FALSE:
 	{
 		auto value = expr->value.As<bool>();
-		std::string str = value ? "true" : "false";
-		Operand op{ str,true,0 };
+		Operand op{ value,true,0 };
 		op.type = ValueType::BOOL;
 		return op;
 		break;
@@ -731,6 +730,8 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	}
 	case TokenType::BANG:
 	{
+		auto res = UnaryInstr(expr, type);
+		return res;
 		break;
 	}
 	default:

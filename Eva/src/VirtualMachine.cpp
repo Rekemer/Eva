@@ -32,6 +32,7 @@ while(false)
 
 ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 {
+	assert(type != ValueType::NIL);
 	switch (op)
 	{
 	case InCode::MULTIPLY:
@@ -81,6 +82,30 @@ ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 		else if (type == ValueType::FLOAT)
 		{
 			currentFunc->opCode.push_back((Bytecode)InCode::DIVIDE_FLOAT);
+			return ValueType::FLOAT;
+		}
+		break;
+	case InCode::LESS:
+		if (type == ValueType::INT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::LESS_INT);
+			return ValueType::INT;
+		}
+		else if (type == ValueType::FLOAT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::LESS_FLOAT);
+			return ValueType::FLOAT;
+		}
+		break;
+	case InCode::GREATER:
+		if (type == ValueType::INT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::GREATER_INT);
+			return ValueType::INT;
+		}
+		else if (type == ValueType::FLOAT)
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::GREATER_FLOAT);
 			return ValueType::FLOAT;
 		}
 		break;
@@ -197,14 +222,17 @@ int CalculateJumpIndex(const std::vector<Bytecode> const &  opCode, const int fr
 {
 	return opCode.size() - 1 - from;
 }
-
+void EmitPop(std::vector<Bytecode>& opCode)
+{
+	opCode.push_back((Bytecode)InCode::POP);
+}
 void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 	std::vector<Bytecode>& opCode)
 {
 	int popAmount = scope->popAmount;
 	while (popAmount > 0)
 	{
-		opCode.push_back((Bytecode)InCode::POP);
+		EmitPop(opCode);
 		popAmount--;
 	}
 	
@@ -354,10 +382,32 @@ int VirtualMachine::GenerateLoopCondition(const Node* node)
 {
 	GenerateAST(node);
 	auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
-	currentFunc->opCode.push_back((uint8_t)InCode::POP);
+	EmitPop(currentFunc->opCode);
 	return indexJumpFalse;
 }
-
+InCode TokenToInCodeOp (TokenType type)
+	{
+		switch (type)
+		{
+		case TokenType::STAR:
+			return InCode::MULTIPLY;
+		case TokenType::PLUS:
+			return InCode::ADD;
+		case TokenType::MINUS:
+			return InCode::SUBSTRACT;
+		case TokenType::SLASH:
+			return InCode::DIVIDE;
+		case TokenType::PERCENT:
+			return InCode::DIVIDE_PERCENT;
+		case TokenType::LESS:
+			return InCode::LESS;
+		case TokenType::GREATER:
+			return InCode::GREATER;
+		default:
+			assert(false);
+			break;
+		}
+	}
 void VirtualMachine::BeginContinue(int startLoopIndex)
 {
 	m_StartLoopIndexes.push(startLoopIndex);
@@ -493,7 +543,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 auto type = globalVariablesTypes.Get(call->name)->value.type;
 			 if (type == ValueType::NIL)
 			 {
-				 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+				 EmitPop(currentFunc->opCode);
 			 }
 			 break;
 		 }
@@ -776,7 +826,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 auto indexFalse = JumpIfFalse(currentFunc->opCode);
 			 // remove the value because we didn't jump
 			 // the whole and is dependent on second operand
-			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 EmitPop(currentFunc->opCode);
 			 GenerateAST(tree->As<Expression>()->right.get());
 			 currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
 			 return ValueType::BOOL;
@@ -814,7 +864,8 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 // condition
 			 GenerateAST(tree->As<Expression>()->left.get());
 			 auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
-			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 EmitPop(currentFunc->opCode);
+			
 			 
 			 
 			 // then
@@ -822,7 +873,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 auto indexJump = Jump(currentFunc->opCode);
 			 currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
 			 // else branch
-			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 EmitPop(currentFunc->opCode);
 			 GenerateAST(tree->As<Expression>()->right.get()->As<Expression>()->left.get());
 			 // once we execute then branch we need to skip else bytecode
 			 // without -1 because we need index of next bytecode, not previous one
@@ -848,7 +899,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 PatchBreak(prevSizeBreak);
 
 			 // clean the check condition 
-			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 EmitPop(currentFunc->opCode);
 			 currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
 			 break;
 			 }
@@ -881,7 +932,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 
 
 			 // clean the check condition once we go finish the loop
-			 currentFunc->opCode.push_back((uint8_t)InCode::POP);
+			 EmitPop(currentFunc->opCode);
 			 currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
 			 // because for loop has declared iterator variable
 			 ClearScope(currentScope, currentScope->stack, currentFunc->opCode);
@@ -1362,27 +1413,9 @@ void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrT
 	CAST_INT_FLOAT(type, instrType);
 }
 
-void VirtualMachine::GenerateCFG(const Block* block)
+void VirtualMachine::GenerateCFG(Block* block)
 {
-	auto tokenToInCodeOp = [](TokenType type)
-		{
-			switch (type)
-			{
-			case TokenType::STAR:
-				return InCode::MULTIPLY;
-			case TokenType::PLUS:
-				return InCode::ADD;
-			case TokenType::MINUS:
-				return InCode::SUBSTRACT;
-			case TokenType::SLASH:
-				return InCode::DIVIDE;
-			case TokenType::PERCENT:
-				return InCode::DIVIDE_PERCENT;
-			default:
-				assert(false);
-				break;
-			}
-		};
+	
 	for (const auto& instr : block->instructions)
 	{
 		auto type = instr.instrType;
@@ -1430,7 +1463,7 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			}
 			else
 			{
-				DetermineOpTypeRet(instr.returnType, tokenToInCodeOp(type), currentFunc);
+				DetermineOpTypeRet(instr.returnType, TokenToInCodeOp(type), currentFunc);
 			}
 			break;
 		}
@@ -1575,6 +1608,25 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		case TokenType::JUMP:
 			break;
 		case TokenType::BRANCH:
+		{
+			// condition
+			auto& conditionOp= instr.operRight;
+			GenerateCFGOperand(conditionOp,ValueType::BOOL);
+			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+			EmitPop(currentFunc->opCode);
+			// then
+			auto thenBlock = instr.targets.begin();
+			GenerateCFG(*thenBlock);
+			auto indexJump = Jump(currentFunc->opCode);
+			currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
+			
+			//else
+			auto elseBlock = instr.targets.end() - 1;
+			EmitPop(currentFunc->opCode);
+			GenerateCFG(*elseBlock);
+			currentFunc->opCode[indexJump] = currentFunc->opCode.size() - indexJump;
+
+		}
 			break;
 		case TokenType::PHI:
 			break;
@@ -1584,9 +1636,10 @@ void VirtualMachine::GenerateCFG(const Block* block)
 		}
 	}
 
-
+	block->isVisited = true;
 	for (auto child : block->blocks)
 	{
+		if(!child->isVisited)
 		GenerateCFG(child);
 	}
 }

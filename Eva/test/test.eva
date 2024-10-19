@@ -89,16 +89,41 @@
 //	d:= 4;
 //	Print d;
 //}
+//
+//a: int = 2.0;
+//a+=2.0;
+//Print a;
+//{
+//	b : int = 15;
+//	b+=2.0;
+//	b-=2;
+//	b/=5;
+//	b*=4.0;
+//	a = b;
+//}
+//Print a;
+//
+//
+//
+//Print 2 + 2+ 2+a+a;
 
-a: int = 2.0;
-a+=2.0;
-Print a;
-{
-	b : int = 15;
-	b+=2.0;
-	b-=2;
-	b/=5;
-	b*=4.0;
-	a = b;
-}
-Print a;
+
+//if false
+//{
+//	Print a + 2;	
+//}
+//else 
+//{
+//	Print a + 4;	
+//}
+g := 0;
+					a := 0;
+					while a < 5
+					{	
+						a++;
+						if (a % 2 == 1) == true
+						{
+							continue;
+						}
+						g+=a;
+						}

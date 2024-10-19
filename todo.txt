@@ -39,9 +39,9 @@ invoke a function that is not defined
 
 
 
-we generate code when we want to get type of variable?
 
-add support of single argument for
+
+add support of single argument for functions? like Print a?
 
 
 peephole optimiser
@@ -62,3 +62,5 @@ a++;
 b:int =a;
 
 Remove substract operation since every our a - b operation is a + (-b);
+
+give errors if there are no then in if statement

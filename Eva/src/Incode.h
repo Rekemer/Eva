@@ -18,6 +18,9 @@ enum class InCode
 	ADD,
 	SUBSTRACT,
 	DIVIDE,
+	LESS,
+	GREATER,
+
 	//
 	MULTIPLY_INT,
 	MULTIPLY_FLOAT,
