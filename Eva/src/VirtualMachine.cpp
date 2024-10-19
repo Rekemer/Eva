@@ -284,6 +284,8 @@ void GenerateLocalGet(Scope* currentScope, Func* currentFunc, const std::string&
 
 void EmitGet(Func* currentFunc, const Operand& variable)
 {
+	if (variable.IsTemp()) return;
+	assert(variable.depth != -1);
 	if (variable.depth > 0)
 	{
 		assert(variable.index != -1);
@@ -1348,7 +1350,7 @@ size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t base
 
 void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrType)
 {
-	auto type = operand.value.type;
+	auto type = operand.type;
 	if (operand.isConstant)
 	{
 		GenerateConstant(operand.value);
@@ -1418,6 +1420,7 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			ValueType left = instr.operLeft.type, right = instr.operRight.type;
 			
 			GenerateCFGOperand(instr.operLeft,instr.returnType);
+
 			GenerateCFGOperand(instr.operRight,instr.returnType);
 			
 			
@@ -1465,7 +1468,8 @@ void VirtualMachine::GenerateCFG(const Block* block)
 			}
 			assert(expressionType != ValueType::NIL);
 			CastWithDeclared(expressionType, declType);
-			if (!res.IsTemp() && type == TokenType::EQUAL)
+			if (!res.IsTemp() && type == TokenType::EQUAL || type == TokenType::DECLARE
+				&& res.depth == 0)
 			{
 				EmitSet(currentFunc,res);
 			}

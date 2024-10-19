@@ -45,6 +45,7 @@ std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::JUMP, "JUMP"},
 		{TokenType::BRANCH, "BRANCH"},
 		{TokenType::PHI, "PHI"},
+		{TokenType::BLOCK, "BLOCK"},
 };
 std::string tokenToString(TokenType token) {
 

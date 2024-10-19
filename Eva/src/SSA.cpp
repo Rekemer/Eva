@@ -86,6 +86,12 @@ bool CFG::IsStatement(const Node* node)
 	case TokenType::BLOCK:
 	case TokenType::DECLARE:
 	case TokenType::EQUAL:
+	case TokenType::PLUS_EQUAL:
+	case TokenType::MINUS_EQUAL:
+	case TokenType::SLASH_EQUAL:
+	case TokenType::STAR_EQUAL:
+	case TokenType::PLUS_PLUS:
+	case TokenType::MINUS_MINUS:
 		return true;
 	default:
 		break;
@@ -378,24 +384,34 @@ void CFG::Debug()
 	Bfs(startBlock, PrintBlock);
 }
 
+
+void  CFG::InitLocal(Operand& op,const std::string& name)
+{
+	variableCounterLocal[name] = 0;
+	localAssigned[name].push_back(currentBlock);
+	auto [isExist, index, depth] = currentScope->IsLocalExist(name, currentScope->depth);
+	assert(isExist);
+	op.index = index;
+	op.depth = depth;
+	op.type = currentScope->GetType(name);
+}
+void CFG::InitGlobal(Operand& op,const std::string& name)
+{
+	globalAssigned[name].push_back(currentBlock);
+	op.type = vm->GetGlobalType(name);
+	op.depth = 0;
+}
 Operand CFG::InitVariable(const std::string& name, int depth)
 {
 	Operand resOp{ ValueContainer{name},false,NOT_INIT_VERSION };
 	if (depth > 0)
 	{
-		variableCounterLocal[name] = 0;
-		localAssigned[name].push_back(currentBlock);
-		auto [isExist, index, depth] = currentScope->IsLocalExist(name, currentScope->depth);
-		assert(isExist);
-		resOp.index = index;
-		resOp.depth = depth;
-		resOp.type = currentScope->GetType(name);
+		InitLocal(resOp, name);
 	}
 	// global variable
 	else
 	{
-		globalAssigned[name].push_back(currentBlock);
-		resOp.type = vm->GetGlobalType(name);
+		InitGlobal(resOp, name);
 	}
 	return resOp;
 }
@@ -424,18 +440,18 @@ void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 	// left is variable
 	auto left = expr->left->As<Expression>();
 	auto name = left->value.AsString();
+	Operand resOp{ ValueContainer{name},false,-1 };
 	// local variable
 	if (left->depth > 0)
 	{
-		variableCounterLocal[name] = 0;
-		localAssigned[name].push_back(currentBlock);
+		
+		InitLocal(resOp, name);
 	}
-	// global variable
+		// global variable
 	else
 	{
-		globalAssigned[name].push_back(currentBlock);
+		InitGlobal(resOp, name);
 	}
-	Operand resOp{ ValueContainer{name},false,-1 };
 
 	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
 	currentBlock->instructions.push_back(instruction);
@@ -446,6 +462,9 @@ Operand CFG::CreateTemp()
 {
 	Operand temp{ ValueContainer{ "t"} ,false,tempVersion++};
 	temp.isTemp = true;
+	if(currentScope == nullptr)
+	temp.depth = 0;
+	else temp.depth = currentScope->depth;
 	return temp;
 }
 

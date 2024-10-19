@@ -4,8 +4,9 @@
 #include "VirtualMachine.h"
 #include "AST.h"
 #include "SSA.h"
-#define DEBUG 0
-#define SSA 0
+#define DEBUG_STACK 1
+#define DEBUG_TOKENS 0
+#define SSA 1
 #define CONSTANT_FOLD 0
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
@@ -14,12 +15,11 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	VirtualMachine vm;
 	if (!parser.Parse(line, vm)) return { ValueContainer{} ,vm};
 	auto& tokens = parser.GetTokens();
-#if DEBUG
+#if DEBUG_TOKENS
 	for (auto token : tokens)
 	{
 		std::cout << tokenToString(token.type) << " ";
 	}
-
 	std::cout << "\n";
 #endif // DEBUG
 	std::vector<AST> trees;
@@ -73,9 +73,6 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 		vm.GenerateBytecodeAST(tree.GetTree());
 	}
 #endif
-	#if DEBUG
-	Print(tree.GetTree());
-	#endif // DEBUG
 	if (panic)
 	{
 		return{};
@@ -87,6 +84,16 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 		auto res = stack[stack.size()-2];
 		return { res,vm };
 	}
+#if DEBUG_STACK
+	std::cout << "STACK [ ";
+	auto& stack = vm.GetStack();
+	for (auto& v : stack)
+	{
+		std::cout << v << ", ";
+	}
+	std::cout << " ]\n";
+#endif // DEBUG
+
 	return { {},vm };
 }
 

@@ -132,6 +132,10 @@ private:
 	Operand CreateTemp();
 	void CreateVariable(const Node* tree, TokenType type);
 	Operand InitVariable(const std::string& name, int depth);
+
+	void InitLocal(Operand& op,const std::string& name);
+	void InitGlobal(Operand& op,const std::string& name);
+
 	void CreateVariableFrom(const Node* tree, const Operand& rightOp);
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
