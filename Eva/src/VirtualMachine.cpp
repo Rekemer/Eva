@@ -242,7 +242,7 @@ ValueType VirtualMachine::GetGlobalType(const std::string& str)
 ValueType VirtualMachine::GetLocalType(const std::string& str)
 {
 	auto  type = currentScope->GetType(str);
-	if (type != ValueType::NIL)
+	if (type == ValueType::NIL)
 	{
 		//std::stringstream ss;
 		//ss << "ERROR[" << (expr->line) << "]: " <<
@@ -254,7 +254,7 @@ ValueType VirtualMachine::GetLocalType(const std::string& str)
 }
 void EmitGlobalGet(Func* currentFunc, const std::string& str)
 {
-	currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+	currentFunc->opCode.push_back((Bytecode)InCode::GET_GLOBAL_VAR);
 	currentFunc->constants.emplace_back(str);
 	currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 }
@@ -266,7 +266,7 @@ void EmitLocalGet(Func* currentFunc,int index)
 }
 void EmitLocalSet(Func* currentFunc, int index)
 {
-	currentFunc->opCode.push_back((uint8_t)InCode::SET_LOCAL_VAR);
+	currentFunc->opCode.push_back((Bytecode)InCode::SET_LOCAL_VAR);
 	assert(index != -1);
 	currentFunc->opCode.push_back(index);
 }
@@ -317,7 +317,7 @@ void GenerateLocalSet(Scope* currentScope, Func* currentFunc, const std::string&
 {
 	assert(currentScope != nullptr);
 	auto [isDeclared, index, _] = currentScope->IsLocalExist(str, depth);
-	
+	EmitLocalSet(currentFunc, index);
 }
 void EmitGlobalSet(Func* currentFunc, const std::string& str)
 {

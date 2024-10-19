@@ -5,7 +5,7 @@
 #include "AST.h"
 #include "SSA.h"
 #define DEBUG 0
-#define SSA 1
+#define SSA 0
 #define CONSTANT_FOLD 0
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
