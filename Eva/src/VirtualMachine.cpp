@@ -1332,6 +1332,16 @@ void VirtualMachine::Execute()
 			vmStack.pop_back();
 			break;
 		}
+		case InCode::STORE_TEMP:
+		{
+			temp = vmStack.back();
+			break;
+		}
+		case InCode::LOAD_TEMP:
+		{
+			vmStack.push_back(temp);
+			break;
+		}
 		default:
 			break;
 		}
@@ -1413,7 +1423,7 @@ void VirtualMachine::GenerateCFG(Block* block)
 				GenerateCFGOperand(instr.operRight, instr.returnType);
 				if (type == TokenType::MINUS)
 				currentFunc->opCode.push_back((Bytecode)InCode::NEGATE);
-				else currentFunc->opCode.push_back((Bytecode)InCode::NEGATE);
+				else currentFunc->opCode.push_back((Bytecode)InCode::NOT);
 				break;
 			}
 		}
@@ -1423,10 +1433,24 @@ void VirtualMachine::GenerateCFG(Block* block)
 		case TokenType::PERCENT:
 		{
 			ValueType left = instr.operLeft.type, right = instr.operRight.type;
-			
-			GenerateCFGOperand(instr.operLeft,instr.returnType);
+			// we cannot simply generate bytecode for left and right,
+			// because the right (temporary) value can end up beneath
+			// of left operand, since it is result of previous computations
+			// 
+			// we could use swap instead ?
+			if (instr.operRight.IsTemp())
+			{
+				currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
+				EmitPop(currentFunc->opCode);
+				GenerateCFGOperand(instr.operLeft, instr.returnType);
+				currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
+			}
+			else
+			{
+				GenerateCFGOperand(instr.operLeft, instr.returnType);
+				GenerateCFGOperand(instr.operRight, instr.returnType);
+			}
 
-			GenerateCFGOperand(instr.operRight,instr.returnType);
 			
 			
 			if (left == right && left == ValueType::STRING)
@@ -1535,7 +1559,30 @@ void VirtualMachine::GenerateCFG(Block* block)
 		case TokenType::END:
 			break;
 		case TokenType::AND:
+		{
+			GenerateCFGOperand(instr.operLeft, instr.returnType);
+			auto indexFalse = JumpIfFalse(currentFunc->opCode);
+			EmitPop(currentFunc->opCode);
+			GenerateCFGOperand(instr.operRight, instr.returnType);
+			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
 			break;
+		}
+		case TokenType::OR:
+		{
+
+			GenerateCFGOperand(instr.operLeft, instr.returnType);
+			auto indexFalse = JumpIfFalse(currentFunc->opCode);
+			// if it is true we get to jump
+			auto jump = Jump(currentFunc->opCode);
+
+			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+
+			GenerateCFGOperand(instr.operRight, instr.returnType);
+			// the first is true- just skip second operand
+			currentFunc->opCode.push_back((uint8_t)InCode::OR);
+			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, jump) + 1;
+			break;
+		}
 		case TokenType::CLASS:
 			break;
 		case TokenType::ELSE:
@@ -1555,8 +1602,6 @@ void VirtualMachine::GenerateCFG(Block* block)
 		case TokenType::ELIF:
 			break;
 		case TokenType::NIL:
-			break;
-		case TokenType::OR:
 			break;
 		case TokenType::PRINT:
 		{

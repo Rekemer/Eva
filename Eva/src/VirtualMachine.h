@@ -91,6 +91,8 @@ private:
 	HashTable internalStrings;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
+
+	ValueContainer temp;
 	
 	std::array<CallFrame, 64> callFrames;
 	int nextToCurrentCallFrame = 0;

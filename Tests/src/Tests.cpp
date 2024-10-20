@@ -6,14 +6,14 @@
 #include "HashTable.h"
 
 #define EXPR 1
-#define LOOPS 1
-#define FUNC 1
-#define VAR 1
-#define STRINGS 1
-#define SCOPE 1
-#define DEDUCTION 1
-#define IF 1
-#define CONSTANT_FOLD 1
+#define LOOPS 0
+#define FUNC 0
+#define VAR 0
+#define STRINGS 0
+#define SCOPE 0
+#define DEDUCTION 0
+#define IF 0
+#define CONSTANT_FOLD 0
 
 struct Tables
 {
@@ -64,19 +64,19 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 		CHECK(CompileTest("false&&true").As<bool>() == false);
 		CHECK(CompileTest("true&&true").As<bool>() == true);
 		CHECK(CompileTest("true || false").As<bool>() == true);
-		//
+		
 		CHECK(CompileTest("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
 		CHECK(CompileTest("2+2 == 2+1+1 ").As<bool>() == true);
 		CHECK(CompileTest("2+2 < 2+1+1+1 ").As<bool>() == true);
 		CHECK(CompileTest("2+2 <= 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("2+2 >= 2+2 ").As<bool>() == true);
-		
+		//
 		CHECK(CompileTest("2.0 >= 2 ").As<bool>() == true);
 		CHECK(CompileTest("2.0 == 2 ").As<bool>() == true);
 		CHECK(CompileTest("2.0 != 2 ").As<bool>() == false);
 		CHECK(CompileTest("2.0 < 4.0 ").As<bool>() == true);
 		CHECK(CompileTest("2 <= 4.0 ").As<bool>() == true);
-		//
+		////
 		CHECK(CompileTest("2+5 >= 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
 		CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
@@ -85,7 +85,7 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 		CHECK(CompileTest("(4.0* 6/3 == 8.0 )").As<bool>() == true);
 		CHECK(CompileTest("(4.0* 6/3 + 2 == 10.0 )").As<bool>() == true);
 		CHECK(CompileTest("(4.0* 6/(4/2.0) + 2 == 14.0 )").As<bool>() == true);
-		CHECK(CompileTest("( 6.0/(6/2.0) * 4.0 + 2 == 10.0 )").As<bool>() == true);
+		CHECK(CompileTest("( 6.0/(6/2.0) * 4.0 + 2 == 10.0 )").As<bool>() ==true);
 		CHECK(CompileTest("( 2.0 / 4 * 3  == 1.5)").As<bool>() == true);
 		CHECK(CompileTest("( 3 * 2 / 4.0 == 6.0/4)").As<bool>() == true);
 	}

@@ -105,6 +105,8 @@ const char* debugEnum(InCode code) {
     case InCode::RETURN: return "RETURN";
     case InCode::JUMP_BACK: return "JUMP_BACK";
     case InCode::CALL: return "CALL";
+    case InCode::STORE_TEMP: return "STORE_TEMP";
+    case InCode::LOAD_TEMP: return "LOAD_TEMP";
     default: return "UNKNOWN";
     }
 }

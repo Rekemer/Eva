@@ -64,7 +64,7 @@ struct Instruction
 	}
 	bool IsUnary() const
 	{
-		return TokenType::MINUS == instrType && operLeft.version == NOT_INIT_OPERAND && operRight.version != NOT_INIT_OPERAND;
+		return (TokenType::BANG== instrType || TokenType::MINUS == instrType) && operLeft.version == NOT_INIT_OPERAND && operRight.version != NOT_INIT_OPERAND;
 	}
 	// for branches 
 	std::vector<Block*> targets;

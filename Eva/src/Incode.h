@@ -62,5 +62,7 @@ enum class InCode
 	// to clear up stack from condition
 	POP,
 	RETURN,
+	STORE_TEMP,
+	LOAD_TEMP,
 
 };
