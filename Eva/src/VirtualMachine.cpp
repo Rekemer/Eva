@@ -539,18 +539,20 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 break;
 		 }
 		 case TokenType::PLUS_PLUS:
-		 {
-			 auto left = GenerateAST(tree->As<Expression>()->left.get());
-			 DETERMINE_OP_TYPE(left, INCREMENT);
-			 assert(exprLeft != nullptr);
-			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
-			 return expr->value.type;
-			 break;
-		 }
 		 case TokenType::MINUS_MINUS:
 		 {
 			 auto left = GenerateAST(tree->As<Expression>()->left.get());
-			 DETERMINE_OP_TYPE(left, DECREMENT);
+
+			 // Determine the operation based on token type
+			 if (type == TokenType::PLUS_PLUS)
+			 {
+				 DETERMINE_OP_TYPE(left, INCREMENT);
+			 }
+			 else if (type == TokenType::MINUS_MINUS)
+			 {
+				 DETERMINE_OP_TYPE(left, DECREMENT);
+			 }
+
 			 assert(exprLeft != nullptr);
 			 SetVariable(currentFunc->opCode, exprLeft->value.AsString(), exprLeft->depth);
 			 return expr->value.type;
@@ -1657,7 +1659,9 @@ void VirtualMachine::GenerateCFG(Block* block)
 		{
 			// condition
 			auto& conditionOp= instr.operRight;
-			GenerateCFGOperand(conditionOp,ValueType::BOOL);
+
+
+			GenerateCFGOperand(conditionOp,instr.returnType);
 			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
 			EmitPop(currentFunc->opCode);
 			// then
@@ -1665,12 +1669,30 @@ void VirtualMachine::GenerateCFG(Block* block)
 			GenerateCFG(*thenBlock);
 			auto indexJump = Jump(currentFunc->opCode);
 			currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
+			auto elif = instr.targets.begin() + 1;
+			// elif
+			auto elseBlock = instr.targets.end() - 1;
+			auto condIndex = 0;
+			//while (condIndex++, elif != elseBlock)
+			//{
+			//	EmitPop(currentFunc->opCode);
+			//	GenerateCFGOperand(instr.operRight, instr.returnType);
+			//	auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+			//	EmitPop(currentFunc->opCode);
+			//	// then
+			//	auto thenBlock = instr.targets.begin();
+			//	GenerateCFG(*elif);
+			//	auto indexJump = Jump(currentFunc->opCode);
+			//	currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
+			//	(*elif)->isVisited = true;
+			//	elif++;
+			//}
 			
 			//else
-			auto elseBlock = instr.targets.end() - 1;
 			EmitPop(currentFunc->opCode);
 			GenerateCFG(*elseBlock);
 			currentFunc->opCode[indexJump] = currentFunc->opCode.size() - indexJump;
+			(*elseBlock)->isVisited = true;
 
 		}
 			break;

@@ -69,7 +69,7 @@ struct Instruction
 	// for branches 
 	std::vector<Block*> targets;
 
-	// for phi function
+	// for phi function and multie branching
 	std::vector<Operand> variables;
 };
 
@@ -117,6 +117,10 @@ class VirtualMachine;
 class CFG
 {
 public:
+	CFG()
+	{
+		startBlock = currentBlock = CreateBlock("[block_0]", {});
+	}
 	VirtualMachine* vm;
 	void BuildDominatorTree();
 	void ConvertAST(const Node* tree);
@@ -125,7 +129,7 @@ public:
 	void InsertPhi();
 	void Debug();
 private:
-	Block* CreateBranchBlock(Block* parentBlock, Instruction& branchInstr, Node* flows, const std::string& BlockName);
+	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName);
 	int NewName(const std::string& name);
 	void Rename(Block* b);
 	void FindDoms();

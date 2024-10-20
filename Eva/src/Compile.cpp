@@ -78,12 +78,6 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 		return{};
 	}
 	vm.Execute();
-	if (vm.GetStack().size() > 1)
-	{
-		auto& stack = vm.GetStack();
-		auto res = stack[stack.size()-2];
-		return { res,vm };
-	}
 #if DEBUG_STACK
 	std::cout << "STACK [ ";
 	auto& stack = vm.GetStack();
@@ -94,6 +88,12 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	std::cout << " ]\n";
 #endif // DEBUG
 
+	if (vm.GetStack().size() > 1)
+	{
+		auto& stack = vm.GetStack();
+		auto res = stack[stack.size()-2];
+		return { res,vm };
+	}
 	return { {},vm };
 }
 

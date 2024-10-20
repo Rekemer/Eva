@@ -33,7 +33,7 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 	os << resValue << "_" <<  v.result.version << " = ";
 	if (leftValue.type != ValueType::NIL ) PrintValue(os, leftValue, v.operLeft.version, v.operLeft.isConstant);
 	os << " " << tokenToString(v.instrType) << " ";
-	if (v.instrType == TokenType::PHI)
+	if (v.instrType == TokenType::PHI || v.instrType == TokenType::BRANCH)
 	{
 		os << "( ";
 		for (auto& param : v.variables)
@@ -90,8 +90,6 @@ bool CFG::IsStatement(const Node* node)
 	case TokenType::MINUS_EQUAL:
 	case TokenType::SLASH_EQUAL:
 	case TokenType::STAR_EQUAL:
-	case TokenType::PLUS_PLUS:
-	case TokenType::MINUS_MINUS:
 		return true;
 	default:
 		break;
@@ -103,6 +101,11 @@ Block* CFG::CreateBlock(const std::string& name, std::vector<Block*> parents)
 	Block* block = &graph[name];
 	block->name = name;
 	block->parents = parents;
+
+	for (auto parent : parents)
+	{
+		parent->blocks.push_back(block);
+	}
 	return block;
 }
 int GetVersion(std::unordered_map<std::string, int>& map, std::string& name)
@@ -123,7 +126,7 @@ Operand NullOperand()
 };
 
 
-Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branchInstr, Node* block, const std::string& BlockName)
+Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* block, const std::string& BlockName)
 {
 	auto then = CreateBlock(BlockName, { parentBlock });
 
@@ -136,8 +139,8 @@ Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branchInstr, Node*
 	currentBlock->instructions.
 		push_back(Instruction{ TokenType::JUMP,{},mergeOperand, NullOperand() });
 
-	parentBlock->blocks.push_back(then);
-	branchInstr.targets.push_back(then);
+	
+	branch.targets.push_back(then);
 	return then;
 }
 
@@ -539,12 +542,6 @@ void CFG::ConvertStatementAST(const Node* tree)
 		CreateVariableFrom(tree, rightOperand);
 		break;
 	}
-	case TokenType::PLUS_PLUS:
-	case TokenType::MINUS_MINUS:
-	{
-		assert(false);
-		break;
-	}
 	case TokenType::CONTINUE:
 	case TokenType::BREAK:
 	case TokenType::FOR:
@@ -555,36 +552,69 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto thenBranch = flows->As<Expression>()->right.get();
 		// we need to convert the condition
 		auto condition = expr->left.get();
-		auto valueCondition = ConvertExpressionAST(condition);
 		auto parentBlock = currentBlock;
 		//Instruction branch;
+		Instruction branch = Instruction{ TokenType::BRANCH,{},{},NullOperand() };
 
-		parentBlock->instructions.push_back(
-			Instruction{ TokenType::BRANCH,{},{valueCondition},NullOperand() }
-		);
-		auto& branchInstr = *(parentBlock->instructions.end() - 1);
+		branch.operRight = ConvertExpressionAST(condition);
+
 		auto thenBlockName = std::format("[then_{}]", std::to_string(Block::counterThen++));
 		std::vector<Block*> mergeParents;
 		std::vector<Block*> elifBlocks;
+
 		//// then
-		auto then = CreateBranchBlock(parentBlock, branchInstr, thenBranch, thenBlockName);
+		auto then = CreateBranchBlock(parentBlock, branch, thenBranch, thenBlockName);
+		parentBlock->instructions.push_back(branch);
 		mergeParents.push_back(then);
+
+		
 		// handle elif cases
 		bool isElif = flows->As<Expression>()->left.get()->type == TokenType::IF;
+		Block* prevConditionBlock = parentBlock;
 		if (isElif)
 		{
+			std::vector<Instruction> branchesElif;
 			auto elifNode = flows->As<Expression>()->left.get();
+			bool firstElif = false;
 			while (elifNode->type != TokenType::BLOCK && elifNode->type == TokenType::IF)
 			{
+				currentBlock = parentBlock;
+				Instruction branchElif = Instruction{ TokenType::BRANCH,{},{},NullOperand() };
+				auto elifBlockName = std::format("[elif_{}]", std::to_string(Block::counterElif));
+				auto conditionNode = elifNode->As<Expression>()->left.get();
+
+				auto conditionName = std::format("[elif_condition_{}]", std::to_string(Block::counterElif++));
+				auto conditionBlock = CreateBlock(conditionName, { currentBlock });
+
+				if (prevConditionBlock)
+				{
+					prevConditionBlock->instructions.back().targets.push_back(conditionBlock);
+				}
+				currentBlock = conditionBlock;
+				branchElif.operRight =  ConvertExpressionAST(conditionNode);
+
+				//if (!firstElif)
+				//{
+				//	branch.targets.push_back(conditionBlock);
+				//	parentBlock->instructions.push_back(branch);
+				//	firstElif = true;
+				//}
+
+				// body 
 				auto elifFlows = elifNode->As<Expression>()->right.get();
 				auto block = elifFlows->As<Expression>()->right.get();
-				auto elifBlockName = std::format("[elif_{}]", std::to_string(Block::counterElif++));
+				auto body = CreateBranchBlock(conditionBlock, branchElif, block,elifBlockName);
 
-				auto elif = CreateBranchBlock(parentBlock, branchInstr, block, elifBlockName);
+				conditionBlock->instructions.push_back(branchElif);
 
-				mergeParents.push_back(elif);
-				elifBlocks.push_back(elif);
 
+				
+
+				mergeParents.push_back(body);
+				elifBlocks.push_back(body);
+				branchesElif.push_back(branchElif);
+
+				prevConditionBlock= conditionBlock;
 				elifNode = elifNode->As<Expression>()->right->As<Expression>()->left.get();
 			}
 			flows = elifNode;
@@ -596,7 +626,13 @@ void CFG::ConvertStatementAST(const Node* tree)
 		assert(flows->type == TokenType::BLOCK);
 		auto elseBranch = flows;
 		auto elseBlockName = std::format("[else_{}]", std::to_string(Block::counterElse++));
-		auto els = CreateBranchBlock(parentBlock, branchInstr, elseBranch, elseBlockName);
+		auto els = CreateBranchBlock(parentBlock, branch, elseBranch, elseBlockName);
+
+		if (prevConditionBlock)
+		{
+			prevConditionBlock->instructions.back().targets.push_back(els);
+		}
+
 		mergeParents.push_back(els);
 
 
@@ -616,6 +652,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 			elif->blocks.push_back(merge);
 		}
 		currentBlock = merge;
+
 
 		break;
 	}
@@ -668,6 +705,8 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		return InitVariable(expr->value.AsString(),expr->depth);
 		break;
 	}
+	case TokenType::PLUS_PLUS:
+	case TokenType::MINUS_MINUS:
 	case TokenType::PLUS:
 	case TokenType::STAR:
 	case TokenType::MINUS:
@@ -675,7 +714,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::PERCENT:
 	{
 		Operand res;
-		if (type == TokenType::MINUS && expr->right == nullptr)
+		if ((type == TokenType::MINUS  || type == TokenType::PLUS_PLUS|| type == TokenType::MINUS_MINUS) && expr->right == nullptr)
 		{
 			res = UnaryInstr(expr, type);
 		}
@@ -845,8 +884,9 @@ void CFG::ConvertAST(const Node* tree)
 {
 	auto expr = tree->As<Expression>();
 	auto type = tree->type;
-
-	startBlock = currentBlock = CreateBlock("[block_0]", {});
+	
+	
+	
 	Block::counterStraight++;
 	if (IsStatement(tree))
 	{

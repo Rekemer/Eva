@@ -1557,10 +1557,11 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 
 		return TypeToLiteral(entry->value.type);
 	}
-	bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::MINUS_MINUS
+	bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::BANG|| expr->type == TokenType::MINUS_MINUS
 		|| expr->type == TokenType::PLUS_PLUS;
 	if (isUnary && childType != TokenType::END)
 	{
+		expr->value = ValueContainer{ LiteralToType(childType) };
 		return childType;
 	}
 	return expr->type;
