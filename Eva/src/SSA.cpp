@@ -131,7 +131,11 @@ Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* bloc
 	auto then = CreateBlock(BlockName, { parentBlock });
 
 	currentBlock = then;
-	ConvertStatementAST(block);
+
+	if (block != nullptr)
+	{
+		ConvertStatementAST(block);
+	}
 
 	auto mergeName = std::format("[merge{}]", std::to_string(Block::counterMerge));
 	ValueContainer name = ValueContainer{ mergeName };
@@ -567,63 +571,72 @@ void CFG::ConvertStatementAST(const Node* tree)
 		parentBlock->instructions.push_back(branch);
 		mergeParents.push_back(then);
 
-		
-		// handle elif cases
-		bool isElif = flows->As<Expression>()->left.get()->type == TokenType::IF;
+		bool isElseCase = flows->As<Expression>()->left != nullptr;
+
 		Block* prevConditionBlock = parentBlock;
-		if (isElif)
+		if (isElseCase)
 		{
-			std::vector<Instruction> branchesElif;
-			auto elifNode = flows->As<Expression>()->left.get();
-			bool firstElif = false;
-			while (elifNode->type != TokenType::BLOCK && elifNode->type == TokenType::IF)
+			// handle elif cases
+			bool isElif = flows->As<Expression>()->left != nullptr ? flows->As<Expression>()->left.get()->type == TokenType::IF : false;
+			if (isElif)
 			{
-				currentBlock = parentBlock;
-				Instruction branchElif = Instruction{ TokenType::BRANCH,{},{},NullOperand() };
-				auto elifBlockName = std::format("[elif_{}]", std::to_string(Block::counterElif));
-				auto conditionNode = elifNode->As<Expression>()->left.get();
-
-				auto conditionName = std::format("[elif_condition_{}]", std::to_string(Block::counterElif++));
-				auto conditionBlock = CreateBlock(conditionName, { currentBlock });
-
-				if (prevConditionBlock)
+				std::vector<Instruction> branchesElif;
+				auto elifNode = flows->As<Expression>()->left.get();
+				bool firstElif = false;
+				while (elifNode->type != TokenType::BLOCK && elifNode->type == TokenType::IF)
 				{
-					prevConditionBlock->instructions.back().targets.push_back(conditionBlock);
-				}
-				currentBlock = conditionBlock;
-				branchElif.operRight =  ConvertExpressionAST(conditionNode);
+					currentBlock = parentBlock;
+					Instruction branchElif = Instruction{ TokenType::BRANCH,{},{},NullOperand() };
+					auto elifBlockName = std::format("[elif_{}]", std::to_string(Block::counterElif));
+					auto conditionNode = elifNode->As<Expression>()->left.get();
 
-				//if (!firstElif)
-				//{
-				//	branch.targets.push_back(conditionBlock);
-				//	parentBlock->instructions.push_back(branch);
-				//	firstElif = true;
-				//}
+					auto conditionName = std::format("[elif_condition_{}]", std::to_string(Block::counterElif++));
+					auto conditionBlock = CreateBlock(conditionName, { currentBlock });
 
-				// body 
-				auto elifFlows = elifNode->As<Expression>()->right.get();
-				auto block = elifFlows->As<Expression>()->right.get();
-				auto body = CreateBranchBlock(conditionBlock, branchElif, block,elifBlockName);
+					if (prevConditionBlock)
+					{
+						prevConditionBlock->instructions.back().targets.push_back(conditionBlock);
+					}
+					currentBlock = conditionBlock;
+					branchElif.operRight =  ConvertExpressionAST(conditionNode);
 
-				conditionBlock->instructions.push_back(branchElif);
+					//if (!firstElif)
+					//{
+					//	branch.targets.push_back(conditionBlock);
+					//	parentBlock->instructions.push_back(branch);
+					//	firstElif = true;
+					//}
+
+					// body 
+					auto elifFlows = elifNode->As<Expression>()->right.get();
+					auto block = elifFlows->As<Expression>()->right.get();
+					auto body = CreateBranchBlock(conditionBlock, branchElif, block,elifBlockName);
+
+					conditionBlock->instructions.push_back(branchElif);
 
 
 				
 
-				mergeParents.push_back(body);
-				elifBlocks.push_back(body);
-				branchesElif.push_back(branchElif);
+					mergeParents.push_back(body);
+					elifBlocks.push_back(body);
+					branchesElif.push_back(branchElif);
 
-				prevConditionBlock= conditionBlock;
-				elifNode = elifNode->As<Expression>()->right->As<Expression>()->left.get();
+					prevConditionBlock= conditionBlock;
+					elifNode = elifNode->As<Expression>()->right->As<Expression>()->left.get();
+				}
+				flows = elifNode;
 			}
-			flows = elifNode;
+			else
+			{
+				flows = flows->As<Expression>()->left.get();
+			}
 		}
 		else
 		{
-			flows = flows->As<Expression>()->left.get();
+			flows = nullptr;
 		}
-		assert(flows->type == TokenType::BLOCK);
+		if(flows != nullptr) assert(flows->type == TokenType::BLOCK);
+		
 		auto elseBranch = flows;
 		auto elseBlockName = std::format("[else_{}]", std::to_string(Block::counterElse++));
 		auto els = CreateBranchBlock(parentBlock, branch, elseBranch, elseBlockName);
@@ -687,7 +700,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::DEDUCE:
 		assert(false && "not all types are deduced");
 	default:
-		assert(false && "we should not be here");
+		//assert(false && "we should not be here");
+		ConvertExpressionAST(tree);
 		break;
 	}
 }
@@ -714,9 +728,37 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::PERCENT:
 	{
 		Operand res;
-		if ((type == TokenType::MINUS  || type == TokenType::PLUS_PLUS|| type == TokenType::MINUS_MINUS) && expr->right == nullptr)
+		if (type == TokenType::MINUS  && expr->right == nullptr)
 		{
 			res = UnaryInstr(expr, type);
+		}
+		else if (type == TokenType::PLUS_PLUS || type == TokenType::MINUS_MINUS)
+		{
+			Operand op1{ ValueContainer{1},true,0 };
+			auto var = ConvertExpressionAST(expr->left.get());
+			auto temp = CreateTemp();
+			temp.type = ValueType::INT;
+			// no default constructor? should we add it?
+			if (type == TokenType::PLUS_PLUS)
+			{
+				auto change = Instruction{ TokenType::PLUS,op1,var,temp};
+				auto eq = Instruction{ TokenType::EQUAL,{},temp,var };
+				GiveType(change, temp, expr->value.type);
+				GiveType(eq, var, eq.returnType);
+				currentBlock->instructions.push_back(change);
+				currentBlock->instructions.push_back(eq);
+			}
+			else
+			{
+				auto change = Instruction{ TokenType::MINUS,var,op1,temp };
+				auto eq = Instruction{ TokenType::EQUAL,{},temp,var };
+				GiveType(change, temp, expr->value.type);
+				GiveType(eq, var, eq.returnType);
+				currentBlock->instructions.push_back(change);
+				currentBlock->instructions.push_back(eq);
+			}
+			return var;
+
 		}
 		else  res = BinaryInstr(expr, type);
 		return res;
