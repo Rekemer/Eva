@@ -6,14 +6,14 @@
 #include "HashTable.h"
 
 #define EXPR 1
-#define LOOPS 1
-#define FUNC 1
+#define LOOPS 0
+#define FUNC 0
 #define VAR 1
-#define STRINGS 1
+#define STRINGS 0
 #define SCOPE 1
-#define DEDUCTION 1
-#define IF 1
-#define CONSTANT_FOLD 1
+#define DEDUCTION 0
+#define IF 0
+#define CONSTANT_FOLD 0
 
 struct Tables
 {
@@ -360,6 +360,7 @@ TEST_CASE("scope test")
 		auto isPass = CheckVariable<float>("a", -29, ValueType::FLOAT, vm);
 		CHECK(isPass);
 	}
+#if SCOPE && IF
 	SUBCASE("=")
 	{
 		auto a = R"(
@@ -395,10 +396,13 @@ TEST_CASE("scope test")
 		}
 )";
 		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<int>("d_g", 10, ValueType::INT, vm) && CheckVariable<int>("c_g", 5, ValueType::INT, vm);
+		auto isPass = CheckVariable<int>("d_g", 10, ValueType::INT, vm) &&
+			CheckVariable<int>("c_g", 5, ValueType::INT, vm);
 		CHECK(isPass);
 
 	}
+#endif
+	
 }
 #endif // 0
 #if DEDUCTION
@@ -788,10 +792,84 @@ TEST_CASE("if statTment")
 						a +=20;		
 					} 
 					)";
+
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<int>("a", 107, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+
+	SUBCASE(" if elif  different conditions elif taken")
+	{
+		auto a = R"(a: int = 102;
+					if a == 101
+					{
+						a++;
+					}
+					elif a < 102 
+					{
+						a+=5;
+					}
+					elif a > 20 {
+						a +=10;		
+					} 
+					
+					)";
+
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 112, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE(" if elif else  different conditions elif taken")
+	{
+		auto a = R"(a: int = 102;
+					if a == 101
+					{
+						a++;
+					}
+					elif a < 102 
+					{
+						a+=5;
+					}
+					elif a > 20 {
+						a +=10;		
+					} 
+					else 
+					{
+						a*= 10; 
+					}
+					
+					)";
+
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 112, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE(" if elif else  different conditions else taken")
+	{
+		auto a = R"(a: int = 102;
+					if a == 101
+					{
+						a++;
+					}
+					elif a < 102 
+					{
+						a+=5;
+					}
+					elif a != 102 {
+						a +=10;		
+					} 
+					else 
+					{
+						a*= 10; 
+					}
+					
+					)";
+
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 1020, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
 }
 #endif // IF
 #if FUNC

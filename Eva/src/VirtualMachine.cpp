@@ -1465,6 +1465,23 @@ void VirtualMachine::GenerateCFG(Block* block)
 			}
 			break;
 		}
+		case TokenType::PLUS_PLUS:
+		case TokenType::MINUS_MINUS:
+		{
+			assert(instr.returnType != ValueType::NIL);
+			GenerateCFGOperand(instr.result,instr.returnType);
+			assert(instr.result.type != ValueType::NIL);
+			if (type == TokenType::PLUS_PLUS)
+			{
+				DETERMINE_OP_TYPE(instr.result.type, INCREMENT);
+			}
+			else if (type == TokenType::MINUS_MINUS)
+			{
+				DETERMINE_OP_TYPE(instr.result.type, DECREMENT);
+			}
+			EmitSet(currentFunc, instr.result);
+			break;
+		}
 		case TokenType::COLON:
 			break;
 		case TokenType::SEMICOLON:
@@ -1552,8 +1569,6 @@ void VirtualMachine::GenerateCFG(Block* block)
 			}
 			break;
 		}
-		case TokenType::MINUS_MINUS:
-			break;
 		case TokenType::IDENTIFIER:
 			break;
 		case TokenType::ERROR:

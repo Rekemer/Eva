@@ -272,7 +272,7 @@ void CFG::Rename(Block* b)
 	for (auto it = b->instructions.rbegin(); it != b->instructions.rend(); ++it)
 	{
 		if (it->variables.size() > 0) continue;
-		if (it->instrType == TokenType::JUMP) continue;
+		if (it->instrType == TokenType::JUMP || it->instrType == TokenType::BRANCH) continue;
 		if (it->result.IsVariable())
 		{
 			auto varName = it->result.value.AsString();
@@ -583,7 +583,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 				std::vector<Instruction> branchesElif;
 				auto elifNode = flows->As<Expression>()->left.get();
 				bool firstElif = false;
-				while (elifNode->type != TokenType::BLOCK && elifNode->type == TokenType::IF)
+				while (elifNode != nullptr && elifNode->type != TokenType::BLOCK && elifNode->type == TokenType::IF)
 				{
 					currentBlock = parentBlock;
 					Instruction branchElif = Instruction{ TokenType::BRANCH,{},{},NullOperand() };
@@ -734,29 +734,10 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		}
 		else if (type == TokenType::PLUS_PLUS || type == TokenType::MINUS_MINUS)
 		{
-			Operand op1{ ValueContainer{1},true,0 };
 			auto var = ConvertExpressionAST(expr->left.get());
-			auto temp = CreateTemp();
-			temp.type = ValueType::INT;
-			// no default constructor? should we add it?
-			if (type == TokenType::PLUS_PLUS)
-			{
-				auto change = Instruction{ TokenType::PLUS,op1,var,temp};
-				auto eq = Instruction{ TokenType::EQUAL,{},temp,var };
-				GiveType(change, temp, expr->value.type);
-				GiveType(eq, var, eq.returnType);
-				currentBlock->instructions.push_back(change);
-				currentBlock->instructions.push_back(eq);
-			}
-			else
-			{
-				auto change = Instruction{ TokenType::MINUS,var,op1,temp };
-				auto eq = Instruction{ TokenType::EQUAL,{},temp,var };
-				GiveType(change, temp, expr->value.type);
-				GiveType(eq, var, eq.returnType);
-				currentBlock->instructions.push_back(change);
-				currentBlock->instructions.push_back(eq);
-			}
+			Instruction action{ type,{},{},var };
+			GiveType(action, action.result, expr->value.type);
+			currentBlock->instructions.push_back(action);
 			return var;
 
 		}

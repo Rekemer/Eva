@@ -54,6 +54,7 @@ struct Instruction
 	Operand operLeft;
 	Operand operRight;
 	Operand result;
+	Instruction() = default;
 	Instruction(TokenType instr, Operand left, Operand right, Operand res) : 
 		instrType{ instr }, 
 		operLeft{left},
