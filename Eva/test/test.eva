@@ -119,51 +119,81 @@
 //	Print a;
 //}
 				
-//a: int = 105;
-//if a == 101
-//{
-//	a++;
-//}
-//elif a == 102 
-//{
-//	a+=5;
-//}
-//elif a == 105 {
-//a +=10;		
-//} 				
-				
+a: int = 121;
 
+if true
+{
+	a++;
+	if  true 
+	{
+		Print "Indeed";
+		if  a > 123 
+		{
+			Print "a > 121";
+		}
+		elif a == 122 
+		{
+			Print "a == 122";
+		}
+		else
+		{
+			Print "a < 121";
+		}
+	}
+	else
+	{
+		Print "NO";
+	}
+	Print "Second";
+}
+//Print "first";
+//if a == 101 
+//{
+//	Print "a is equal 101";	
+//}
+//elif a == 105 
+//{
+//	Print "a is equal 105";	
+//
+//}
+//else
+//{
+//Print "a else";
+// a+=2;
+//}
+//				
+//Print a;
 
 //d_g :=0;
-//		c_g :=0;
-//		{
-//			  a: int = 1;
-//			  a++;
-//			  a = 5;
-//			  b:int = a;
-//			  c:int = 2;
-//			  {
-//				 a := 5;
-//				 b:int =a;
-//				 c:int = 2;
-//			  }
-//			   d := 6;
-//			  d = 2 ;
-//			check := false;
-//			//if (check)
-//			//{
-//			//d = 5;
-//			//}
-//			//else 
-//			//{
-//			//d = 10;
-//			//}
-//			// c = 5;
-//			//d_g = d;
-//			//c_g = c;
-//			
-//		}
+//c_g :=0;
+		//{
+		//	//a: int = 1;
+		//	//a++;
+		//	//a = 5;
+		//	//b:int = a;
+		//	//c:int = 2;
+		//	//{
+		//	// a := 5;
+		//	// b:int =a;
+		//	// c:int = 2;
+		//	//}
+		//	 d := 6;
+		//	//d = 2 ;
+		//
+		//	check := false;
+		//	if (check)
+		//	{
+		//	//d = 5;
+		//	Print "hjah";
+		//	}
+		//	//else 
+		//	//{
+		//	//d = 10;
+		//	//}
+		//	// c = 5;
+		//	//d_g = d;
+		//	//c_g = c;
+		//	
+		//}
 
-		a: int = 100;
-		a--;
-		Print a;
+	

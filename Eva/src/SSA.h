@@ -99,6 +99,7 @@ struct Block
 
 	// next blocks - children
 	std::vector<Block*> blocks;
+	Block* merge; 
 	// number of block - number of node in graph
 	static inline int counterStraight = 0;
 	static inline int counterThen = 0;
@@ -130,7 +131,7 @@ public:
 	void InsertPhi();
 	void Debug();
 private:
-	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName);
+	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
 	int NewName(const std::string& name);
 	void Rename(Block* b);
 	void FindDoms();

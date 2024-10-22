@@ -47,6 +47,7 @@ enum class TokenType : uint8_t {
 	DECLARE,
 	JUMP,
 	BRANCH,
+	BRANCH_ELIF,
 	PHI,
 	
 };

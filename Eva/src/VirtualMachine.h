@@ -28,6 +28,7 @@ struct Expression;
 struct Scope;
 struct StackSim;
 struct Operand;
+struct Instruction;
 class CFG;
 class VirtualMachine
 {
@@ -54,6 +55,8 @@ public:
 	ValueType GetGlobalType(const std::string& str );
 	~VirtualMachine();
 private:
+	Block* HandleBranch(std::vector<Block*> branches, const Instruction& branch);
+	void GenerateBlockInstructions(Block* block);
 	ValueType GenerateAST(const Node* tree);
 	void GenerateCFG(Block* block);
 	void GenerateConstant(const ValueContainer& v);

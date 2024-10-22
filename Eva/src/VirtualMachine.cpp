@@ -420,6 +420,12 @@ ValueType VirtualMachine::GetVariableType (const  std::string& name, int depthOf
 }
 void VirtualMachine::GenerateConstant(const ValueContainer& v)
 {
+	if (v.type == ValueType::BOOL)
+	{
+		auto instr = v.As<bool>() ? (Bytecode)InCode::TRUE : (Bytecode)InCode::FALSE;
+		currentFunc->opCode.push_back(instr);
+		return;
+	}
 	currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
 	currentFunc->constants.push_back(v);
 	currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
@@ -618,12 +624,12 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 		 }
 		 case TokenType::TRUE:
 		 {
-			 currentFunc->opCode.push_back((uint8_t)InCode::TRUE);
+			 currentFunc->opCode.push_back((Bytecode)InCode::TRUE);
 			 return ValueType::BOOL;
 			 }
 		 case TokenType::FALSE:
 		 {
-			 currentFunc->opCode.push_back((uint8_t)InCode::FALSE);
+			 currentFunc->opCode.push_back((Bytecode)InCode::FALSE);
 			 return ValueType::BOOL;
 		 }
 		 case TokenType::GREATER:
@@ -636,7 +642,7 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 			 if (type == TokenType::GREATER_EQUAL)
 			 {
 				 DETERMINE_BOOL(left, right, LESS);
-				 currentFunc->opCode.push_back((uint8_t)InCode::NOT);
+				 currentFunc->opCode.push_back((Bytecode)InCode::NOT);
 			 }
 			 else
 			 {
@@ -1375,8 +1381,7 @@ void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrT
 	}
 	CAST_INT_FLOAT(type, instrType);
 }
-
-void VirtualMachine::GenerateCFG(Block* block)
+void VirtualMachine::GenerateBlockInstructions(Block* block)
 {
 	auto tokenToInCodeOp = [](TokenType type)
 		{
@@ -1424,7 +1429,7 @@ void VirtualMachine::GenerateCFG(Block* block)
 			{
 				GenerateCFGOperand(instr.operRight, instr.returnType);
 				if (type == TokenType::MINUS)
-				currentFunc->opCode.push_back((Bytecode)InCode::NEGATE);
+					currentFunc->opCode.push_back((Bytecode)InCode::NEGATE);
 				else currentFunc->opCode.push_back((Bytecode)InCode::NOT);
 				break;
 			}
@@ -1453,8 +1458,8 @@ void VirtualMachine::GenerateCFG(Block* block)
 				GenerateCFGOperand(instr.operRight, instr.returnType);
 			}
 
-			
-			
+
+
 			if (left == right && left == ValueType::STRING)
 			{
 				currentFunc->opCode.push_back((Bytecode)InCode::ADD_STRING);
@@ -1469,7 +1474,7 @@ void VirtualMachine::GenerateCFG(Block* block)
 		case TokenType::MINUS_MINUS:
 		{
 			assert(instr.returnType != ValueType::NIL);
-			GenerateCFGOperand(instr.result,instr.returnType);
+			GenerateCFGOperand(instr.result, instr.returnType);
 			assert(instr.result.type != ValueType::NIL);
 			if (type == TokenType::PLUS_PLUS)
 			{
@@ -1506,8 +1511,8 @@ void VirtualMachine::GenerateCFG(Block* block)
 				std::string name = assigned.value.AsString();
 				if (!assigned.IsTemp())
 				{
-					EmitGet(currentFunc,assigned);
-					
+					EmitGet(currentFunc, assigned);
+
 				}
 			}
 			assert(expressionType != ValueType::NIL);
@@ -1515,7 +1520,7 @@ void VirtualMachine::GenerateCFG(Block* block)
 			if (!res.IsTemp() && type == TokenType::EQUAL || type == TokenType::DECLARE
 				&& res.depth == 0)
 			{
-				EmitSet(currentFunc,res);
+				EmitSet(currentFunc, res);
 			}
 			break;
 		}
@@ -1531,7 +1536,7 @@ void VirtualMachine::GenerateCFG(Block* block)
 				currentFunc->opCode.push_back((Bytecode)InCode::NOT);
 			}
 		}
-			break;
+		break;
 		case TokenType::GREATER:
 		case TokenType::GREATER_EQUAL:
 		{
@@ -1550,14 +1555,14 @@ void VirtualMachine::GenerateCFG(Block* block)
 			}
 			break;
 		}
-			break;
+		break;
 		case TokenType::LESS:
 		case TokenType::LESS_EQUAL:
 		{
 			GenerateCFGOperand(instr.operLeft, instr.returnType);
 			GenerateCFGOperand(instr.operRight, instr.returnType);
 			auto left = instr.operLeft.type;
-			auto right= instr.operRight.type;
+			auto right = instr.operRight.type;
 			if (type == TokenType::LESS_EQUAL)
 			{
 				DETERMINE_BOOL(left, right, GREATER);
@@ -1672,58 +1677,83 @@ void VirtualMachine::GenerateCFG(Block* block)
 			break;
 		case TokenType::BRANCH:
 		{
-			// condition
-			auto& conditionOp= instr.operRight;
 
-
-			GenerateCFGOperand(conditionOp,instr.returnType);
-			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
-			EmitPop(currentFunc->opCode);
-			// then
-			auto thenBlock = instr.targets.begin();
-			GenerateCFG(*thenBlock);
-			auto indexJump = Jump(currentFunc->opCode);
-			currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
-			auto elif = instr.targets.begin() + 1;
-			// elif
-			auto elseBlock = instr.targets.end() - 1;
-			auto condIndex = 0;
-			//while (condIndex++, elif != elseBlock)
-			//{
-			//	EmitPop(currentFunc->opCode);
-			//	GenerateCFGOperand(instr.operRight, instr.returnType);
-			//	auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
-			//	EmitPop(currentFunc->opCode);
-			//	// then
-			//	auto thenBlock = instr.targets.begin();
-			//	GenerateCFG(*elif);
-			//	auto indexJump = Jump(currentFunc->opCode);
-			//	currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
-			//	(*elif)->isVisited = true;
-			//	elif++;
-			//}
+			auto& branches = block->blocks;
+			auto mergeBlock = HandleBranch(branches,instr);
 			
-			//else
-			EmitPop(currentFunc->opCode);
-			GenerateCFG(*elseBlock);
-			currentFunc->opCode[indexJump] = currentFunc->opCode.size() - indexJump;
-			(*elseBlock)->isVisited = true;
-
+			//if (mergeBlock != nullptr)
+			//GenerateCFG(mergeBlock);
 		}
 			break;
 		case TokenType::PHI:
+		case TokenType::BRANCH_ELIF:
 			break;
 		default:
 			assert(false);
 			break;
 		}
 	}
-
 	block->isVisited = true;
+}
+Block* VirtualMachine::HandleBranch(std::vector<Block*> branches,const  Instruction& instr)
+{
+	std::vector<int> indexJumps;
+	// condition
+	auto& conditionOp = instr.operRight;
+	GenerateCFGOperand(conditionOp, instr.returnType);
+
+	auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+	auto thenBlock = branches[0];
+	EmitPop(currentFunc->opCode);
+	// then
+	//auto thenBlock = instr.targets.begin();
+	GenerateBlockInstructions(thenBlock);
+	auto indexJump = Jump(currentFunc->opCode);
+	indexJumps.push_back(indexJump);
+	currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
+	
+	//elif
+	for (int i = 1; i < branches.size() - 1; i += 1)
+	{
+		EmitPop(currentFunc->opCode);
+		auto elseBlock = branches[i];
+		// condition
+		GenerateBlockInstructions(elseBlock);
+		indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+		EmitPop(currentFunc->opCode);
+		// elif then
+		GenerateBlockInstructions(elseBlock->blocks[0]);
+		indexJump = Jump(currentFunc->opCode);
+		indexJumps.push_back(indexJump);
+		currentFunc->opCode[indexJumpFalse] = (indexJump + 1) - indexJumpFalse;
+
+
+		//auto elif = instr.targets.begin() + 1;
+		// elif
+		//auto elseBlock = instr.targets.end() - 1;
+
+	}
+	//else
+	EmitPop(currentFunc->opCode);
+	GenerateBlockInstructions(branches.back());
+	auto mergeBlock = branches.back()->merge;
+	for ( auto index : indexJumps)
+	{
+		currentFunc->opCode[index] = currentFunc->opCode.size() - index;
+	}
+
+	GenerateBlockInstructions(mergeBlock);
+	return mergeBlock;
+}
+void VirtualMachine::GenerateCFG(Block* block)
+{
+
+	GenerateBlockInstructions(block);
 	for (auto child : block->blocks)
 	{
 		if(!child->isVisited)
 		GenerateCFG(child);
+	
 	}
 }
 

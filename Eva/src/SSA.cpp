@@ -126,7 +126,7 @@ Operand NullOperand()
 };
 
 
-Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* block, const std::string& BlockName)
+Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* block, const std::string& BlockName, const std::string& mergeName)
 {
 	auto then = CreateBlock(BlockName, { parentBlock });
 
@@ -137,7 +137,7 @@ Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* bloc
 		ConvertStatementAST(block);
 	}
 
-	auto mergeName = std::format("[merge{}]", std::to_string(Block::counterMerge));
+	
 	ValueContainer name = ValueContainer{ mergeName };
 	Operand mergeOperand = { name, false, LABEL_VERSION };
 	currentBlock->instructions.
@@ -565,9 +565,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto thenBlockName = std::format("[then_{}]", std::to_string(Block::counterThen++));
 		std::vector<Block*> mergeParents;
 		std::vector<Block*> elifBlocks;
-
+		auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge++));
 		//// then
-		auto then = CreateBranchBlock(parentBlock, branch, thenBranch, thenBlockName);
+		auto then = CreateBranchBlock(parentBlock, branch, thenBranch, thenBlockName, mergeName);
 		parentBlock->instructions.push_back(branch);
 		mergeParents.push_back(then);
 
@@ -586,7 +586,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 				while (elifNode != nullptr && elifNode->type != TokenType::BLOCK && elifNode->type == TokenType::IF)
 				{
 					currentBlock = parentBlock;
-					Instruction branchElif = Instruction{ TokenType::BRANCH,{},{},NullOperand() };
+					Instruction branchElif = Instruction{ TokenType::BRANCH_ELIF,{},{},NullOperand() };
 					auto elifBlockName = std::format("[elif_{}]", std::to_string(Block::counterElif));
 					auto conditionNode = elifNode->As<Expression>()->left.get();
 
@@ -610,7 +610,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 					// body 
 					auto elifFlows = elifNode->As<Expression>()->right.get();
 					auto block = elifFlows->As<Expression>()->right.get();
-					auto body = CreateBranchBlock(conditionBlock, branchElif, block,elifBlockName);
+					auto body = CreateBranchBlock(conditionBlock, branchElif, block,elifBlockName, mergeName);
 
 					conditionBlock->instructions.push_back(branchElif);
 
@@ -639,7 +639,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		
 		auto elseBranch = flows;
 		auto elseBlockName = std::format("[else_{}]", std::to_string(Block::counterElse++));
-		auto els = CreateBranchBlock(parentBlock, branch, elseBranch, elseBlockName);
+		auto els = CreateBranchBlock(parentBlock, branch, elseBranch, elseBlockName, mergeName);
 
 		if (prevConditionBlock)
 		{
@@ -654,15 +654,18 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 
 
-		auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge));
-		auto merge = CreateBlock(mergeName, mergeParents);
-		// phi function
+		auto merge = CreateBlock(mergeName, {});
 
-		then->blocks.push_back(merge);
-		els->blocks.push_back(merge);
+
+		for (auto parent : mergeParents)
+		{
+			parent->merge = merge;
+		}
+
 		for (auto& elif : elifBlocks)
 		{
-			elif->blocks.push_back(merge);
+			elif->merge = merge;
+			//elif->blocks.push_back(merge);
 		}
 		currentBlock = merge;
 

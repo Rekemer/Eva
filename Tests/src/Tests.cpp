@@ -4,6 +4,8 @@
 #include "Compile.h"
 #include "Value.h"
 #include "HashTable.h"
+#include <format>
+
 
 #define EXPR 1
 #define LOOPS 0
@@ -12,7 +14,7 @@
 #define STRINGS 0
 #define SCOPE 1
 #define DEDUCTION 0
-#define IF 0
+#define IF 1
 #define CONSTANT_FOLD 0
 
 struct Tables
@@ -844,26 +846,54 @@ TEST_CASE("if statTment")
 		auto isPass = CheckVariable<int>("a", 112, ValueType::INT, vm);
 		CHECK(isPass);
 	}
-	SUBCASE(" if elif else  different conditions else taken")
+	SUBCASE("Nested if statements in ifs, elifs, and else being taken")
 	{
 		auto a = R"(a: int = 102;
-					if a == 101
-					{
-						a++;
-					}
-					elif a < 102 
-					{
-						a+=5;
-					}
-					elif a != 102 {
-						a +=10;		
-					} 
-					else 
-					{
-						a*= 10; 
-					}
-					
-					)";
+                if a == 101
+                {
+                    if a > 100
+                    {
+                        a++;
+                    }
+                    else
+                    {
+                        a--;
+                    }
+                }
+                elif a < 102 
+                {
+                    if a > 50
+                    {
+                        a += 5;
+                    }
+                    else
+                    {
+                        a -= 5;
+                    }
+                }
+                elif a != 102 {
+                    if a % 2 == 0
+                    {
+                        a +=10;     
+                    }
+                    else
+                    {
+                        a +=20;
+                    }
+                } 
+                else 
+                {
+                    if a == 102
+                    {
+                        a *= 10; 
+                    }
+                    else
+                    {
+                        a /= 10;
+                    }
+                }
+                
+                )";
 
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<int>("a", 1020, ValueType::INT, vm);
