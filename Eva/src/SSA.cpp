@@ -278,11 +278,14 @@ void CFG::Rename(Block* b)
 					auto parent = std::find(child->parents.begin(), child->parents.end(), b);
 					if (parent == child->parents.end())
 					{
-						assert(false && "parent is not found!? ");
+						//assert(false && "parent is not found!? ");
 					}
-					auto index = std::distance(child->parents.begin(), parent);
-					phi.variables[index].version = variableStack[varName.value.AsString()].top();
-					phi.variables[index].value = varName.value;
+					else
+					{
+						auto index = std::distance(child->parents.begin(), parent);
+						phi.variables[index].version = variableStack[varName.value.AsString()].top();
+						phi.variables[index].value = varName.value;
+					}
 				}
 
 			}

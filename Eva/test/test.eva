@@ -27,26 +27,28 @@
 //Print "Second";
 
 
-a:= 2;
-{
-	a:= 4;
-	if a == 4 
-	{
-		Print "local a is now 10";
-		a = 10;
-		if  a== 10 
-		{
-			Print "then";
-			a = 5;
-		}
-		else 
-		{
-			a = 4;
-		}
-		Print "merge nested";
-	}
-	Print "merge out";
-}
+//a:= 2;
+//{
+//	a:= 4;
+//	if a == 4 
+//	{
+//		Print "local a is now 10";
+//		a = 10;
+//		if  a== 10 
+//		{
+//			Print "then";
+//			a = 5;
+//		}
+//		else 
+//		{
+//			a = 4;
+//		}
+//		Print "merge nested";
+//	}
+//	Print "merge out";
+//}
+
+
 	//else 
 	//{
 	//	a = 11;
@@ -79,47 +81,48 @@ a:= 2;
 //		Print "global a is 14";
 //		a = 14;
 //	}
-//a: int = 102;
-//              if a == 101
-//              {
-//                  if a > 100
-//                  {
-//                      a++;
-//                  }
-//                  else
-//                  {
-//                      a--;
-//                  }
-//              }
-//              elif a < 102 
-//              {
-//                  if a > 50
-//                  {
-//                      a += 5;
-//                  }
-//                  else
-//                  {
-//                      a -= 5;
-//                  }
-//              }
-//              elif a != 102 {
-//                  if a % 2 == 0
-//                  {
-//                      a +=10;     
-//                  }
-//                  else
-//                  {
-//                      a +=20;
-//                  }
-//              } 
-//              else 
-//              {
-//                  if a == 102
-//                  {
-//                      a *= 10; 
-//                  }
-//                  else
-//                  {
-//                      a /= 10;
-//                  }
-//              }
+a: int = 102;
+if a == 101
+{
+    if a > 100
+    {
+        a++;
+    }
+    else
+    {
+        a--;
+    }
+}
+elif a < 102 
+{
+    if a > 50
+    {
+        a += 5;
+    }
+    else
+    {
+        a -= 5;
+    }
+}
+elif a != 102 {
+    if a % 2 == 0
+    {
+        a +=10;     
+    }
+    else
+    {
+        a +=20;
+    }
+} 
+else 
+{
+    if a == 102
+    {
+        a *= 10; 
+    }
+    else
+    {
+        a /= 10;
+    }
+}
+
