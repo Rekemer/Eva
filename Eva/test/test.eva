@@ -1,113 +1,3 @@
-//Print "sd";
-
-//{
-//  a: int = 1;
-//  a++;
-//  a = 5;
-//  b:int = a + 2;
-//  c:int = 2;
-// // {
-////	 a := 5;
-////	 b:int =a;
-////	 c:int = 2;
-// // }
-//  // SSA form 
-//  // t = 4 + 1;
-//  // t1 = 2 + t;
-//  // d := t1;
-//   d := 6;
-//   //d = 5;
-//check := 21;
-//if check == 20
-//{
-//d /= 5;
-//}
-//elif check == 21
-//{
-//d *= 10;
-//}
-//elif check == 22
-//{
-//d += 11;
-//}
-//else 
-//{
-// d -= 2;
-//}
-// //Print d;
-// //c = 5;
-// //Print c;
-//
-//
-//}
-//a := 2;
-//b := 2;
-//e_varr := a  + b ;
-//t_0 := 5;
-// c := a - b;
-//str := "String SSA";
-//e :=5 + 2 * 4/ 4 + 1 - 10;
-//mod := 3.0 % 2.3;
-//mod = a % b;
-//mod = 2;
-//Print c;
-//Print mod;
-//Print e;
-//Print e_varr;
-//Print str;
-//Print str;
-//Print mod;
-
-
-//{
-//	a:= 4;
-//	b:= 1;
-//	c:= 2;
-//	str:= "haha";
-//
-//	{
-//		b:=6;
-//		//Print a;
-//		//Print b;
-//		//Print c;
-//		//Print str;
-//		{
-//			//Print str;
-//			//Print b;
-//		}
-//		Print c;
-//	}
-//		Print c;
-//		Print b;
-//}
-
-
-
-//{
-//	c:= 4;
-//	b:= 4;
-//	d:= 4;
-//	Print d;
-//}
-//
-//a+=2.0;
-//Print a;
-//{
-//	b : int = 15;
-//	b+=2.0;
-//	b-=2;
-//	b/=5;
-//	b*=4.0;
-//	a = b;
-//}
-//Print a;
-//
-//
-//
-//Print 2 + 2+ 2+a+a;
-
-
-
 //{
 //	a: int = 100;
 //	a++;
@@ -119,81 +9,117 @@
 //	Print a;
 //}
 				
-a: int = 121;
+//a: int = 123;
 
-if true
-{
-	a++;
-	if  true 
-	{
-		Print "Indeed";
-		if  a > 123 
-		{
-			Print "a > 121";
-		}
-		elif a == 122 
-		{
-			Print "a == 122";
-		}
-		else
-		{
-			Print "a < 121";
-		}
-	}
-	else
-	{
-		Print "NO";
-	}
-	Print "Second";
-}
-//Print "first";
-//if a == 101 
+//a++;
+//Print "Indeed";
+//if  a > 123 
 //{
-//	Print "a is equal 101";	
+//	 a = 1;
+//	Print "a > 123";
 //}
-//elif a == 105 
+//elif a == 122 
 //{
-//	Print "a is equal 105";	
+//	 a = 0;
+//	Print "a == 122";
+//}
 //
-//}
-//else
-//{
-//Print "a else";
-// a+=2;
-//}
-//				
-//Print a;
+//Print "Second";
 
-//d_g :=0;
-//c_g :=0;
-		//{
-		//	//a: int = 1;
-		//	//a++;
-		//	//a = 5;
-		//	//b:int = a;
-		//	//c:int = 2;
-		//	//{
-		//	// a := 5;
-		//	// b:int =a;
-		//	// c:int = 2;
-		//	//}
-		//	 d := 6;
-		//	//d = 2 ;
-		//
-		//	check := false;
-		//	if (check)
-		//	{
-		//	//d = 5;
-		//	Print "hjah";
-		//	}
-		//	//else 
-		//	//{
-		//	//d = 10;
-		//	//}
-		//	// c = 5;
-		//	//d_g = d;
-		//	//c_g = c;
-		//	
-		//}
 
-	
+a:= 2;
+{
+	a:= 4;
+	if a == 4 
+	{
+		Print "local a is now 10";
+		a = 10;
+		if  a== 10 
+		{
+			Print "then";
+			a = 5;
+		}
+		else 
+		{
+			a = 4;
+		}
+		Print "merge nested";
+	}
+	Print "merge out";
+}
+	//else 
+	//{
+	//	a = 11;
+	//	Print "local a is now 11";
+	//}
+	//Print a;
+//}
+// a:= 2;
+//if a == 2 
+//	{
+//		Print "global a is now 10";
+//		a = 10;
+//
+//	}
+//	else 
+//	{
+//		a = 11;
+//		Print "global a is now 11";
+//	}
+//a = 3;
+//a--;
+//if a == 2 
+//	{	
+//		Print "global a is 13";
+//		a = 13;
+//
+//	}
+//	else 
+//	{
+//		Print "global a is 14";
+//		a = 14;
+//	}
+//a: int = 102;
+//              if a == 101
+//              {
+//                  if a > 100
+//                  {
+//                      a++;
+//                  }
+//                  else
+//                  {
+//                      a--;
+//                  }
+//              }
+//              elif a < 102 
+//              {
+//                  if a > 50
+//                  {
+//                      a += 5;
+//                  }
+//                  else
+//                  {
+//                      a -= 5;
+//                  }
+//              }
+//              elif a != 102 {
+//                  if a % 2 == 0
+//                  {
+//                      a +=10;     
+//                  }
+//                  else
+//                  {
+//                      a +=20;
+//                  }
+//              } 
+//              else 
+//              {
+//                  if a == 102
+//                  {
+//                      a *= 10; 
+//                  }
+//                  else
+//                  {
+//                      a /= 10;
+//                  }
+//              }

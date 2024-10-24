@@ -1742,6 +1742,7 @@ Block* VirtualMachine::HandleBranch(std::vector<Block*> branches,const  Instruct
 		currentFunc->opCode[index] = currentFunc->opCode.size() - index;
 	}
 
+	if (mergeBlock != nullptr)
 	GenerateBlockInstructions(mergeBlock);
 	return mergeBlock;
 }

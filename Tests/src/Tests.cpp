@@ -11,11 +11,11 @@
 #define LOOPS 0
 #define FUNC 0
 #define VAR 1
-#define STRINGS 0
+#define STRINGS 1
 #define SCOPE 1
-#define DEDUCTION 0
+#define DEDUCTION 1
 #define IF 1
-#define CONSTANT_FOLD 0
+#define CONSTANT_FOLD 1
 
 struct Tables
 {
@@ -986,7 +986,7 @@ TEST_CASE("functions")
 }
 
 #endif
-#if CONSTANT_FOLD
+#if CONSTANT_FOLD && FUNC
 
 TEST_CASE("constant folding")
 {

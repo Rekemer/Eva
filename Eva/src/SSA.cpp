@@ -101,11 +101,6 @@ Block* CFG::CreateBlock(const std::string& name, std::vector<Block*> parents)
 	Block* block = &graph[name];
 	block->name = name;
 	block->parents = parents;
-
-	for (auto parent : parents)
-	{
-		parent->blocks.push_back(block);
-	}
 	return block;
 }
 int GetVersion(std::unordered_map<std::string, int>& map, std::string& name)
@@ -130,6 +125,7 @@ Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* bloc
 {
 	auto then = CreateBlock(BlockName, { parentBlock });
 
+	parentBlock->blocks.push_back(then);
 	currentBlock = then;
 
 	if (block != nullptr)
@@ -158,6 +154,34 @@ void PrintBlock(Block* block)
 	{
 		std::cout << instr;
 	}
+
+	std::cout << "[dominator children]\n[ ";
+
+	for (auto dominator : block->dominatorChildren)
+	{
+		if (dominator != block)
+			std::cout << dominator->name << " ";
+	}
+	std::cout << "]" << std::endl;
+
+	std::cout << "[children]\n[ ";
+
+	for (auto dominator : block->blocks)
+	{
+		if (dominator != block)
+			std::cout << dominator->name << " ";
+	}
+	std::cout << "]" << std::endl;
+
+	std::cout << "[parents]\n[ ";
+
+	for (auto dominator : block->parents)
+	{
+		if (dominator != block)
+			std::cout << dominator->name << " ";
+	}
+	std::cout << "]" << std::endl;
+
 	std::cout << "[dominators]\n[ ";
 
 	for (auto dominator : block->dom)
@@ -237,29 +261,63 @@ void CFG::Rename(Block* b)
 			else name = instr.result.value.AsString();
 		}
 	}
+
+
+	auto updatePhiParam = [](Block*b, Block* child,
+		std::unordered_map<std::string, std::stack<int>>& variableStack)
+		{
+			for (auto index : child->phiInstructionIndexes)
+			{
+				auto& phi = child->instructions[index];
+				auto& varName = phi.result;
+				if (variableStack[varName.value.AsString()].size() > 0)
+				{
+					// we cannot simply iterate over stack
+					// because the parents of merge node 
+					// have not been proccesed yet
+					auto parent = std::find(child->parents.begin(), child->parents.end(), b);
+					if (parent == child->parents.end())
+					{
+						assert(false && "parent is not found!? ");
+					}
+					auto index = std::distance(child->parents.begin(), parent);
+					phi.variables[index].version = variableStack[varName.value.AsString()].top();
+					phi.variables[index].value = varName.value;
+				}
+
+			}
+		};
+
 	// update phi parametrs
 	for (auto child : b->blocks)
 	{
-		for (auto index : child->phiInstructionIndexes)
-		{
-			auto& phi = child->instructions[index];
-			auto& varName = phi.result;
-			if (variableStack[varName.value.AsString()].size() > 0)
-			{
-				// we cannot simply iterate over stack
-				// because the parents of merge node 
-				// have not been proccesed yet
-				auto parent = std::find(child->parents.begin(), child->parents.end(), b);
-				if (parent == child->parents.end())
-				{
-					assert(false && "parent is not found!? ");
-				}
-				auto index = std::distance(child->parents.begin(),parent);
-				phi.variables[index].version = variableStack[varName.value.AsString()].top();
-				phi.variables[index].value= varName.value;
-			}
 
-		}
+		updatePhiParam(b, child, variableStack);
+		//for (auto index : child->phiInstructionIndexes)
+		//{
+		//	auto& phi = child->instructions[index];
+		//	auto& varName = phi.result;
+		//	if (variableStack[varName.value.AsString()].size() > 0)
+		//	{
+		//		// we cannot simply iterate over stack
+		//		// because the parents of merge node 
+		//		// have not been proccesed yet
+		//		auto parent = std::find(child->parents.begin(), child->parents.end(), b);
+		//		if (parent == child->parents.end())
+		//		{
+		//			assert(false && "parent is not found!? ");
+		//		}
+		//		auto index = std::distance(child->parents.begin(),parent);
+		//		phi.variables[index].version = variableStack[varName.value.AsString()].top();
+		//		phi.variables[index].value= varName.value;
+		//	}
+		//
+		//}
+	}
+
+	if (b->merge)
+	{
+		updatePhiParam(b, b->merge, variableStack);
 	}
 
 	for (auto s : b->dominatorChildren)
@@ -375,6 +433,12 @@ void CFG::Bfs(Block* start, std::function<void (Block*)> action)
 				blockQueue.push(block);
 				visitedBlocks.insert(block);
 			}
+			auto merge = block->merge;
+			if (merge != nullptr && visitedBlocks.find(merge) == visitedBlocks.end())
+			{
+				blockQueue.push(merge);
+				visitedBlocks.insert(merge);
+			}
 		}
 	}
 }
@@ -404,7 +468,7 @@ void  CFG::InitLocal(Operand& op,const std::string& name)
 }
 void CFG::InitGlobal(Operand& op,const std::string& name)
 {
-	globalAssigned[name].push_back(currentBlock);
+	localAssigned[name].push_back(currentBlock);
 	op.type = vm->GetGlobalType(name);
 	op.depth = 0;
 }
@@ -569,7 +633,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		//// then
 		auto then = CreateBranchBlock(parentBlock, branch, thenBranch, thenBlockName, mergeName);
 		parentBlock->instructions.push_back(branch);
-		mergeParents.push_back(then);
+		mergeParents.push_back(currentBlock);
 
 		bool isElseCase = flows->As<Expression>()->left != nullptr;
 
@@ -592,7 +656,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 					auto conditionName = std::format("[elif_condition_{}]", std::to_string(Block::counterElif++));
 					auto conditionBlock = CreateBlock(conditionName, { currentBlock });
-
+					currentBlock->blocks.push_back(conditionBlock);
 					if (prevConditionBlock)
 					{
 						prevConditionBlock->instructions.back().targets.push_back(conditionBlock);
@@ -617,7 +681,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 				
 
-					mergeParents.push_back(body);
+					mergeParents.push_back(currentBlock);
 					elifBlocks.push_back(body);
 					branchesElif.push_back(branchElif);
 
@@ -646,7 +710,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 			prevConditionBlock->instructions.back().targets.push_back(els);
 		}
 
-		mergeParents.push_back(els);
+		mergeParents.push_back(currentBlock);
 
 
 
@@ -654,12 +718,13 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 
 
-		auto merge = CreateBlock(mergeName, {});
-
+		auto merge = CreateBlock(mergeName, { });
 
 		for (auto parent : mergeParents)
 		{
+
 			parent->merge = merge;
+			merge->parents.push_back(parent);
 		}
 
 		for (auto& elif : elifBlocks)
@@ -824,9 +889,8 @@ void CFG::FindIDoms()
 			// Check if d is dominated by any other dominator in strict_dom
 			for (Block* other_d : strict_dom) {
 				if (other_d == d) continue;
-				if (d->dom.find(other_d) != d->dom.end()) {
-					// d is dominated by other_d, so it's not the immediate dominator
-					// if we follow the definition
+				if (other_d->dom.find(d) != other_d->dom.end()) {
+					// If d is dominated by another dominator, it's not the immediate dominator
 					isImmediate = false;
 					break;
 				}
