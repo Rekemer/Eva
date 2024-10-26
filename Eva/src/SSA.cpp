@@ -554,7 +554,11 @@ void GiveType(Instruction& instr, Operand& resOp, ValueType type)
 	instr.returnType = type;
 	resOp.type = type;
 }
-
+ValueType HighestType(ValueType a, ValueType b) {
+	// Define a hierarchy for types, where higher value means stronger type.
+	if (a > b) return a;
+	return b;
+}
 // create temp because it is separate operation which is stored
 // in temp variable
 Operand CFG::UnaryInstr(const Expression* expr, TokenType type)
@@ -566,13 +570,14 @@ Operand CFG::UnaryInstr(const Expression* expr, TokenType type)
 	currentBlock->instructions.push_back(instr);
 	return res;
 }
+
 Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 {
 	auto left = ConvertExpressionAST(expr->left.get());
 	auto right = ConvertExpressionAST(expr->right.get());
 	auto res = CreateTemp();
 	Instruction instr{ type,left,right,res };
-	GiveType(instr, res, expr->value.type);
+	GiveType(instr, res, HighestType(left.type,right.type));
 	currentBlock->instructions.push_back(instr);
 	return res;
 }
@@ -622,6 +627,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 	case TokenType::CONTINUE:
 	case TokenType::BREAK:
+	{
+		Instruction command= Instruction{ type,{},{},NullOperand() };
+		currentBlock->instructions.push_back(command);
+		break;
+	}
 	case TokenType::FOR:
 	case TokenType::FUN:
 	case TokenType::IF:
@@ -764,7 +774,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto parentBlock = currentBlock;
 		auto whileConditionName = std::format("[while_condition_{}]", Block::counterWhileCondition++);
 		Operand condOperand= { whileConditionName , false, LABEL_VERSION };
-		auto condJump = Instruction{ TokenType::JUMP,{},{},  NullOperand() };
+		auto condJump = Instruction{ TokenType::JUMP_WHILE,{},{},  NullOperand() };
 		auto condition = CreateBlock(whileConditionName, {currentBlock});
 		condJump.targets.push_back(condition);
 		currentBlock->instructions.

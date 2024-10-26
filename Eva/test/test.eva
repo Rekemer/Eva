@@ -131,14 +131,33 @@
 
 
 
-a := 10;
+//a := 10;
+//
+//e := 4;
+//while a > 0
+//{
+//	a--;
+//	//e = 4;
+//	if  a % 2  == 1 
+//	{
+//		continue;
+//	}
+//	Print a;
+//	Print "while loop";
+//}
+//Print "end";
 
-e := 4;
-while a > 10 
-{
-	a--;
-	e = 4;
-	Print "while loop";
-	e = 5;
-}
-Print "end";
+g := 0;
+					a := 0;
+					//while a < 5
+					//{	
+					//	a++;
+					//	if (a % 2 == 1) == true
+					//	{
+					//		continue;
+					//	}
+					//	//Print a;
+					//	g+=a;
+					//}
+Print g;
+Print 2.0 > 2;

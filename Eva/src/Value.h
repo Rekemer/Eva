@@ -11,9 +11,9 @@
 // could be a template?
 enum class ValueType
 {
-	FLOAT,
-	INT,
 	BOOL,
+	INT,
+	FLOAT,
 
 	STRING,
 	FUNCTION ,

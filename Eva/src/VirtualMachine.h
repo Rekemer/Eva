@@ -108,6 +108,7 @@ private:
 	// to come back and  patch it with correct distance
 	// for a jump
 	std::stack<int> m_BreakIndexes;
+	int conditionIndex = -1;
 public:
 	Scope* currentScope= nullptr;
 };

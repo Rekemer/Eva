@@ -7,6 +7,7 @@ std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::COMMA, "COMMA"},
 		{TokenType::DOT, "DOT"},
 		{TokenType::MINUS, "MINUS"},
+		{TokenType::PERCENT, "PERCENT"},
 		{TokenType::PLUS, "PLUS"},
 		{TokenType::SEMICOLON, "SEMICOLON"},
 		{TokenType::SLASH, "SLASH"},
@@ -51,6 +52,7 @@ std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::BRANCH_ELIF, "BRANCH_ELIF"},
 		{TokenType::BRANCH_WHILE, "BRANCH_WHILE"},
 		{TokenType::JUMP_BRANCH, "JUMP_BRANCH"},
+		{TokenType::JUMP_WHILE, "JUMP_WHILE"},
 };
 std::string tokenToString(TokenType token) {
 

@@ -30,6 +30,8 @@ vmStack.push_back(ValueContainer{v2 operation v});\
 while(false)
 
 
+
+
 ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 {
 	assert(type != ValueType::NIL);
@@ -211,24 +213,7 @@ void VirtualMachine::ClearScope(const Scope* scope, StackSim& stackSim,
 		EmitPop(opCode);
 		popAmount--;
 	}
-	
-	//if (stackSim.m_StackPtr == scopes.back()->popAmount)
-	//{
-	//	stackSim.m_StackPtr = 0;
-	//	return;
-	//}
-	//if (stackSim.m_StackPtr < scopes.back()->popAmount)
-	//{
-	//	assert(false && "cannot pop so many elements");
-	//}
-	//for (int i = stackSim.m_StackPtr ; i > (stackSim.m_StackPtr - scopes.back()->popAmount); i-- )
-	//{
-	//	stackSim.locals[i-1] = stackSim.locals[i];
-	//}
-	//stackSim.m_StackPtr -= scopes.back()->popAmount;
 	currentScope = currentScope->prevScope;
-	//scopes.pop_back();
-	//assert(stackSim.m_StackPtr >= 0);
 }
 ValueType VirtualMachine::GetGlobalType(const std::string& str)
 {
@@ -1613,10 +1598,6 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::FALSE:
 			break;
-		case TokenType::CONTINUE:
-			break;
-		case TokenType::BREAK:
-			break;
 		case TokenType::FOR:
 			break;
 		case TokenType::FUN:
@@ -1685,6 +1666,18 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			GenerateBlockInstructions(target);
 			break;
 		}
+		case TokenType::JUMP_WHILE:
+		{
+
+			auto target = instr.targets[0];
+
+			if (!target->isVisited)
+			{
+				conditionIndex = currentFunc->opCode.size();
+				GenerateBlockInstructions(target);
+			}
+			break;
+		}
 		case TokenType::BRANCH:
 		{
 
@@ -1694,23 +1687,40 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		}
 		case TokenType::BRANCH_WHILE:
 		{
-			auto startIndex = currentFunc->opCode.size();
-			auto condition = instr.targets[0];
-			GenerateBlockInstructions(condition);
-
+			assert(conditionIndex != -1);
+			auto startIndex = conditionIndex;
 			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
 			EmitPop(currentFunc->opCode);
 
-			auto body = block->blocks[0];
+			BeginContinue(startIndex);
+			auto prevSizeBreak = BeginBreak();
+			
+			auto body = instr.targets[0];
 			GenerateBlockInstructions(body);
+
 
 			auto jump = JumpBack(currentFunc->opCode);
 			// jumping backwards
 			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
 
+			EndContinue();
+			PatchBreak(prevSizeBreak);
+
 			EmitPop(currentFunc->opCode);
 			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
-			
+			conditionIndex = -1;
+			break;
+		}
+		case TokenType::CONTINUE:
+		{
+			int index = JumpBack(currentFunc->opCode);
+			assert(m_StartLoopIndexes.size() > 0);
+			currentFunc->opCode[index] = CalculateJumpIndex(currentFunc->opCode, m_StartLoopIndexes.top());
+			break;
+		}
+		case TokenType::BREAK:
+		{
+			m_BreakIndexes.push(Jump(currentFunc->opCode));
 			break;
 		}
 		case TokenType::PHI:

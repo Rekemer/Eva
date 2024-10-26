@@ -531,18 +531,7 @@ void Print(const Expression* tree, int level) {
 	 return false;
 	 }
  }
- bool isBinaryBoolOp(TokenType type)
- {
-	 return type == TokenType::EQUAL_EQUAL ||
-		 type == TokenType::OR || type == TokenType::AND || type == TokenType::BANG_EQUAL ||
-		 type == TokenType::GREATER || type == TokenType::GREATER_EQUAL || type == TokenType::LESS ||
-		 type == TokenType::LESS_EQUAL;
- }
- bool IsBinaryOp(TokenType type)
- {
-	 return type == TokenType::PLUS || type == TokenType::STAR ||
-		 type == TokenType::SLASH || type == TokenType::MINUS || isBinaryBoolOp(type);
- }
+
  void AST::CalculateConstant(TokenType op,Expression* left, Expression* right, Expression* newValue)
  {
 	 auto node = newValue;
@@ -746,7 +735,7 @@ void Print(const Expression* tree, int level) {
 			 else
 			 {
 				 CalculateConstant(expr->type,leftExpr,rightExpr,node);
-				 if (isBinaryBoolOp(expr->type))
+				 if (IsBinaryBoolOp(expr->type))
 				 {
 					 node->type = node->value.As<bool>() ? TokenType::TRUE : TokenType::FALSE;
 				 }
@@ -1294,7 +1283,8 @@ bool IsCastable(ValueType to, ValueType from)
 	}
 	return false;
 }
-
+// expr value type track the type all operands if needed must be casted to,
+// that is why == can have type FLOAT instead of BOOL
 TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 {
 	TokenType childType = TokenType::END;
@@ -1433,12 +1423,20 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		expr->type == TokenType::SLASH_EQUAL ||
 		expr->type == TokenType::MINUS_EQUAL ||
 		expr->type == TokenType::STAR_EQUAL ;
+
+	
 	if (expr->type == TokenType::PERCENT)
 	{
 
 		// for cfg to init instruction return type
 		expr->value.type = ValueType::INT;
 		return TokenType::INT_LITERAL;
+	}
+	auto isBool = IsBinaryBoolOp(expr->type);
+	if (isBool)
+	{
+		expr->value = ValueContainer{ ValueType::BOOL };
+		return TokenType::BOOL_TYPE;
 	}
 	if(areChildren&& isTermOp)
 	{
@@ -1455,8 +1453,6 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 		}
 		else if (childType1 == TokenType::STRING_LITERAL || childType == TokenType::STRING_LITERAL)
 		{
-			//ErrorTypeCheck(expr->line,"Strings cannot participate in binary operations yet ");
-
 			return TokenType::STRING_LITERAL;
 		}
 		expr->value = ValueContainer{ ValueType::FLOAT };
@@ -1504,13 +1500,6 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			{
 				auto str = leftChild->value.AsString();
 				Entry* entry = nullptr;
-				//auto tmp = indexCurrentScope;
-				//while (tmp != -1)
-				//{
-				//	auto scope = currentScopes[tmp--];
-				//	if (!scope->types.IsExist(str->GetStringView())) continue;
-				//	entry = scope->types.Get(str->GetStringView());
-				//}
 				for (auto scope : currentScopes)
 				{
 					if (!scope->types.IsExist(str)) continue;
@@ -1536,13 +1525,6 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 			
 			auto str = expr->value.AsString();
 			Entry* entry = nullptr;
-			//auto tmp = indexCurrentScope;
-			//while (tmp != -1)
-			//{
-			//	auto scope = currentScopes[tmp--];
-			//	if (!scope->types.IsExist(str->GetStringView())) continue;
-			//	entry = scope->types.Get(str->GetStringView());
-			//}
 			for (auto scope : currentScopes)
 			{
 				if (!scope->types.IsExist(str)) continue;

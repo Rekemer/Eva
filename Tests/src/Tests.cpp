@@ -8,7 +8,8 @@
 
 
 #define EXPR 1
-#define LOOPS 0
+#define WHILE 1
+#define FOR 0
 #define FUNC 0
 #define VAR 1
 #define STRINGS 1
@@ -439,7 +440,7 @@ TEST_CASE("deduction test")
 
 }
 #endif
-#if LOOPS
+#if WHILE
 TEST_CASE("while statement")
 {
 	SUBCASE("basic while")
@@ -494,6 +495,8 @@ TEST_CASE("while statement")
 		CHECK(isPass);
 	}
 }
+#endif
+#if FOR
 TEST_CASE("basic for loop test")
 {
 	SUBCASE("basic for loop")

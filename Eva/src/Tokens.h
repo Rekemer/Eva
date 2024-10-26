@@ -53,10 +53,22 @@ enum class TokenType : uint8_t {
 	BRANCH_ELIF,
 	// so we don't hit code generation for if,elif, else branching
 	BRANCH_WHILE,
+	JUMP_WHILE,
 	PHI,
 	
 };
-
+inline bool IsBinaryBoolOp(TokenType type)
+{
+	return type == TokenType::EQUAL_EQUAL ||
+		type == TokenType::OR || type == TokenType::AND || type == TokenType::BANG_EQUAL ||
+		type == TokenType::GREATER || type == TokenType::GREATER_EQUAL || type == TokenType::LESS ||
+		type == TokenType::LESS_EQUAL;
+}
+inline bool IsBinaryOp(TokenType type)
+{
+	return type == TokenType::PLUS || type == TokenType::STAR ||
+		type == TokenType::SLASH || type == TokenType::MINUS || IsBinaryBoolOp(type);
+}
 inline std::tuple<bool, TokenType> IsVariableType(TokenType type)
 {
 	auto castedType = (int)type;
