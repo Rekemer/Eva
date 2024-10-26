@@ -21,6 +21,44 @@ enum class ValueType
 	DEDUCE,
 	NIL
 };
+inline ValueType HighestType(ValueType a, ValueType b) {
+	if (a > b) return a;
+	return b;
+}
+
+inline bool IsCastable(ValueType toType, ValueType fromType)
+{
+	if (toType == fromType)
+		return true;
+
+	switch (toType)
+	{
+	case ValueType::INT:
+		return fromType == ValueType::FLOAT ||
+			fromType == ValueType::BOOL ||
+			fromType == ValueType::INT;
+
+	case ValueType::FLOAT:
+		return fromType == ValueType::INT ||
+			fromType == ValueType::FLOAT;
+
+	case ValueType::STRING:
+		return fromType == ValueType::STRING;
+
+	case ValueType::BOOL:
+		return fromType == ValueType::INT ||
+			fromType == ValueType::FLOAT ||
+			fromType == ValueType::BOOL;
+
+	case ValueType::NIL:
+		
+		return fromType == ValueType::NIL;
+
+		
+	default:
+		return false;
+	}
+}
 
 class Object;
 class String;

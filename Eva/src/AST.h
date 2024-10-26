@@ -38,6 +38,30 @@ public:
 	void Fold();
 private:
 
+	// Helper functions for different node types
+	TokenType TypeCheckEqual(Node* expr, TokenType to, TokenType from);
+
+	TokenType TypeCheckIfStatement(Node* node, VirtualMachine& vm);
+
+	TokenType TypeCheckFunctionCall(Node* node, VirtualMachine& vm);
+
+	TokenType TypeCheckReturnStatement(Node* node, VirtualMachine& vm);
+
+	TokenType TypeCheckFunctionDefinition(Node* node, VirtualMachine& vm);
+
+	TokenType TypeCheckBlock(Node* node, VirtualMachine& vm);
+
+	TokenType TypeCheckForLoop(Node* node, VirtualMachine& vm);
+
+	TokenType TypeCheckExpression(Node* node, VirtualMachine& vm);
+
+	TokenType TypeCheckBinaryOperation(Expression* expr, TokenType leftType, TokenType rightType);
+
+	TokenType TypeCheckUnaryOperation(Expression* expr, TokenType operandType);
+
+	TokenType TypeCheckIdentifier(Expression* expr, VirtualMachine& vm);
+	
+	TokenType TypeCheckVariableDeclaration(Expression* expr, TokenType leftType, TokenType rightType, VirtualMachine& vm);
 	
 	void UpdateScope(int stackOffset, Scope* prevScope, Scope* newScope);
 	void PartialFold(Node* leftOperandSibling, Node* rightOperandSibling,
@@ -67,8 +91,7 @@ private:
 	void Error( Iterator& currentToken, const char* msg);
 	void Error( Iterator& currentToken, std::stringstream& ss);
 
-	void ErrorTypeCheck(int line, std::stringstream& ss);
-	void ErrorTypeCheck(int line, const char* str);
+	void ErrorTypeCheck(int line, const std::string& str);
 
 	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
 	std::unique_ptr<Node> UnaryOpPrefix(Iterator& currentToken);

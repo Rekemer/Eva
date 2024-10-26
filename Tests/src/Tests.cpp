@@ -16,7 +16,7 @@
 #define SCOPE 1
 #define DEDUCTION 1
 #define IF 1
-#define CONSTANT_FOLD 1
+#define CONSTANT_FOLD 0
 
 struct Tables
 {

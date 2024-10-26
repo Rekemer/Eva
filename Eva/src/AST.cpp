@@ -1,6 +1,7 @@
 #include "AST.h"
 #include <iostream>
 #include <cassert>
+#include <format>
 #include <algorithm>
 #include "VirtualMachine.h"
 #include "Value.h"
@@ -299,74 +300,113 @@ void Print(const Expression* tree, int level) {
 	return left;
 }
 
- std::unique_ptr<Node> AST::Comparison( Iterator& currentToken)
- {
-	 auto left = Term(currentToken);
-	 auto nextToken = (currentToken );
-	 bool isCompare = nextToken->type == TokenType::LESS ||
-		 nextToken->type == TokenType::LESS_EQUAL || nextToken->type == TokenType::GREATER ||
-		 nextToken->type == TokenType::GREATER_EQUAL || nextToken->type == TokenType::BANG_EQUAL;
-	 if (isCompare)
-	 {
+ std::unique_ptr<Node> AST::Comparison(Iterator& currentToken) {
+	 auto left = Term(currentToken);  
+
+	 while (true) {
+		 auto nextToken = currentToken;
+		 bool isCompare = nextToken->type == TokenType::LESS ||
+			 nextToken->type == TokenType::LESS_EQUAL ||
+			 nextToken->type == TokenType::GREATER ||
+			 nextToken->type == TokenType::GREATER_EQUAL ||
+			 nextToken->type == TokenType::BANG_EQUAL;
+
+		 if (!isCompare) break;  
 
 		 auto operation = nextToken->type;
+		 currentToken++;  
+
+		 auto right = Term(currentToken);  
+
 		 auto parent = std::make_unique<Expression>();
 		 parent->line = currentToken->line;
-		 currentToken ++;
-		 auto right = Comparison(currentToken);
 		 parent->left = std::move(left);
 		 parent->right = std::move(right);
 		 parent->type = operation;
-		 return parent;
 
+		 left = std::move(parent);  
 	 }
+
 	 return left;
  }
+ std::unique_ptr<Node> AST::LogicalAnd(Iterator& currentToken) {
+	 auto left = Equality(currentToken);  
 
- std::unique_ptr<Node> AST::Equality(Iterator& currentToken)
- {
+	 while (true) {
+		 auto nextToken = currentToken;
+		 bool isAnd = nextToken->type == TokenType::AND;
+
+		 if (!isAnd) break;  
+
+		 auto operation = nextToken->type;
+		 currentToken++;  
+
+		 auto right = Equality(currentToken); 
+
+		 auto parent = std::make_unique<Expression>();
+		 parent->line = currentToken->line;
+		 parent->left = std::move(left);
+		 parent->right = std::move(right);
+		 parent->type = operation;
+
+		 left = std::move(parent);  
+	 }
+
+	 return left;
+ }
+ std::unique_ptr<Node> AST::LogicalOr(Iterator& currentToken) {
+	 auto left = LogicalAnd(currentToken);  
+
+	 while (true) {
+		 auto nextToken = currentToken;
+		 bool isOr = nextToken->type == TokenType::OR;
+
+		 if (!isOr) break;  
+
+		 auto operation = nextToken->type;
+		 currentToken++;  
+
+		 auto right = LogicalAnd(currentToken);  
+
+		 auto parent = std::make_unique<Expression>();
+		 parent->line = currentToken->line;
+		 parent->left = std::move(left);
+		 parent->right = std::move(right);
+		 parent->type = operation;
+
+		 left = std::move(parent);  
+	 }
+
+	 return left;
+ }
+ std::unique_ptr<Node> AST::Equality(Iterator& currentToken) {
 	 auto left = Comparison(currentToken);
-	 auto nextToken = (currentToken );
-	 bool isCompare = nextToken->type == TokenType::EQUAL_EQUAL ||
-		 nextToken->type == TokenType::BANG_EQUAL;
-	 if (isCompare)
-	 {
+
+	 while (true) {
+		 auto nextToken = currentToken;
+		 bool isCompare = nextToken->type == TokenType::EQUAL_EQUAL ||
+			 nextToken->type == TokenType::BANG_EQUAL;
+
+		 if (!isCompare) break;
 
 		 auto operation = nextToken->type;
+		 currentToken += 1;  
+
+		 auto right = Comparison(currentToken);  
+
 		 auto parent = std::make_unique<Expression>();
 		 parent->line = currentToken->line;
-		 currentToken += 1;
-		 auto right = Equality(currentToken);
 		 parent->left = std::move(left);
 		 parent->right = std::move(right);
 		 parent->type = operation;
-		 return parent;
 
+		 left = std::move(parent);  
 	 }
+
 	 return left;
  }
 
- std::unique_ptr<Node> AST::LogicalAnd(Iterator& currentToken)
- {
-	 auto left = Equality(currentToken);
-	 auto nextToken = (currentToken );
-	 bool isAnd = nextToken->type == TokenType::AND;
-	 if (isAnd)
-	 {
 
-		 auto operation = nextToken->type;
-		 auto parent = std::make_unique<Expression>();
-		 parent->line = currentToken->line;
-		 currentToken += 1;
-		 auto right = LogicalAnd(currentToken);
-		 parent->left = std::move(left);
-		 parent->right = std::move(right);
-		 parent->type = operation;
-		 return parent;
-
-	 }
-	 return left;
- }
 
  std::unique_ptr<Node> AST::EqualOp(Iterator& currentToken)
  {
@@ -908,27 +948,6 @@ void Print(const Expression* tree, int level) {
 	 return EqualOp(currentToken);
 
  }
- std::unique_ptr<Node> AST::LogicalOr(Iterator& currentToken)
- {
-	 auto left = LogicalAnd(currentToken);
-	 auto nextToken = (currentToken );
-	 bool isOr = nextToken->type == TokenType::OR;
-	 if (isOr)
-	 {
-
-		 auto operation = nextToken->type;
-		 auto parent = std::make_unique<Expression>();
-		 parent->line = currentToken->line;
-		 currentToken += 1;
-		 auto right = LogicalOr(currentToken);
-		 parent->left = std::move(left);
-		 parent->right = std::move(right);
-		 parent->type = operation;
-		 return parent;
-
-	 }
-	 return left;
- }
 
  std::unique_ptr<Node> AST::EatBlock(Iterator& currentToken)
  {
@@ -988,15 +1007,10 @@ void Print(const Expression* tree, int level) {
 	 }
 	 currentToken++;
  }
- void AST::ErrorTypeCheck(int line, const char* str)
+ void AST::ErrorTypeCheck(int line,const std::string& str)
  {
 	 m_Panic = true;
 	 std::cout << "ERROR[" << line << "] " << str << std::endl;
- }
- void AST::ErrorTypeCheck(int line, std::stringstream& ss)
- {
-	 m_Panic = true;
-	 std::cout << "ERROR[" << line << "] " << ss.str() << std::endl;
  }
  void AST::Error(Iterator& currentToken, std::stringstream& ss)
  {
@@ -1270,283 +1284,407 @@ void AST::TypeCheck(VirtualMachine& vm)
 {
 	TypeCheck(tree.get(), vm);
 }
-bool IsCastable(ValueType to, ValueType from)
-{
-	if (to == from) return true;
-	if (to == ValueType::INT && from == ValueType::FLOAT)
-	{
-		return true;
-	}
-	else if (to == ValueType::FLOAT && from == ValueType::INT)
-	{
-		return true;
-	}
-	return false;
-}
-// expr value type track the type all operands if needed must be casted to,
-// that is why == can have type FLOAT instead of BOOL
+
 TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 {
-	TokenType childType = TokenType::END;
-	TokenType childType1 = TokenType::END;
-	if (node->type == TokenType::IF)
-	{
-		auto expr = node->As<Expression>();
-		// check condition
-		TypeCheck(expr->left.get(), vm);
-
-		// check then
-		auto then = expr->right->As<Expression>()->right.get();
-		TypeCheck(then, vm);
-		auto els = expr->right->As<Expression>()->left.get();
-		// check else/elif
-		if (els != nullptr)
-		{
-			TypeCheck(els , vm);
-		}
+	if (!node) {
+		// Handle null node if necessary
 		return TokenType::END;
-
 	}
-	if (node->type == TokenType::LEFT_PAREN)
+
+	switch (node->type)
 	{
-		auto call = static_cast<Call*>(node);
+	case TokenType::IF:
+		return TypeCheckIfStatement(node, vm);
 
-		auto& globals = vm.GetGlobals();
-		auto funcValue = globals.Get(call->name)
-			->value.AsFunc();
+	case TokenType::LEFT_PAREN:
+		return TypeCheckFunctionCall(node, vm);
 
-		for ( auto i = 0; i < call->args.size(); i++)
-		{
-			auto& arg = call->args[i];
-			auto type = LiteralToType(TypeCheck(arg.get(), vm));
-			auto declType = funcValue->argTypes[i];
-			// check declared type and real passed type
-			auto castable = IsCastable(declType, type);
-			if (!castable)
-			{
-				std::stringstream ss;
-				ss << "The " << i << " declared argument's type is " << ValueToStr(declType) <<
-					", but the passed type is " << ValueToStr(type);
-				ErrorTypeCheck(call->line,ss);
-				return TokenType::NIL;
-			}
+	case TokenType::RETURN:
+		return TypeCheckReturnStatement(node, vm);
 
-			// we need to compare type of arguments 
-			// with the the type of parameters
-			
-		}
-		auto name = call->name;
-		auto entry = vm.GetGlobalsType().Get(name);
-		std::stringstream ss;
-		assert(entry->IsInit());
-		return TypeToLiteral(entry->value.type);
+	case TokenType::FUN:
+		return TypeCheckFunctionDefinition(node, vm);
+
+	case TokenType::CONTINUE:
+	case TokenType::BREAK:
+		return node->type;
+
+	case TokenType::BLOCK:
+		return TypeCheckBlock(node, vm);
+
+	case TokenType::FOR:
+		return TypeCheckForLoop(node, vm);
+
+	default:
+		return TypeCheckExpression(node, vm);
 	}
-	if (node->type == TokenType::RETURN)
-	{
+}
 
-		auto ret = TypeCheck(static_cast<Expression*>(node)->left.get(), vm);
-		if (ret == TokenType::NIL)
-		{
-			ErrorTypeCheck(node->line, "Cannot return NIL value");
-		}
-		return ret;
-	}
-	if (node->type == TokenType::FUN)
+// Helper functions for different node types
+
+TokenType AST::TypeCheckIfStatement(Node* node, VirtualMachine& vm)
+{
+	auto expr = static_cast<Expression*>(node);
+	// Check condition
+	TypeCheck(expr->left.get(), vm);
+
+	// Check 'then' branch
+	auto thenExpr = expr->right->As<Expression>()->right.get();
+	TypeCheck(thenExpr, vm);
+
+	// Check 'else' branch if it exists
+	auto elseExpr = expr->right->As<Expression>()->left.get();
+	if (elseExpr)
 	{
-		auto fun = static_cast<FunctionNode*>(node);
-		auto entry = vm.GetGlobalsType().Get(fun->name);
-		auto actualType = TypeCheck(fun->body.get(), vm);
-		assert(entry->IsInit());
-		if (entry->value.type != ValueType::NIL)
-		{
-			auto declaredType = TypeToLiteral(entry->value.type);
-			if (actualType == TokenType::BLOCK) assert(false && "Could not find the actual return type");
-			assert(declaredType == actualType);
-			return declaredType;
-		}
+		TypeCheck(elseExpr, vm);
+	}
+
+	return TokenType::END;
+}
+
+TokenType AST::TypeCheckFunctionCall(Node* node, VirtualMachine& vm)
+{
+	auto call = static_cast<Call*>(node);
+	auto& globals = vm.GetGlobals();
+	auto funcEntry = globals.Get(call->name);
+	if (!funcEntry)
+	{
+		ErrorTypeCheck(call->line, "Undefined function '" + call->name + "'");
 		return TokenType::NIL;
 	}
-	if (node->type == TokenType::CONTINUE || node->type == TokenType::BREAK)
-	{
-		return node->type;
-	}
-	if (node->type == TokenType::BLOCK)
-	{
-		auto block = static_cast<Scope*>(node);
 
-		currentScopes.push_back(block);
-		BeginBlock();
-		block->depth = scopeDepth;
-		auto ret = TokenType::BLOCK;
-		for (auto& e : block->expressions)
+	auto funcValue = funcEntry->value.AsFunc();
+	if (call->args.size() != funcValue->argTypes.size())
+	{
+		ErrorTypeCheck(call->line, "Incorrect number of arguments for function '" + call->name + "'");
+		return TokenType::NIL;
+	}
+
+	for (size_t i = 0; i < call->args.size(); ++i)
+	{
+		auto& arg = call->args[i];
+		auto argType = LiteralToType(TypeCheck(arg.get(), vm));
+		auto paramType = funcValue->argTypes[i];
+
+		if (!IsCastable(paramType, argType))
 		{
-			auto type = TypeCheck(e.get(), vm);
-			if (e->type == TokenType::RETURN)
-			{
-				ret = type;
-			}
+			std::stringstream ss;
+			ss << "Argument " << i + 1 << " of function '" << call->name << "' expects type "
+				<< ValueToStr(paramType) << ", but got " << ValueToStr(argType);
+			ErrorTypeCheck(call->line, ss.str());
+			return TokenType::NIL;
 		}
-		EndBlock();
-		currentScopes.pop_back();
-		return ret;
 	}
-	if (node->type == TokenType::FOR)
+
+	// Return the function's return type
+	auto funcTypeEntry = vm.GetGlobalsType().Get(call->name);
+	if (!funcTypeEntry || !funcTypeEntry->IsInit())
 	{
-		auto forNode = static_cast<For*>(node);
-		currentScope = &forNode->initScope;
-		currentScopes.push_back(currentScope);
-		TypeCheck(forNode->init.get(), vm);
-		TypeCheck(forNode->condition.get(), vm);
-		TypeCheck(forNode->action.get(), vm);
-		TypeCheck(forNode->body.get(), vm);
-		indexCurrentScope--;
-		currentScopes.pop_back();
-		return TokenType::FOR;
+		ErrorTypeCheck(call->line, "Function type information missing for '" + call->name + "'");
+		return TokenType::NIL;
 	}
+
+	return TypeToLiteral(funcTypeEntry->value.type);
+}
+
+TokenType AST::TypeCheckReturnStatement(Node* node, VirtualMachine& vm)
+{
 	auto expr = static_cast<Expression*>(node);
-	if (expr->left != nullptr)
+	auto retType = TypeCheck(expr->left.get(), vm);
+
+	if (retType == TokenType::NIL)
 	{
-		childType = TypeCheck(expr->left.get(), vm);
+		ErrorTypeCheck(node->line, "Cannot return NIL value");
 	}
-	if (expr->right != nullptr)
+
+	return retType;
+}
+
+TokenType AST::TypeCheckFunctionDefinition(Node* node, VirtualMachine& vm)
+{
+	auto funcNode = static_cast<FunctionNode*>(node);
+	auto funcTypeEntry = vm.GetGlobalsType().Get(funcNode->name);
+
+	if (!funcTypeEntry || !funcTypeEntry->IsInit())
 	{
-		childType1 = TypeCheck(expr->right.get(),vm);
+		ErrorTypeCheck(funcNode->line, "Function '" + funcNode->name + "' is not properly declared");
+		return TokenType::NIL;
 	}
-	auto& globalsType = vm.GetGlobalsType();
-	auto& globals = vm.GetGlobals();
 
+	auto actualReturnType = TypeCheck(funcNode->body.get(), vm);
+	auto declaredReturnType = funcTypeEntry->value.type;
 
-	// determine what kind of type operations returns 
-	bool areChildren = childType != TokenType::END && childType1 != TokenType::END;
-	bool isTermOp = IsBinaryOp(expr->type);
-	bool isTermOpEqual = expr->type == TokenType::PLUS_EQUAL ||
-		expr->type == TokenType::SLASH_EQUAL ||
-		expr->type == TokenType::MINUS_EQUAL ||
-		expr->type == TokenType::STAR_EQUAL ;
-
-	
-	if (expr->type == TokenType::PERCENT)
+	if (declaredReturnType != ValueType::NIL)
 	{
+		if (actualReturnType == TokenType::BLOCK)
+		{
+			ErrorTypeCheck(funcNode->line, "Could not determine the actual return type of the function");
+			return TokenType::NIL;
+		}
 
-		// for cfg to init instruction return type
+		if (TypeToLiteral(declaredReturnType) != actualReturnType)
+		{
+			std::stringstream ss;
+			ss << "Function '" << funcNode->name << "' declared return type "
+				<< ValueToStr(declaredReturnType) << ", but returns " << tokenToString(actualReturnType);
+			ErrorTypeCheck(funcNode->line, ss.str());
+			return TokenType::NIL;
+		}
+
+		return TypeToLiteral(declaredReturnType);
+	}
+
+	return TokenType::NIL;
+}
+
+TokenType AST::TypeCheckBlock(Node* node, VirtualMachine& vm)
+{
+	auto block = static_cast<Scope*>(node);
+
+	currentScopes.push_back(block);
+	BeginBlock();
+	block->depth = scopeDepth;
+
+	TokenType returnType = TokenType::BLOCK;
+
+	for (auto& expr : block->expressions)
+	{
+		auto type = TypeCheck(expr.get(), vm);
+		if (expr->type == TokenType::RETURN)
+		{
+			returnType = type;
+		}
+	}
+
+	EndBlock();
+	currentScopes.pop_back();
+
+	return returnType;
+}
+
+TokenType AST::TypeCheckForLoop(Node* node, VirtualMachine& vm)
+{
+	auto forNode = static_cast<For*>(node);
+
+	currentScopes.push_back(&forNode->initScope);
+	BeginBlock();
+
+	TypeCheck(forNode->init.get(), vm);
+	TypeCheck(forNode->condition.get(), vm);
+	TypeCheck(forNode->action.get(), vm);
+	TypeCheck(forNode->body.get(), vm);
+
+	EndBlock();
+	currentScopes.pop_back();
+
+	return TokenType::FOR;
+}
+TokenType AST::TypeCheckEqual(Node* expr, TokenType to, TokenType from)
+{
+	if (!IsCastable(LiteralToType(to), LiteralToType(from)))
+	{
+		ErrorTypeCheck(expr->line, std::format("Cannot cast from {} to {}", tokenToString(to), tokenToString(from)));
+		return TokenType::NIL;
+	}
+	return to;
+}
+TokenType AST::TypeCheckExpression(Node* node, VirtualMachine& vm)
+{
+	auto expr = static_cast<Expression*>(node);
+	TokenType leftType = TokenType::END;
+	TokenType rightType = TokenType::END;
+
+	if (expr->left)
+	{
+		leftType = TypeCheck(expr->left.get(), vm);
+	}
+
+	if (expr->right)
+	{
+		rightType = TypeCheck(expr->right.get(), vm);
+	}
+
+	switch (expr->type)
+	{
+	case TokenType::PERCENT:
+		expr->value.type = ValueType::INT;
+		return TokenType::INT_LITERAL;
+
+	case TokenType::PLUS:
+	case TokenType::MINUS:
+	case TokenType::STAR:
+	case TokenType::SLASH:
+		if (expr->right == nullptr)
+		{
+			return TypeCheckUnaryOperation(expr, leftType);
+		}
+		else return TypeCheckBinaryOperation(expr, leftType, rightType);
+
+	case TokenType::EQUAL_EQUAL:
+	case TokenType::BANG_EQUAL:
+	case TokenType::LESS:
+	case TokenType::LESS_EQUAL:
+	case TokenType::GREATER:
+	case TokenType::GREATER_EQUAL:
+	{
+		expr->value.type = ValueType::BOOL;
+		return TokenType::BOOL_TYPE;
+	}
+
+	case TokenType::IDENTIFIER:
+		return TypeCheckIdentifier(expr, vm);
+
+	case TokenType::DECLARE:
+		return TypeCheckVariableDeclaration(expr, leftType, rightType, vm);
+
+	case TokenType::BANG:
+	case TokenType::MINUS_MINUS:
+	case TokenType::PLUS_PLUS:
+		return TypeCheckUnaryOperation(expr, leftType);
+	case TokenType::EQUAL:
+		return TypeCheckEqual(expr, leftType,rightType);
+	default:
+		return expr->type;
+	}
+}
+
+
+TokenType AST::TypeCheckBinaryOperation(Expression* expr, TokenType leftType, TokenType rightType) {
+	// Check for NIL types
+	if (leftType == TokenType::NIL || rightType == TokenType::NIL) {
+		ErrorTypeCheck(expr->line, "NIL operand in binary operation");
+		return TokenType::NIL;
+	}
+
+	// Check if both operands are integers
+	if (leftType == TokenType::INT_LITERAL && rightType == TokenType::INT_LITERAL) {
 		expr->value.type = ValueType::INT;
 		return TokenType::INT_LITERAL;
 	}
-	auto isBool = IsBinaryBoolOp(expr->type);
-	if (isBool)
-	{
-		expr->value = ValueContainer{ ValueType::BOOL };
-		return TokenType::BOOL_TYPE;
-	}
-	if(areChildren&& isTermOp)
-	{
 
-		if (childType1 == TokenType::NIL || childType == TokenType::NIL)
-		{
-			ErrorTypeCheck(expr->line,"NIL operand in binary operation");
-			return TokenType::NIL;
-		}
-		if (childType1 == TokenType::INT_LITERAL && childType == TokenType::INT_LITERAL)
-		{
-			expr->value = ValueContainer{ ValueType::INT };
-			return TokenType::INT_LITERAL;
-		}
-		else if (childType1 == TokenType::STRING_LITERAL || childType == TokenType::STRING_LITERAL)
-		{
-			return TokenType::STRING_LITERAL;
-		}
-		expr->value = ValueContainer{ ValueType::FLOAT };
+	// Check if both operands are floats
+	if (leftType == TokenType::FLOAT_LITERAL && rightType == TokenType::FLOAT_LITERAL) {
+		expr->value.type = ValueType::FLOAT;
 		return TokenType::FLOAT_LITERAL;
 	}
-	else if (childType1 != TokenType::END && isTermOpEqual)
-	{
-		auto type = LiteralToType(childType);
-		auto type1 = LiteralToType(childType1);
-		if (!IsCastable(type, type1))
-		{
-			std::stringstream ss;
-			ss << "cannot cast " << ValueToStr(type1) << " to " << ValueToStr(type);
-			ErrorTypeCheck(node->line, ss);
-			return TokenType::NIL;
-		}
-		if (childType1 == TokenType::NIL)
-		{
-			ErrorTypeCheck(expr->line, "cannot use NIL value");
-			return TokenType::NIL;
-		}
-		if (childType1 == TokenType::INT_LITERAL)
-		{
-			expr->value = ValueContainer{ ValueType::INT };
-			return TokenType::INT_LITERAL;
-		}
-		expr->value = ValueContainer{ ValueType::FLOAT };
+
+	// Check if one operand is an integer and the other is a float
+	if ((leftType == TokenType::INT_LITERAL && rightType == TokenType::FLOAT_LITERAL) ||
+		(leftType == TokenType::FLOAT_LITERAL && rightType == TokenType::INT_LITERAL)) {
+		expr->value.type = ValueType::FLOAT; // Promote to float
 		return TokenType::FLOAT_LITERAL;
 	}
-	
-	
-	
-	
-	if (expr->type == TokenType::DECLARE)
-	{
-		auto leftChild = expr->left->AsMut<Expression>();
-		if (childType1 == TokenType::NIL)
-		{
-			ErrorTypeCheck(expr->line, "cannot assign NIL value");
-			return TokenType::NIL;
-		}
-		if (childType == TokenType::DEDUCE)
-		{
-			if (expr->depth > 0)
-			{
-				auto str = leftChild->value.AsString();
-				Entry* entry = nullptr;
-				for (auto scope : currentScopes)
-				{
-					if (!scope->types.IsExist(str)) continue;
-					entry = scope->types.Get(str);
-				}
-				assert(entry != nullptr);
-				entry->value.UpdateType(LiteralToType(childType1));
-			}
-			else
-			{
-				auto str = leftChild->value.AsString();
-				auto entry = globalsType.Get(str);
-				entry->value.UpdateType(LiteralToType(childType1));
-			}
 
-		}
-		return childType1;
+	// Check if both operands are strings
+	if (leftType == TokenType::STRING_LITERAL && rightType == TokenType::STRING_LITERAL) {
+		expr->value.type = ValueType::STRING;
+		return TokenType::STRING_LITERAL;
 	}
-	if (expr->type == TokenType::IDENTIFIER)
-	{
-		if (expr->depth > 0)
-		{
-			
-			auto str = expr->value.AsString();
-			Entry* entry = nullptr;
-			for (auto scope : currentScopes)
-			{
-				if (!scope->types.IsExist(str)) continue;
-				entry = scope->types.Get(str);
-			}
-			assert(entry != nullptr);
-			return TypeToLiteral(entry->value.type);
-		}
-		auto str = expr->value.AsString();
-		auto entry = globalsType.Get(str);
-		assert(entry->IsInit());
 
-		return TypeToLiteral(entry->value.type);
+	// If one operand is a string, return an error unless both are strings
+	if (leftType == TokenType::STRING_LITERAL || rightType == TokenType::STRING_LITERAL) {
+		ErrorTypeCheck(expr->line, "Invalid operation between STRING and non-STRING types");
+		return TokenType::NIL;
 	}
-	bool isUnary = expr->type == TokenType::MINUS || expr->type == TokenType::BANG|| expr->type == TokenType::MINUS_MINUS
-		|| expr->type == TokenType::PLUS_PLUS;
-	if (isUnary && childType != TokenType::END)
-	{
-		expr->value = ValueContainer{ LiteralToType(childType) };
-		return childType;
-	}
-	return expr->type;
 
+	ErrorTypeCheck(expr->line, "Incompatible operand types for binary operation");
+	return TokenType::NIL;
 }
 
+TokenType AST::TypeCheckUnaryOperation(Expression* expr, TokenType operandType)
+{
+	if (operandType == TokenType::END)
+	{
+		ErrorTypeCheck(expr->line, "Unary operator missing operand");
+		return TokenType::NIL;
+	}
+
+	expr->value.type = LiteralToType(operandType);
+	return operandType;
+}
+
+TokenType AST::TypeCheckIdentifier(Expression* expr, VirtualMachine& vm)
+{
+	Entry* entry = nullptr;
+
+	if (expr->depth > 0)
+	{
+		// Look up in current scopes
+		auto name = expr->value.AsString();
+		for (auto it = currentScopes.rbegin(); it != currentScopes.rend(); ++it) {
+			auto scope = *it;
+			if (scope->types.IsExist(name))
+			{
+				entry = scope->types.Get(name);
+				break;
+			}
+		}
+
+		if (!entry)
+		{
+			ErrorTypeCheck(expr->line, "Undefined variable '" + name + "'");
+			return TokenType::NIL;
+		}
+	}
+	else
+	{
+		// Look up in global scope
+		auto name = expr->value.AsString();
+		entry = vm.GetGlobalsType().Get(name);
+		if (!entry || !entry->IsInit())
+		{
+			ErrorTypeCheck(expr->line, "Undefined global variable '" + name + "'");
+			return TokenType::NIL;
+		}
+	}
+
+	return TypeToLiteral(entry->value.type);
+}
+
+TokenType AST::TypeCheckVariableDeclaration(Expression* expr, TokenType leftType, TokenType rightType, VirtualMachine& vm)
+{
+	if (leftType != TokenType::DEDUCE && !IsCastable(LiteralToType(leftType), LiteralToType(rightType)))
+	{
+		ErrorTypeCheck(expr->line, std::format("Cannot cast from {} to {}", tokenToString(rightType),tokenToString(leftType) ));
+		return TokenType::NIL;
+	}
+	if (rightType == TokenType::NIL)
+	{
+		ErrorTypeCheck(expr->line, "Cannot assign NIL value to variable");
+		return TokenType::NIL;
+	}
+
+	if (leftType == TokenType::DEDUCE)
+	{
+		// Type inference
+		auto varName = expr->left->As<Expression>()->value.AsString();
+		ValueType inferredType = LiteralToType(rightType);
+
+		if (expr->depth > 0)
+		{
+			// Update type in current scope
+
+			for (auto it = currentScopes.rbegin(); it != currentScopes.rend(); ++it) {
+				auto scope = *it;
+				if (scope->types.IsExist(varName))
+				{
+					auto entry = scope->types.Get(varName);
+					entry->value.UpdateType(inferredType);
+					break;
+				}
+			}
+		}
+		else
+		{
+			// Update type in global scope
+			auto entry = vm.GetGlobalsType().Get(varName);
+			if (entry)
+			{
+				entry->value.UpdateType(inferredType);
+			}
+		}
+	}
+
+	return rightType;
+}

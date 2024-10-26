@@ -147,8 +147,8 @@
 //}
 //Print "end";
 
-g := 0;
-					a := 0;
+//g := 0;
+					//a := 0;
 					//while a < 5
 					//{	
 					//	a++;
@@ -159,5 +159,23 @@ g := 0;
 					//	//Print a;
 					//	g+=a;
 					//}
-Print g;
-Print 2.0 > 2;
+//Print g;
+//Print 2.0 > 2;
+
+//a:= "Ha";
+//Print 1 == 1.0 == false ;
+//Print 2 * 2 + 1;
+
+//a : String = "Hello, New Year!";
+//a = 2;
+//Print a;
+//Print 2.0 + 1/2.0 / true;
+
+
+{
+	  a: int = 1;
+	  {
+		 a := 5;
+	  }
+	
+}

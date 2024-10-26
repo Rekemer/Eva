@@ -554,11 +554,7 @@ void GiveType(Instruction& instr, Operand& resOp, ValueType type)
 	instr.returnType = type;
 	resOp.type = type;
 }
-ValueType HighestType(ValueType a, ValueType b) {
-	// Define a hierarchy for types, where higher value means stronger type.
-	if (a > b) return a;
-	return b;
-}
+
 // create temp because it is separate operation which is stored
 // in temp variable
 Operand CFG::UnaryInstr(const Expression* expr, TokenType type)

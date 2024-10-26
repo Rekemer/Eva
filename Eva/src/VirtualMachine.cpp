@@ -151,6 +151,9 @@ else if (type1== ValueType::FLOAT && type2== ValueType::INT)\
 
 void VirtualMachine::CastWithDeclared(ValueType assignedType, ValueType declared)
 {
+	if (assignedType == declared) return;
+	assert(assignedType == ValueType::INT || assignedType == ValueType::FLOAT);
+	assert(declared == ValueType::INT || declared == ValueType::FLOAT);
 	if (assignedType != declared && assignedType != ValueType::NIL)
 	{
 		if (declared == ValueType::INT)
