@@ -701,7 +701,7 @@ TEST_CASE("loops in loops")
 #endif
 
 #if IF
-TEST_CASE("if statTment")
+TEST_CASE("if statement")
 {
 	SUBCASE("if")
 	{

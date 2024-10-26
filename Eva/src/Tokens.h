@@ -45,9 +45,14 @@ enum class TokenType : uint8_t {
 	BLOCK,
 	DEDUCE,
 	DECLARE,
+	//jumps to compile
 	JUMP,
+	// just notift about flow
+	JUMP_BRANCH,
 	BRANCH,
 	BRANCH_ELIF,
+	// so we don't hit code generation for if,elif, else branching
+	BRANCH_WHILE,
 	PHI,
 	
 };

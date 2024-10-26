@@ -134,10 +134,9 @@ Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* bloc
 	}
 
 	
-	ValueContainer name = ValueContainer{ mergeName };
-	Operand mergeOperand = { name, false, LABEL_VERSION };
+	auto jump = Instruction{ TokenType::JUMP_BRANCH,{}, {}, NullOperand() };
 	currentBlock->instructions.
-		push_back(Instruction{ TokenType::JUMP,{},mergeOperand, NullOperand() });
+		push_back(jump);
 
 	
 	branch.targets.push_back(then);
@@ -154,7 +153,7 @@ void PrintBlock(Block* block)
 	{
 		std::cout << instr;
 	}
-
+	std::cout << std::endl;
 	std::cout << "[dominator children]\n[ ";
 
 	for (auto dominator : block->dominatorChildren)
@@ -382,7 +381,15 @@ void CFG::InsertPhi()
 					auto potentialChanges = blockDf->parents.size();
 					instr.variables.resize(potentialChanges);
 					blockDf->instructions.insert(blockDf->instructions.begin(), instr);
-					blockDf->phiInstructionIndexes.push_back(0);
+					if (blockDf->phiInstructionIndexes.empty())
+					{
+						blockDf->phiInstructionIndexes.push_back(0);
+					}
+					else
+					{
+						blockDf->phiInstructionIndexes.push_back(blockDf->phiInstructionIndexes.back() + 1);
+
+					}
 					//since we have actually just added a variable to the new node
 					// we need to update our block
 					workList.push(blockDf);
@@ -727,6 +734,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 		{
 
 			parent->merge = merge;
+			auto& instr = parent->instructions.back();
+			assert(instr.instrType == TokenType::JUMP_BRANCH);
+			instr.targets.push_back(merge);
 			merge->parents.push_back(parent);
 		}
 
@@ -742,6 +752,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 	case TokenType::PRINT:
 	{
+		
 		auto value = ConvertExpressionAST(expr->left.get());
 		Instruction instr{ type,{},value, CreateTemp()};
 		currentBlock->instructions.push_back(instr);
@@ -749,6 +760,51 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 	case TokenType::RETURN:
 	case TokenType::WHILE:
+	{
+		auto parentBlock = currentBlock;
+		auto whileConditionName = std::format("[while_condition_{}]", Block::counterWhileCondition++);
+		Operand condOperand= { whileConditionName , false, LABEL_VERSION };
+		auto condJump = Instruction{ TokenType::JUMP,{},{},  NullOperand() };
+		auto condition = CreateBlock(whileConditionName, {currentBlock});
+		condJump.targets.push_back(condition);
+		currentBlock->instructions.
+			push_back(condJump);
+		
+		currentBlock->blocks.push_back(condition);
+		currentBlock = condition;
+		auto cond = ConvertExpressionAST(expr->left.get());
+		auto whileBodyName = std::format("[while_body_{}]", Block::counterWhileBody++);
+		Instruction branch = Instruction{ TokenType::BRANCH_WHILE,{},cond,NullOperand() };
+		
+		auto body = CreateBlock(whileBodyName, {currentBlock});
+		currentBlock->blocks.push_back(body);
+
+
+		branch.targets.push_back(body);
+		branch.targets.push_back(parentBlock);
+		condition->instructions.push_back(branch);
+
+		currentBlock = body;
+		ConvertStatementAST(expr->right.get());
+		currentBlock->instructions.
+			push_back(condJump);
+
+		auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge++));
+		auto parents = { parentBlock,currentBlock };
+		auto merge = CreateBlock(mergeName,parents);
+
+		for (auto parent : parents)
+		{
+			parent->blocks.push_back(merge);
+		}
+
+		Instruction jumpBack= Instruction{ TokenType::JUMP_BRANCH,{} ,{},NullOperand() };
+		jumpBack.targets.push_back(parentBlock);
+		merge->instructions.push_back(jumpBack);
+		currentBlock = parentBlock;
+
+		break;
+	}
 	case TokenType::BLOCK:
 	{
 		Block* block = currentBlock;

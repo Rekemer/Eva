@@ -1383,6 +1383,8 @@ void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrT
 }
 void VirtualMachine::GenerateBlockInstructions(Block* block)
 {
+	block->isVisited = true;
+
 	auto tokenToInCodeOp = [](TokenType type)
 		{
 			switch (type)
@@ -1673,18 +1675,44 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::DEDUCE:
 			break;
-		case TokenType::JUMP:
+		case TokenType::JUMP_BRANCH:
 			break;
+		case TokenType::JUMP:
+		{
+
+			auto target = instr.targets[0];
+			if (!target->isVisited)
+			GenerateBlockInstructions(target);
+			break;
+		}
 		case TokenType::BRANCH:
 		{
 
 			auto& branches = block->blocks;
 			auto mergeBlock = HandleBranch(branches,instr);
-			
-			//if (mergeBlock != nullptr)
-			//GenerateCFG(mergeBlock);
-		}
 			break;
+		}
+		case TokenType::BRANCH_WHILE:
+		{
+			auto startIndex = currentFunc->opCode.size();
+			auto condition = instr.targets[0];
+			GenerateBlockInstructions(condition);
+
+			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+			EmitPop(currentFunc->opCode);
+
+			auto body = block->blocks[0];
+			GenerateBlockInstructions(body);
+
+			auto jump = JumpBack(currentFunc->opCode);
+			// jumping backwards
+			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
+
+			EmitPop(currentFunc->opCode);
+			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
+			
+			break;
+		}
 		case TokenType::PHI:
 		case TokenType::BRANCH_ELIF:
 			break;
@@ -1693,7 +1721,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		}
 	}
-	block->isVisited = true;
+	
 }
 Block* VirtualMachine::HandleBranch(std::vector<Block*> branches,const  Instruction& instr)
 {

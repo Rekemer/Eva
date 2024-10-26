@@ -49,6 +49,10 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 
 	}
 
+	if (panic)
+	{
+		return{};
+	}
 #if SSA
 	CFG cfg;
 	cfg.vm = &vm;
@@ -73,10 +77,6 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 		vm.GenerateBytecodeAST(tree.GetTree());
 	}
 #endif
-	if (panic)
-	{
-		return{};
-	}
 	vm.Execute();
 #if DEBUG_STACK
 	std::cout << "STACK [ ";

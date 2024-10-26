@@ -106,6 +106,8 @@ struct Block
 	static inline int counterElse = 0;
 	static inline int counterElif = 0;
 	static inline int counterMerge = 0;
+	static inline int counterWhileCondition = 0;
+	static inline int counterWhileBody = 0;
 
 	bool isVisited = false;
 };
