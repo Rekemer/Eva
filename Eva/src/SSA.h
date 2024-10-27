@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include "Tokens.h"
 #include <ostream>
 #include <set>
@@ -184,5 +185,8 @@ private:
 
 	// topologically sorted graph
 	std::vector<Block*> tpgSort;
+	// so we do not pop variables that are already taken care of by the end of loops
+	std::unordered_set<std::string> notPoped;
+	bool isNotPop = false;
 
 };

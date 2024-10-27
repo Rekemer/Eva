@@ -488,7 +488,14 @@ Operand CFG::InitVariable(const std::string& name, int depth)
 	if (depth > 0)
 	{
 		InitLocal(resOp, name);
-		currentScope->currentPopAmount++;
+		if (isNotPop)
+		{
+			notPoped.insert(name);
+		}
+		if (!isNotPop && notPoped.find(name) == notPoped.end())
+		{
+			currentScope->currentPopAmount++;
+		}
 	}
 	// global variable
 	else
@@ -680,8 +687,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto forInitName = std::format("[for_init_{}]", Block::counterForInit++);
 		auto init = CreateConditionBlock(forInitName, currentBlock);
 		currentBlock = init;
+		isNotPop = true;
 		ConvertStatementAST(forNode->init.get());
-
+		// so we do not pop iterator
+		isNotPop = false;
+		
 
 		auto forConditionName = std::format("[for_condition_{}]", Block::counterForCondition++);
 		auto condition = CreateConditionBlock(forConditionName, init);
