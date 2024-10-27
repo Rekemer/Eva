@@ -70,7 +70,12 @@ struct Scope : public Node
 	// Default the move constructor and move assignment operator
 	Scope(Scope&&) = default;
 	Scope& operator=(Scope&&) = default;
+	// total
 	int popAmount = 0;
+	// so far during code gen
+	// we can face continue or break
+	// total amount will overestimate 
+	int currentPopAmount = 0;
 	void AddLocal(std::string& name, int currentScopeDepth)
 	{
 		auto endIterator = stack.locals.begin() + stack.m_StackPtr;

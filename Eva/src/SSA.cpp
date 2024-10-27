@@ -488,6 +488,7 @@ Operand CFG::InitVariable(const std::string& name, int depth)
 	if (depth > 0)
 	{
 		InitLocal(resOp, name);
+		currentScope->currentPopAmount++;
 	}
 	// global variable
 	else
@@ -610,7 +611,11 @@ Block* CFG::CreateConditionBlock(const std::string& name,  Block* currentBlock) 
 	currentBlock->blocks.push_back(conditionBlock);
 	return conditionBlock;
 }
-
+void EmitPop(Block* currentBlock,int popAmount)
+{
+	Instruction instr{ TokenType::BLOCK,{},Operand{popAmount,false,NOT_INIT_VERSION},{} };
+	currentBlock->instructions.push_back(instr);
+}
 void CFG::ConvertStatementAST(const Node* tree)
 {
 	auto GetOpFromComplexAssignment = [](TokenType assignment)
@@ -657,14 +662,20 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::CONTINUE:
 	case TokenType::BREAK:
 	{
+		
 		Instruction command= Instruction{ type,{},{},NullOperand() };
+		assert(currentScope->prevScope != nullptr);
+		assert(currentScope != nullptr);
+		EmitPop(currentBlock, currentScope->currentPopAmount);
+		EmitPop(currentBlock, currentScope->prevScope->currentPopAmount);
+		// for 
 		currentBlock->instructions.push_back(command);
 		break;
 	}
 	case TokenType::FOR:
 	{
 		auto parentBlock = currentBlock;
-		auto forNode = tree->As<For>();
+		auto forNode = tree->AsMut<For>();
 		currentScope = &forNode->initScope;
 		auto forInitName = std::format("[for_init_{}]", Block::counterForInit++);
 		auto init = CreateConditionBlock(forInitName, currentBlock);
@@ -838,13 +849,12 @@ void CFG::ConvertStatementAST(const Node* tree)
 		}
 		currentBlock = parentBlock;
 		currentBlock = merge;
-
+		//EmitPop(currentBlock,currentScope->popAmount);
 
 		break;
 	}
 	case TokenType::PRINT:
 	{
-		
 		auto value = ConvertExpressionAST(expr->left.get());
 		Instruction instr{ type,{},value, CreateTemp()};
 		currentBlock->instructions.push_back(instr);
@@ -888,10 +898,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 	case TokenType::BLOCK:
 	{
-		Block* block = currentBlock;
-		auto scope = tree->As<Scope>();
+		auto block = currentBlock;
+		auto scope = tree->AsMut<Scope>();
 		currentScope = scope;
-
 		for (auto& statement : scope->expressions)
 		{
 			ConvertStatementAST(statement.get());
@@ -901,8 +910,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 			currentScope = currentScope->prevScope;
 		}
 		// to know how many times we need to pop
-		Instruction instr{ TokenType::BLOCK,{},Operand{scope->popAmount,false,NOT_INIT_VERSION},{} };
-		currentBlock->instructions.push_back(instr);
+		EmitPop(block, scope->popAmount);
+		
 		break;
 	}
 	case TokenType::DEDUCE:

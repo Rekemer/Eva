@@ -252,9 +252,15 @@
 					while a < 5
 					{	
 						a++;
-						if (a % 2 == 1) == true
+						str:=4;
+						str2:=1;
+						str3:=42;
+						if a % 2 == 1 
 						{
+							str5:=2;
 							continue;
 						}
+						str56:=2;
 						g+=a;
 					}
+					Print g;

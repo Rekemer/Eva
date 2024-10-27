@@ -166,7 +166,7 @@ public:
 	Block* currentBlock = nullptr;
 	Block* startBlock = nullptr;
 	// Scope
-	const Scope* currentScope = nullptr; 
+	Scope* currentScope = nullptr; 
 private:
 	
 	// int is a version
