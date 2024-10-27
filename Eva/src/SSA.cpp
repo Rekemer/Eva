@@ -229,7 +229,7 @@ void CFG::Rename(Block* b)
 	for (auto& instr : b->instructions)
 	{
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
-			instr.instrType == TokenType::BLOCK) continue;
+			instr.instrType == TokenType::BLOCK || instr.instrType == TokenType::JUMP_FOR) continue;
 		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
@@ -332,7 +332,7 @@ void CFG::Rename(Block* b)
 	for (auto it = b->instructions.rbegin(); it != b->instructions.rend(); ++it)
 	{
 		if (it->variables.size() > 0) continue;
-		if (it->instrType == TokenType::JUMP || it->instrType == TokenType::BRANCH) continue;
+		if (it->instrType == TokenType::JUMP_FOR || it->instrType == TokenType::JUMP || it->instrType == TokenType::BRANCH) continue;
 		if (it->result.IsVariable())
 		{
 			auto varName = it->result.value.AsString();
@@ -578,6 +578,39 @@ Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 	return res;
 }
 
+Block* CFG::CreateMergeBlock(std::vector<Block*> parents)
+{
+	auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge++));
+	auto merge = CreateBlock(mergeName, parents);
+	for (auto parent : parents)
+	{
+		parent->blocks.push_back(merge);
+	}
+	return merge;
+}
+Instruction CreateBranchInstruction(TokenType branchType, Operand conditionOp, Block* trueTarget, Block* falseTarget) {
+	Instruction branchInstruction = { branchType, {}, conditionOp, NullOperand() };
+	branchInstruction.targets.push_back(trueTarget);
+	branchInstruction.targets.push_back(falseTarget);
+	return branchInstruction;
+}
+Instruction CreateJumpInstruction(TokenType jumpType, std::initializer_list<Block*> targets, Block* currentBlock)
+{
+	Instruction jumpInstruction = { jumpType, {}, {}, NullOperand() };
+	for (auto target : targets)
+	{
+		jumpInstruction.targets.push_back(target);
+	}
+	currentBlock->instructions.push_back(jumpInstruction);
+	return jumpInstruction;
+}
+// Helper function to create a block and add a jump to it from the current block
+Block* CFG::CreateConditionBlock(const std::string& name,  Block* currentBlock) {
+	auto conditionBlock = CreateBlock(name, { currentBlock });
+	currentBlock->blocks.push_back(conditionBlock);
+	return conditionBlock;
+}
+
 void CFG::ConvertStatementAST(const Node* tree)
 {
 	auto GetOpFromComplexAssignment = [](TokenType assignment)
@@ -629,6 +662,58 @@ void CFG::ConvertStatementAST(const Node* tree)
 		break;
 	}
 	case TokenType::FOR:
+	{
+		auto parentBlock = currentBlock;
+		auto forNode = tree->As<For>();
+		currentScope = &forNode->initScope;
+		auto forInitName = std::format("[for_init_{}]", Block::counterForInit++);
+		auto init = CreateConditionBlock(forInitName, currentBlock);
+		currentBlock = init;
+		ConvertStatementAST(forNode->init.get());
+
+
+		auto forConditionName = std::format("[for_condition_{}]", Block::counterForCondition++);
+		auto condition = CreateConditionBlock(forConditionName, init);
+		
+		auto forActionName = std::format("[for_action_{}]", Block::counterForAction++);
+		auto action = CreateBlock(forActionName, { condition });
+		//currentBlock = action;
+		//currentBlock = condition;
+
+		auto forBodyName = std::format("[for_body_{}]", Block::counterForBody++);
+		auto body = CreateBlock(forBodyName, { condition});
+		auto forAction = CreateJumpInstruction(TokenType::JUMP, { init }, parentBlock);
+		auto jumpFor = CreateJumpInstruction(TokenType::JUMP_FOR, {action,condition, body}, init);
+
+		condition->blocks.push_back(body);
+		condition->blocks.push_back(action);
+
+
+
+		
+		currentBlock = condition;
+		auto conditionOp = ConvertExpressionAST(forNode->condition.get());
+		Instruction branch = CreateBranchInstruction(TokenType::JUMP_BRANCH,conditionOp,action, condition);
+		branch.targets.push_back(body);
+		condition->instructions.push_back(branch);
+
+		currentBlock = action;
+		ConvertStatementAST(forNode->action.get());
+		currentBlock = body;
+		ConvertStatementAST(forNode->body.get());
+
+		
+		auto parents = { parentBlock,currentBlock };
+		auto merge = CreateMergeBlock(parents);
+		
+
+		currentBlock = parentBlock;
+		//currentBlock->instructions.push_back(forAction);
+		Instruction instr{ TokenType::BLOCK,{},Operand{currentScope->popAmount,false,NOT_INIT_VERSION},{} };
+		currentBlock->instructions.push_back(instr);
+		
+		break;
+	}
 	case TokenType::FUN:
 	case TokenType::IF:
 	{
@@ -751,6 +836,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 			elif->merge = merge;
 			//elif->blocks.push_back(merge);
 		}
+		currentBlock = parentBlock;
 		currentBlock = merge;
 
 
@@ -769,26 +855,17 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto parentBlock = currentBlock;
 		auto whileConditionName = std::format("[while_condition_{}]", Block::counterWhileCondition++);
-		Operand condOperand= { whileConditionName , false, LABEL_VERSION };
-		auto condJump = Instruction{ TokenType::JUMP_WHILE,{},{},  NullOperand() };
-		auto condition = CreateBlock(whileConditionName, {currentBlock});
-		condJump.targets.push_back(condition);
-		currentBlock->instructions.
-			push_back(condJump);
-		
-		currentBlock->blocks.push_back(condition);
+		auto condition = CreateConditionBlock(whileConditionName, currentBlock);
+		auto condJump = CreateJumpInstruction(TokenType::JUMP_WHILE, { condition }, currentBlock);
+
 		currentBlock = condition;
 		auto cond = ConvertExpressionAST(expr->left.get());
 		auto whileBodyName = std::format("[while_body_{}]", Block::counterWhileBody++);
-		Instruction branch = Instruction{ TokenType::BRANCH_WHILE,{},cond,NullOperand() };
-		
 		auto body = CreateBlock(whileBodyName, {currentBlock});
 		currentBlock->blocks.push_back(body);
 
 
-		branch.targets.push_back(body);
-		branch.targets.push_back(parentBlock);
-		condition->instructions.push_back(branch);
+		auto branch = CreateBranchInstruction(TokenType::BRANCH_WHILE, cond, body, {});
 
 		currentBlock = body;
 		ConvertStatementAST(expr->right.get());
@@ -797,12 +874,10 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 		auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge++));
 		auto parents = { parentBlock,currentBlock };
-		auto merge = CreateBlock(mergeName,parents);
+		auto merge = CreateMergeBlock(parents);
+		branch.targets[1] = merge;
+		condition->instructions.push_back(branch);
 
-		for (auto parent : parents)
-		{
-			parent->blocks.push_back(merge);
-		}
 
 		Instruction jumpBack= Instruction{ TokenType::JUMP_BRANCH,{} ,{},NullOperand() };
 		jumpBack.targets.push_back(parentBlock);

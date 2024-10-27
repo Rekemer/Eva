@@ -108,6 +108,10 @@ struct Block
 	static inline int counterMerge = 0;
 	static inline int counterWhileCondition = 0;
 	static inline int counterWhileBody = 0;
+	static inline int counterForCondition = 0;
+	static inline int counterForBody = 0;
+	static inline int counterForAction = 0;
+	static inline int counterForInit = 0;
 
 	bool isVisited = false;
 };
@@ -133,12 +137,13 @@ public:
 	void InsertPhi();
 	void Debug();
 private:
+	Block* CreateConditionBlock(const std::string& name,  Block* currentBlock);
 	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
 	int NewName(const std::string& name);
 	void Rename(Block* b);
 	void FindDoms();
 	void FindIDoms();
-
+	Block* CreateMergeBlock(std::vector<Block*> parents);
 	Operand CreateTemp();
 	void CreateVariable(const Node* tree, TokenType type);
 	Operand InitVariable(const std::string& name, int depth);

@@ -53,6 +53,10 @@ std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::BRANCH_WHILE, "BRANCH_WHILE"},
 		{TokenType::JUMP_BRANCH, "JUMP_BRANCH"},
 		{TokenType::JUMP_WHILE, "JUMP_WHILE"},
+		{TokenType::CONTINUE, "CONTINUE"},
+		{TokenType::BREAK, "BREAK"},
+		{TokenType::JUMP_FOR, "JUMP_FOR"},
+		{TokenType::BRANCH_FOR, "BRANCH_FOR"},
 };
 std::string tokenToString(TokenType token) {
 

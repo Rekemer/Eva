@@ -53,6 +53,8 @@ enum class TokenType : uint8_t {
 	BRANCH_ELIF,
 	// so we don't hit code generation for if,elif, else branching
 	BRANCH_WHILE,
+	BRANCH_FOR,
+	JUMP_FOR,
 	JUMP_WHILE,
 	PHI,
 	

@@ -494,6 +494,32 @@ TEST_CASE("while statement")
 		auto isPass = CheckVariable<int>("g", (1 + 2 + 3), ValueType::INT, vm);
 		CHECK(isPass);
 	}
+	SUBCASE("whlie loop in while")
+	{
+		auto a = R"(
+					a:=0;
+					i:= 0;
+					j:= 0;
+					while i < 5
+					{
+						i++;
+						if i % 2 == 1 
+						{
+							continue;
+						}
+						a+=2;
+						while j < 2
+						{
+							j++;
+							a+=2;
+						}
+						j =0;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", (2 * 3 + 6), ValueType::INT, vm);
+		CHECK(isPass);
+	}
 }
 #endif
 #if FOR
@@ -529,6 +555,7 @@ TEST_CASE("basic for loop test")
 		auto isPass = CheckVariable<int>("g", (2 + 4), ValueType::INT, vm);
 		CHECK(isPass);
 	}
+
 
 	SUBCASE("basic for loop break")
 	{
@@ -641,10 +668,7 @@ TEST_CASE("folded for loop test")
 		auto isPass = CheckVariable<int>("g", (1 + 2 + 3), ValueType::INT, vm);
 		CHECK(isPass);
 	}
-}
 
-TEST_CASE("loops in loops")
-{
 	SUBCASE("for loop in for")
 	{
 		auto a = R"(
@@ -672,35 +696,7 @@ TEST_CASE("loops in loops")
 		auto isPass = CheckVariable<int>("a", declRes, ValueType::INT, vm);
 		CHECK(isPass);
 	}
-	SUBCASE("whlie loop in while")
-	{
-		auto a = R"(
-					a:=0;
-					i:= 0;
-					j:= 0;
-					while i < 5
-					{
-						i++;
-						if i % 2 == 1 
-						{
-							continue;
-						}
-						a+=2;
-						while j < 2
-						{
-							j++;
-							a+=2;
-						}
-						j =0;
-					}
-					)";
-		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<int>("a", (2 * 3 + 6), ValueType::INT, vm);
-		CHECK(isPass);
-	}
-
 }
-
 #endif
 
 #if IF

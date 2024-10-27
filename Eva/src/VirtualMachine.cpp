@@ -1676,7 +1676,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 
 			if (!target->isVisited)
 			{
-				conditionIndex = currentFunc->opCode.size();
+				conditionIndex.push(currentFunc->opCode.size());
 				GenerateBlockInstructions(target);
 			}
 			break;
@@ -1688,10 +1688,42 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			auto mergeBlock = HandleBranch(branches,instr);
 			break;
 		}
+		case TokenType::JUMP_FOR:
+		{
+			//assert(instr.targets.size() < 4);
+			auto firstIteration = Jump(currentFunc->opCode);
+			auto startIndex = currentFunc->opCode.size();
+			BeginContinue(startIndex);
+			auto prevSizeBreak = BeginBreak();
+			// action
+			GenerateBlockInstructions(instr.targets[0]);
+
+			// generate loop condition
+			GenerateBlockInstructions(instr.targets[1]);
+			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
+			EmitPop(currentFunc->opCode);
+
+			currentFunc->opCode[firstIteration] = CalculateJumpIndex(currentFunc->opCode, firstIteration) + 1;
+			// body
+			GenerateBlockInstructions(instr.targets[2]);
+
+			EndContinue();
+
+			auto jump = JumpBack(currentFunc->opCode);
+			// jumping backwards
+			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, startIndex);
+
+			PatchBreak(prevSizeBreak);
+
+			EmitPop(currentFunc->opCode);
+			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
+			//ClearScope(currentScope, currentScope->stack, currentFunc->opCode);
+			break;
+		}
 		case TokenType::BRANCH_WHILE:
 		{
-			assert(conditionIndex != -1);
-			auto startIndex = conditionIndex;
+			assert(!conditionIndex.empty());
+			auto startIndex = conditionIndex.top();
 			auto indexJumpFalse = JumpIfFalse(currentFunc->opCode);
 			EmitPop(currentFunc->opCode);
 
@@ -1711,7 +1743,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 
 			EmitPop(currentFunc->opCode);
 			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
-			conditionIndex = -1;
+			conditionIndex.pop();
 			break;
 		}
 		case TokenType::CONTINUE:
