@@ -10,7 +10,6 @@
 //}
 				
 //a: int = 123;
-//
 //a++;
 //b:= 4;
 //Print "Indeed";
@@ -266,17 +265,15 @@
 //	Print g;
 
 
-fun max( a: int, b :int) : int 
-{
-	Print "max";
-	//Print a;
-	//Print b;
-	//return 0;
-	if a > b {return a;}
-	return b;
-}
-
-Print max(2,4);
+//fun max( a: int, b :int) : int 
+//{
+//	Print "max";
+//	//Print a;
+//	//Print b;
+//	//return 0;
+//	if a > b {return a;}
+//	return b;
+//}
 //fun fib(n : int) : int
 //{
 //	if n < 2 
@@ -284,7 +281,15 @@ Print max(2,4);
 //		return n;
 //	}
 //	return fib(n - 2) + fib(n - 1);
+//
 //}
+fun max(t : int) : int 
+{
+	Print t;
+	return t;
+}
+c := 4;
+Print max(c);
 //g: int = 0;
 //fun main() : int
 //{

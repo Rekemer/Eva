@@ -96,12 +96,20 @@ bool CFG::IsStatement(const Node* node)
 	}
 	return false;
 }
-Block* CFG::CreateBlock(const std::string& name, std::vector<Block*> parents)
+Block* CFG::CreateBlock(const std::string& currentFunction ,const std::string& name, std::vector<Block*> parents)
 {
 	Block* block = &graph[name];
 	block->name = name;
 	block->parents = parents;
-	return block;
+	if (functionCFG[currentFunction].start == nullptr)
+	{
+		functionCFG[currentFunction].start = functionCFG[currentFunction].current = block;
+	}
+	else
+	{
+		functionCFG[currentFunction].current = block;
+	}
+	return functionCFG[currentFunction].current;
 }
 int GetVersion(std::unordered_map<std::string, int>& map, std::string& name)
 {
@@ -123,7 +131,7 @@ Operand NullOperand()
 
 Block* CFG::CreateBranchBlock(Block* parentBlock,Instruction& branch, Node* block, const std::string& BlockName, const std::string& mergeName)
 {
-	auto then = CreateBlock(BlockName, { parentBlock });
+	auto then = CreateBlock(currentFunc,BlockName, { parentBlock });
 
 	parentBlock->blocks.push_back(then);
 	currentBlock = then;
@@ -230,7 +238,7 @@ void CFG::Rename(Block* b)
 	{
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
 			instr.instrType == TokenType::BLOCK || instr.instrType == TokenType::JUMP_FOR
-			|| instr.instrType == TokenType::LEFT_PAREN|| instr.instrType == TokenType::FUN) continue;
+			|| instr.instrType == TokenType::LEFT_PAREN || instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN) continue;
 		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
@@ -463,7 +471,7 @@ void CFG::Debug()
 	std::queue<Block*> blockQueue;
 	std::unordered_set<Block*> visitedBlocks;
 
-	Bfs(startBlock, PrintBlock);
+	Bfs(functionCFG.at("global").start, PrintBlock);
 }
 
 
@@ -592,7 +600,7 @@ Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 Block* CFG::CreateMergeBlock(std::vector<Block*> parents)
 {
 	auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge++));
-	auto merge = CreateBlock(mergeName, parents);
+	auto merge = CreateBlock(currentFunc,mergeName, parents);
 	for (auto parent : parents)
 	{
 		parent->blocks.push_back(merge);
@@ -617,12 +625,12 @@ Instruction CreateJumpInstruction(TokenType jumpType, std::initializer_list<Bloc
 }
 // Helper function to create a block and add a jump to it from the current block
 Block* CFG::CreateConditionBlock(const std::string& name,  Block* currentBlock) {
-	auto conditionBlock = CreateBlock(name, { currentBlock });
+	auto conditionBlock = CreateBlock(currentFunc,name, { currentBlock });
 	currentBlock->blocks.push_back(conditionBlock);
 	return conditionBlock;
 }
 void EmitPop(Block* currentBlock,int popAmount)
-{
+{	
 	Instruction instr{ TokenType::BLOCK,{},Operand{popAmount,false,NOT_INIT_VERSION},{} };
 	currentBlock->instructions.push_back(instr);
 }
@@ -717,12 +725,12 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto condition = CreateConditionBlock(forConditionName, init);
 		
 		auto forActionName = std::format("[for_action_{}]", Block::counterForAction++);
-		auto action = CreateBlock(forActionName, { condition });
+		auto action = CreateBlock(currentFunc,forActionName, { condition });
 		//currentBlock = action;
 		//currentBlock = condition;
 
 		auto forBodyName = std::format("[for_body_{}]", Block::counterForBody++);
-		auto body = CreateBlock(forBodyName, { condition});
+		auto body = CreateBlock(currentFunc,forBodyName, { condition});
 		auto forAction = CreateJumpInstruction(TokenType::JUMP, { init }, parentBlock);
 		auto jumpFor = CreateJumpInstruction(TokenType::JUMP_FOR, {action,condition, body}, init);
 
@@ -758,32 +766,31 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::FUN:
 	{
 		auto func = tree->As<FunctionNode>();
-
-		auto funcBlock = CreateBlock(func->name, {startBlock});
-		auto argumentsName = "[" + func->name + "_arguments" + "]";
-		auto argumentsBlock = CreateBlock(argumentsName, { funcBlock });
+		Instruction funcInstr{ TokenType::FUN,{},Operand{func->name,false,2},{} };
+		currentBlock->instructions.push_back(funcInstr);
+		auto prevFunc = currentFunc;
+		currentFunc = func->name;
+		auto funcBlock = CreateBlock(currentFunc,func->name, {startBlock});
 		auto bodyName = "[" + func->name + "_body" + "]";
-		auto bodyBlock = CreateBlock(bodyName,{ argumentsBlock });
-		funcBlock->blocks.push_back(argumentsBlock);
-		argumentsBlock->blocks.push_back(bodyBlock);
-		Instruction funcInstr{ TokenType::FUN,{},{},{}};
-		funcInstr.targets.push_back(argumentsBlock);
-		funcBlock->instructions.push_back(funcInstr);
+		auto bodyBlock = CreateBlock(currentFunc, bodyName,{ funcBlock });
+		funcBlock->blocks.push_back(bodyBlock);
 		
 		startBlock->blocks.push_back(funcBlock);
 		currentBlock = funcBlock;
 
-		auto prevScope = currentScope;
+		//auto prevScope = currentScope;
 		currentScope = const_cast<Scope*>(&func->paramScope);
-		currentScope->prevScope = prevScope;
-		currentBlock = argumentsBlock;
+		//currentScope->prevScope = prevScope;
+		currentBlock = funcBlock;
 		for (auto& arg : func->arguments)
 		{
 			ConvertStatementAST(arg.get());
 		}
 		currentBlock = bodyBlock;
 		ConvertStatementAST(func->body.get());
-		currentScope = prevScope;
+		//currentScope = prevScope;
+		currentFunc = prevFunc;
+		currentBlock = functionCFG.at(currentFunc).current;
 		break;
 	}
 	case TokenType::IF:
@@ -827,7 +834,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 					auto conditionNode = elifNode->As<Expression>()->left.get();
 
 					auto conditionName = std::format("[elif_condition_{}]", std::to_string(Block::counterElif++));
-					auto conditionBlock = CreateBlock(conditionName, { currentBlock });
+					auto conditionBlock = CreateBlock(currentFunc,conditionName, { currentBlock });
 					currentBlock->blocks.push_back(conditionBlock);
 					if (prevConditionBlock)
 					{
@@ -890,7 +897,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 
 
-		auto merge = CreateBlock(mergeName, { });
+		auto merge = CreateBlock(currentFunc,mergeName, { });
 
 		for (auto parent : mergeParents)
 		{
@@ -924,7 +931,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::RETURN:
 	{
 		auto tmp = currentScope;
-		while (tmp != nullptr && tmp->prevScope!= nullptr)
+		// becase the last scope is argument scope, before that is body scope
+		while (tmp != nullptr && tmp->prevScope->prevScope!= nullptr)
 		{
 			EmitPop(currentBlock, tmp->currentPopAmount);
 			tmp = tmp->prevScope;
@@ -946,7 +954,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock = condition;
 		auto cond = ConvertExpressionAST(expr->left.get());
 		auto whileBodyName = std::format("[while_body_{}]", Block::counterWhileBody++);
-		auto body = CreateBlock(whileBodyName, {currentBlock});
+		auto body = CreateBlock(currentFunc,whileBodyName, {currentBlock});
 		currentBlock->blocks.push_back(body);
 
 
@@ -1010,6 +1018,11 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto call = static_cast<const Call*>(tree);
 		std::vector<Operand> args;
 		args.reserve(call->args.size());
+		auto res = CreateTemp();
+		Operand  funcNameOp{ {call->name},false,2 };
+		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
+		GiveType(funcCall, res, vm->GetGlobalType(call->name));
+		currentBlock->instructions.push_back(funcCall);
 		for (auto i = 0; i < call->args.size(); i++)
 		{
 			auto& arg = call->args[i];
@@ -1017,13 +1030,12 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 			args.push_back(argOp);
 
 		}
-
-		auto res = CreateTemp();
-		Operand  funcNameOp{ {call->name},false,2 };
-		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
-		GiveType(funcCall, res, vm->GetGlobalType(call->name));
-		funcCall.variables = args;
-		currentBlock->instructions.push_back(funcCall);
+		auto iter = currentBlock->instructions.end() - 1 - call->args.size();
+		iter->variables = args;
+		auto callInstr = Instruction{ TokenType::CALL ,{},funcNameOp,{} };
+		callInstr.variables = args;
+		GiveType(callInstr, res, vm->GetGlobalType(call->name));
+		currentBlock->instructions.push_back(callInstr);
 		return res;
 		break;
 	}

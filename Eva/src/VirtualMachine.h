@@ -8,6 +8,7 @@
 #include "Function.h"
 #include "HashTable.h"
 #include "Bytecode.h"
+
  
 
 
@@ -110,6 +111,7 @@ private:
 	std::stack<int> m_BreakIndexes;
 	std::stack<int> conditionIndex;
 	ValueType m_FuncReturnType = ValueType::NIL;
+	
 public:
 	Scope* currentScope= nullptr;
 };

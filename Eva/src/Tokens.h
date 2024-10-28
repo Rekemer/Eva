@@ -56,6 +56,7 @@ enum class TokenType : uint8_t {
 	BRANCH_FOR,
 	JUMP_FOR,
 	JUMP_WHILE,
+	CALL,
 	PHI,
 	
 };

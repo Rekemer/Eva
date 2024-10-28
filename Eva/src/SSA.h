@@ -138,7 +138,7 @@ class CFG
 public:
 	CFG()
 	{
-		startBlock = currentBlock = CreateBlock("[block_0]", {});
+		startBlock = currentBlock = CreateBlock(currentFunc, "[block_0]", {});
 	}
 	VirtualMachine* vm;
 	void BuildDominatorTree();
@@ -166,7 +166,7 @@ private:
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
 	bool IsStatement(const Node* node);
-	Block* CreateBlock(const std::string& name, std::vector<Block*>  parents);
+	Block* CreateBlock(const std::string& currentFunction, const std::string& name, std::vector<Block*>  parents);
 	Operand BinaryInstr(const Expression* expr, TokenType type);
 	Operand UnaryInstr(const Expression* expr, TokenType type);
 	//breadth first search
@@ -180,8 +180,8 @@ public:
 	Scope* currentScope = nullptr; 
 
 	std::unordered_map<std::string, CFGFunction> functionCFG;
+	std::string currentFunc = "global";
 private:
-	
 	// int is a version
 	std::unordered_map<std::string, int> variableCounterGlobal;
 	std::unordered_map<std::string, int> variableCounterLocal;

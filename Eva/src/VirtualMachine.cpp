@@ -30,7 +30,7 @@ vmStack.push_back(ValueContainer{v2 operation v});\
 while(false)
 
 
-
+const std::unordered_map<std::string, CFGFunction>* functionCFG;
 
 ValueType DetermineOpTypeRet(ValueType type, InCode op, Func * currentFunc)
 {
@@ -1400,15 +1400,27 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		case TokenType::LEFT_PAREN:
 		{
 			auto callName = instr.operRight.value.AsString();
-			currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+			currentFunc->opCode.push_back((Bytecode)InCode::GET_GLOBAL_VAR);
 			currentFunc->constants.emplace_back(callName);
 			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 
 			for (auto& arg : instr.variables)
 			{
-				GenerateCFGOperand(arg,instr.returnType);
+				// same reason we do that as with slash case
+					GenerateCFGOperand(arg,instr.returnType);
+				//if (arg.IsTemp())
+				//{
+					//currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
+					//EmitPop(currentFunc->opCode);
+					//currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
+				//}
 			}
-			currentFunc->opCode.push_back((uint8_t)InCode::CALL);
+			
+			break;
+		}
+		case TokenType::CALL:
+		{
+			currentFunc->opCode.push_back((Bytecode)InCode::CALL);
 			currentFunc->opCode.push_back(instr.variables.size());
 			if (instr.returnType == ValueType::NIL)
 			{
@@ -1620,17 +1632,19 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::FUN:
 		{
-			auto args = block->blocks[0];
+			//auto args = block->blocks[0];
 			//auto body = block->blocks[1];
-
-			auto funcValue = globalVariables.Get(block->name)->
+			auto funcName = instr.operRight.value.AsString();
+			auto args = functionCFG->at(funcName).start;
+			auto funcValue = globalVariables.Get(funcName)->
 				value.AsFunc();
-			funcValue->name = block->name;
+			funcValue->name = funcName;
 			functionNames.push_back(funcValue->name);
-			if (block->name == "main")
+			if (funcName == "main")
 			{
 				mainFunc = funcValue.get();
 			}
+			auto prevFunc = currentFunc;
 			currentFunc = funcValue.get();
 			m_FuncReturnType = globalVariablesTypes.Get(funcValue->name)->value.type;
 			GenerateCFG(args);
@@ -1641,7 +1655,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 				currentFunc->opCode.push_back((uint8_t)InCode::NIL);
 				currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
 			}
-
+			currentFunc = prevFunc;
 			break;
 		}
 		case TokenType::IF:
@@ -1880,7 +1894,8 @@ void VirtualMachine::GenerateCFG(Block* block)
 void VirtualMachine::GenerateBytecodeCFG(const CFG& cfg)
 {
 	currentFunc = globalFunc.get();
-	GenerateCFG(cfg.startBlock);
+	functionCFG = &cfg.functionCFG;
+	GenerateCFG(cfg.functionCFG.at(cfg.currentFunc).start);
 }
 
 void VirtualMachine::GenerateBytecodeAST(const Node const* node)
