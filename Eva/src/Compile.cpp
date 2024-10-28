@@ -56,6 +56,7 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 #if SSA
 	CFG cfg;
 	cfg.vm = &vm;
+	//cfg.startBlock
 	for (auto& tree : trees)
 	{
 		auto node = tree.GetTree();

@@ -79,6 +79,8 @@ struct Instruction
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
 {
+	std::string funcName = "global";
+
 	std::string name;
 	
 	std::vector<Instruction> instructions;
@@ -116,6 +118,14 @@ struct Block
 
 	bool isVisited = false;
 };
+
+
+struct CFGFunction
+{
+	Block* start;
+	Block* current;
+};
+
 
 struct Node;
 struct Scope;
@@ -168,6 +178,8 @@ public:
 	Block* startBlock = nullptr;
 	// Scope
 	Scope* currentScope = nullptr; 
+
+	std::unordered_map<std::string, CFGFunction> functionCFG;
 private:
 	
 	// int is a version

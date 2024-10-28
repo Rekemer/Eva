@@ -484,7 +484,6 @@ ValueType VirtualMachine::GenerateAST(const Node * tree)
 				 auto argType = GenerateAST(arg.get());
 				 auto declType = funcValue->argTypes[i];
 				 CastWithDeclared(argType,declType);
-
 			 }
 			 currentFunc->opCode.push_back((uint8_t)InCode::CALL);
 			 currentFunc->opCode.push_back(call->args.size());
@@ -1399,7 +1398,24 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		switch (type)
 		{
 		case TokenType::LEFT_PAREN:
+		{
+			auto callName = instr.operRight.value.AsString();
+			currentFunc->opCode.push_back((uint8_t)InCode::GET_GLOBAL_VAR);
+			currentFunc->constants.emplace_back(callName);
+			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+
+			for (auto& arg : instr.variables)
+			{
+				GenerateCFGOperand(arg,instr.returnType);
+			}
+			currentFunc->opCode.push_back((uint8_t)InCode::CALL);
+			currentFunc->opCode.push_back(instr.variables.size());
+			if (instr.returnType == ValueType::NIL)
+			{
+				EmitPop(currentFunc->opCode);
+			}
 			break;
+		}
 		case TokenType::RIGHT_PAREN:
 			break;
 		case TokenType::LEFT_BRACE:
@@ -1491,6 +1507,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			auto declType = res.type;
 			assert(declType != ValueType::NIL);
 			auto& assigned = instr.operRight;
+			if (assigned.version == NOT_INIT_OPERAND) break;
 			auto expressionType = assigned.type;
 			if (assigned.isConstant)
 			{
@@ -1498,11 +1515,9 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			}
 			else
 			{
-				std::string name = assigned.value.AsString();
 				if (!assigned.IsTemp())
 				{
 					EmitGet(currentFunc, assigned);
-
 				}
 			}
 			assert(expressionType != ValueType::NIL);
@@ -1604,7 +1619,31 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		case TokenType::FOR:
 			break;
 		case TokenType::FUN:
+		{
+			auto args = block->blocks[0];
+			//auto body = block->blocks[1];
+
+			auto funcValue = globalVariables.Get(block->name)->
+				value.AsFunc();
+			funcValue->name = block->name;
+			functionNames.push_back(funcValue->name);
+			if (block->name == "main")
+			{
+				mainFunc = funcValue.get();
+			}
+			currentFunc = funcValue.get();
+			m_FuncReturnType = globalVariablesTypes.Get(funcValue->name)->value.type;
+			GenerateCFG(args);
+			//ClearLocal();
+
+			if (m_FuncReturnType == ValueType::NIL)
+			{
+				currentFunc->opCode.push_back((uint8_t)InCode::NIL);
+				currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
+			}
+
 			break;
+		}
 		case TokenType::IF:
 			break;
 		case TokenType::ELIF:
@@ -1629,7 +1668,14 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		}
 		case TokenType::RETURN:
+		{
+			if (m_FuncReturnType != ValueType::NIL)
+			{
+				GenerateCFGOperand(instr.operRight, m_FuncReturnType);
+				currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
+			}
 			break;
+		}
 		case TokenType::SUPER:
 			break;
 		case TokenType::THIS:

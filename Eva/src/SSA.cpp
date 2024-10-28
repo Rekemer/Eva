@@ -63,13 +63,13 @@ bool CFG::IsStatement(const Node* node)
 	case TokenType::LEFT_PAREN:
 	{
 		// we need to check whether is returns any value
-		auto call = node->As<Call>();
-		auto type = vm->GetGlobalsType().Get(call->name)->value.type;
-		if (type == ValueType::NIL)
-		{
-			return true;
-		}
-		return false;
+		//auto call = node->As<Call>();
+		//auto type = vm->GetGlobalType(call->name);
+		//if (type == ValueType::NIL) 
+		//{
+			return false;
+		//}
+		//return false;
 		break;
 	}
 	case TokenType::LEFT_BRACE:
@@ -229,7 +229,8 @@ void CFG::Rename(Block* b)
 	for (auto& instr : b->instructions)
 	{
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
-			instr.instrType == TokenType::BLOCK || instr.instrType == TokenType::JUMP_FOR) continue;
+			instr.instrType == TokenType::BLOCK || instr.instrType == TokenType::JUMP_FOR
+			|| instr.instrType == TokenType::LEFT_PAREN|| instr.instrType == TokenType::FUN) continue;
 		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
@@ -514,7 +515,9 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	
 	auto resOp = InitVariable(left->value.AsString(), left->depth);
 	
-	auto rightOp = ConvertExpressionAST(expr->right.get());
+	Operand rightOp{};
+	if (expr->right != nullptr)
+	rightOp = ConvertExpressionAST(expr->right.get());
 
 	auto instruction = Instruction{ type,{},rightOp,resOp };
 	
@@ -647,10 +650,27 @@ void CFG::ConvertStatementAST(const Node* tree)
 	auto expr = tree->As<Expression>();
 	switch (type)
 	{
-	case TokenType::LEFT_PAREN:
+	/*case TokenType::LEFT_PAREN:
 	{
+		auto call = static_cast<const Call*>(tree);
+		std::vector<Operand> args;
+		args.reserve(call->args.size());
+		for (auto i = 0; i < call->args.size(); i++)
+		{
+			auto& arg = call->args[i];
+			auto argOp = ConvertExpressionAST(arg.get());
+			args.push_back(argOp);
+
+		}
+		
+		auto res = CreateTemp();
+		Operand  funcNameOp{ {call->name},false,2};
+		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
+		GiveType(funcCall,res,vm->GetGlobalType(call->name));
+		funcCall.variables = args;
+		currentBlock->instructions.push_back(funcCall);
 		break;
-	}
+	}*/
 	case TokenType::DECLARE:
 	case TokenType::EQUAL:
 	{
@@ -736,6 +756,36 @@ void CFG::ConvertStatementAST(const Node* tree)
 		break;
 	}
 	case TokenType::FUN:
+	{
+		auto func = tree->As<FunctionNode>();
+
+		auto funcBlock = CreateBlock(func->name, {startBlock});
+		auto argumentsName = "[" + func->name + "_arguments" + "]";
+		auto argumentsBlock = CreateBlock(argumentsName, { funcBlock });
+		auto bodyName = "[" + func->name + "_body" + "]";
+		auto bodyBlock = CreateBlock(bodyName,{ argumentsBlock });
+		funcBlock->blocks.push_back(argumentsBlock);
+		argumentsBlock->blocks.push_back(bodyBlock);
+		Instruction funcInstr{ TokenType::FUN,{},{},{}};
+		funcInstr.targets.push_back(argumentsBlock);
+		funcBlock->instructions.push_back(funcInstr);
+		
+		startBlock->blocks.push_back(funcBlock);
+		currentBlock = funcBlock;
+
+		auto prevScope = currentScope;
+		currentScope = const_cast<Scope*>(&func->paramScope);
+		currentScope->prevScope = prevScope;
+		currentBlock = argumentsBlock;
+		for (auto& arg : func->arguments)
+		{
+			ConvertStatementAST(arg.get());
+		}
+		currentBlock = bodyBlock;
+		ConvertStatementAST(func->body.get());
+		currentScope = prevScope;
+		break;
+	}
 	case TokenType::IF:
 	{
 		auto flows = expr->right.get();
@@ -863,6 +913,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 		break;
 	}
+	
 	case TokenType::PRINT:
 	{
 		auto value = ConvertExpressionAST(expr->left.get());
@@ -871,6 +922,20 @@ void CFG::ConvertStatementAST(const Node* tree)
 		break;
 	}
 	case TokenType::RETURN:
+	{
+		auto tmp = currentScope;
+		while (tmp != nullptr && tmp->prevScope!= nullptr)
+		{
+			EmitPop(currentBlock, tmp->currentPopAmount);
+			tmp = tmp->prevScope;
+		}
+
+		auto value = ConvertExpressionAST(expr->left.get());
+		Instruction instr{ type,{},value, CreateTemp() };
+		currentBlock->instructions.push_back(instr);
+
+		break;
+	}
 	case TokenType::WHILE:
 	{
 		auto parentBlock = currentBlock;
@@ -940,7 +1005,28 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	
 	switch (type)
 	{
+	case TokenType::LEFT_PAREN:
+	{
+		auto call = static_cast<const Call*>(tree);
+		std::vector<Operand> args;
+		args.reserve(call->args.size());
+		for (auto i = 0; i < call->args.size(); i++)
+		{
+			auto& arg = call->args[i];
+			auto argOp = ConvertExpressionAST(arg.get());
+			args.push_back(argOp);
 
+		}
+
+		auto res = CreateTemp();
+		Operand  funcNameOp{ {call->name},false,2 };
+		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
+		GiveType(funcCall, res, vm->GetGlobalType(call->name));
+		funcCall.variables = args;
+		currentBlock->instructions.push_back(funcCall);
+		return res;
+		break;
+	}
 	case TokenType::IDENTIFIER:
 	{
 		return InitVariable(expr->value.AsString(),expr->depth);

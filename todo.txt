@@ -64,3 +64,10 @@ b:int =a;
 Remove substract operation since every our a - b operation is a + (-b);
 
 give errors if there are no then in if statement
+
+support syntax like  if (a > b) return a;
+	       return b;
+
+check why in for after branching we have operations in parent block
+
+check compiler errors on return from functions

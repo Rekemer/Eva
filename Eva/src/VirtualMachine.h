@@ -109,7 +109,7 @@ private:
 	// for a jump
 	std::stack<int> m_BreakIndexes;
 	std::stack<int> conditionIndex;
-	std::stack<int> actionIndex;
+	ValueType m_FuncReturnType = ValueType::NIL;
 public:
 	Scope* currentScope= nullptr;
 };
