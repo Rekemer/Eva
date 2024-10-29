@@ -1023,15 +1023,14 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
 		GiveType(funcCall, res, vm->GetGlobalType(call->name));
 		currentBlock->instructions.push_back(funcCall);
+		auto funcCallIndex = currentBlock->instructions.size() - 1;
 		for (auto i = 0; i < call->args.size(); i++)
 		{
 			auto& arg = call->args[i];
 			auto argOp = ConvertExpressionAST(arg.get());
 			args.push_back(argOp);
-
 		}
-		auto iter = currentBlock->instructions.end() - 1 - call->args.size();
-		iter->variables = args;
+		currentBlock->instructions[funcCallIndex].variables = args;
 		auto callInstr = Instruction{ TokenType::CALL ,{},funcNameOp,{} };
 		callInstr.variables = args;
 		GiveType(callInstr, res, vm->GetGlobalType(call->name));
