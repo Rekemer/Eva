@@ -71,3 +71,5 @@ support syntax like  if (a > b) return a;
 check why in for after branching we have operations in parent block
 
 check compiler errors on return from functions
+add init
+arg1, arg2, arg3  := 2 ,2, 2, 

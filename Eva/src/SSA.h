@@ -73,8 +73,9 @@ struct Instruction
 
 	// for phi function and multie branching
 	std::vector<Operand> variables;
+	
+	Block* argBlock;
 };
-
 
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
@@ -200,5 +201,6 @@ private:
 	// so we do not pop variables that are already taken care of by the end of loops
 	std::unordered_set<std::string> notPoped;
 	bool isNotPop = false;
-
+	bool getAsParam = false;
+	ValueType paramType = ValueType::NIL;
 };

@@ -15,6 +15,7 @@
 //it is an input/output statement, 
 //or it affects the value in a storage location that may be accessible 
 //from outside the current procedure
+void PrintBlock(Block* block);
 
 void PrintValue(std::ostream& os, const ValueContainer& v, int version, bool IsConstant)
 {
@@ -27,6 +28,7 @@ void PrintValue(std::ostream& os, const ValueContainer& v, int version, bool IsC
 }
 std::ostream& operator<<(std::ostream& os, const Instruction& v)
 {	
+	if (v.instrType == TokenType::VAR) return os;
 	auto& resValue = v.result.value;
 	auto& leftValue = v.operLeft.value;
 	auto& rightValue = v.operRight.value;
@@ -41,6 +43,11 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 			os << param.value << "_" << param.version << ", ";
 		}
 		os << ") ";
+	}
+	if (v.instrType == TokenType::LEFT_PAREN)
+	{
+		os << "\n(arg block)\n";
+		PrintBlock(v.argBlock);
 	}
 	if (rightValue.type != ValueType::NIL ) PrintValue(os, rightValue, v.operRight.version, v.operRight.isConstant);
 	if (v.targets.size() > 0)
@@ -1021,20 +1028,42 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto res = CreateTemp();
 		Operand  funcNameOp{ {call->name},false,2 };
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
+		static int counter = 0;
+		auto name = std::format("args_{}", counter++);
+		funcCall.argBlock = &graph[name];
+		funcCall.argBlock->name = name;
+		funcCall.argBlock->parents = {currentBlock};
+
 		GiveType(funcCall, res, vm->GetGlobalType(call->name));
 		currentBlock->instructions.push_back(funcCall);
 		auto funcCallIndex = currentBlock->instructions.size() - 1;
+		auto prevBlock = currentBlock;
+		currentBlock = funcCall.argBlock;
+		
+		
+		auto funcEntry = vm->GetGlobals().Get(call->name);
+		auto funcValue = funcEntry->value.AsFunc();
+		getAsParam = true;
 		for (auto i = 0; i < call->args.size(); i++)
 		{
+			paramType = funcValue->argTypes[i];
 			auto& arg = call->args[i];
 			auto argOp = ConvertExpressionAST(arg.get());
+
+			Operand actual = Operand{ ValueContainer{argOp.type},false,2 };
+			Operand decl = Operand{ ValueContainer{funcValue->argTypes[i]},false,2 };
+			Instruction instr{ TokenType::VAR,actual,decl,argOp };
+			currentBlock->instructions.push_back(instr);
+
 			args.push_back(argOp);
 		}
-		currentBlock->instructions[funcCallIndex].variables = args;
-		auto callInstr = Instruction{ TokenType::CALL ,{},funcNameOp,{} };
-		callInstr.variables = args;
-		GiveType(callInstr, res, vm->GetGlobalType(call->name));
-		currentBlock->instructions.push_back(callInstr);
+		getAsParam = false;
+		prevBlock->instructions[funcCallIndex].operLeft = Operand{ ValueContainer{(int)call->args.size()},true,2 };
+		//auto callInstr = Instruction{ TokenType::CALL ,{},funcNameOp,{} };
+		//callInstr.variables = args;
+		//GiveType(callInstr, res, vm->GetGlobalType(call->name));
+		//currentBlock->instructions.push_back(callInstr);
+		currentBlock = prevBlock;
 		return res;
 		break;
 	}

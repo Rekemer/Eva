@@ -1397,29 +1397,41 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 
 		switch (type)
 		{
+		case TokenType::VAR:
+		{
+			auto exp = instr.operRight.value.type;
+			auto real = instr.operLeft.value.type;
+			auto& res = instr.result;
+			GenerateCFGOperand(res, exp);
+			//CAST_INT_FLOAT(real, exp);
+			break;
+		}
 		case TokenType::LEFT_PAREN:
 		{
 			auto callName = instr.operRight.value.AsString();
 			currentFunc->opCode.push_back((Bytecode)InCode::GET_GLOBAL_VAR);
 			currentFunc->constants.emplace_back(callName);
 			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+			auto argBlock = instr.argBlock;
 
-			for (auto& arg : instr.variables)
+			GenerateCFG(argBlock);
+			//for (auto& arg : instr.variables)
+			//{
+			//	// doesn't do anything if we passed temp values, 
+			//	// because they will be  on stack after parsing next SSA instructions
+			//	GenerateCFGOperand(arg,instr.returnType);
+			//}
+			currentFunc->opCode.push_back((Bytecode)InCode::CALL);
+			currentFunc->opCode.push_back(instr.operLeft.value.As<int>());
+			if (instr.returnType == ValueType::NIL)
 			{
-				// same reason we do that as with slash case
-					GenerateCFGOperand(arg,instr.returnType);
-				//if (arg.IsTemp())
-				//{
-					//currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
-					//EmitPop(currentFunc->opCode);
-					//currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
-				//}
+				EmitPop(currentFunc->opCode);
 			}
-			
 			break;
 		}
 		case TokenType::CALL:
 		{
+			assert(false);
 			currentFunc->opCode.push_back((Bytecode)InCode::CALL);
 			currentFunc->opCode.push_back(instr.variables.size());
 			if (instr.returnType == ValueType::NIL)
@@ -1696,8 +1708,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::TRUE:
 			break;
-		case TokenType::VAR:
-			break;
+		
 		case TokenType::WHILE:
 			break;
 		case TokenType::STRING_TYPE:

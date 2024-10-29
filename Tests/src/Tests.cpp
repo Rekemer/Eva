@@ -918,6 +918,51 @@ TEST_CASE("functions")
 		auto isPass = CheckVariable<int>("a", 8, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+	SUBCASE("global call pass constants")
+	{
+		auto a = R"(	
+					fun sum(a : int, b : int, c : int) : int 
+					{
+						return a+b+c;
+					}
+					a := sum(10,3,4);
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a",17 , ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("global call pass variables")
+	{
+		auto a = R"(	
+					fun sum(a : int, b : int, c : int) : int 
+					{
+						return a+b+c;
+					}
+					arg1 := 10;
+					arg2 := 3;
+					arg3 := 4;
+					a := sum(arg1,arg2,arg3);
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 17, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("global call pass temporaries")
+	{
+		auto a = R"(	
+					fun sum(a : int, b : int, c : int) : int 
+					{
+						return a+b+c;
+					}
+					arg1 := 9;
+					arg2 := 4;
+					arg3 := 3;
+					a := sum(arg1 + 1,arg2 -1 ,arg3+ 1);
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", 17, ValueType::INT, vm);
+		CHECK(isPass);
+	}
 	SUBCASE("main calling functions")
 	{
 		auto a = R"(

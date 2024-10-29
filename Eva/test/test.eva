@@ -274,38 +274,43 @@
 //	if a > b {return a;}
 //	return b;
 //}
-fun fib(n : int) : int
-{
-	if n < 2 
-	{
-		return n;
-	}
-	return fib(n - 2) + fib(n - 1);
 
-}
-fun max(t : int) : int 
-{
-	Print t;
-	return t;
-}
-fun ret(a : int, b : int, c : int) : int 
-{
-	return a+b+c;
-}
-c := 10;
+
+//fun fib(n : int) : int
+//{
+//	if n < 2 
+//	{
+//		return n;
+//	}
+//	return fib(n - 2) + fib(n - 1);
+//
+//}
+//fun max(t : int) : int 
+//{
+//	Print t;
+//	return t;
+//}
+//fun ret(a : int, b : int, c : int) : int 
+//{
+//	return a+b+c;
+//}
+//c := ret(1,1,1) + 2;
+//Print c;
+
+
 //Print ret();
 //Print fib(c+1);
 
-g: int = 0;
-fun main() : int
-{
-	c:=2;
-	e:=2;
-	a := fib(c+e);
-	g = a;
-	Print g;
-	return 0;
-}
+//g: int = 0;
+//fun main() : int
+//{
+//	c:=2;
+//	e:=2;
+//	a := fib(c+e);
+//	g = a;
+//	Print g;
+//	return 0;
+//}
 
 //a:=0;
 //for i:= 0..5
@@ -324,4 +329,15 @@ fun main() : int
 //		//a+=j;
 //	}
 //}
+
+fun foo(n : int) : int
+{
+	return n + 2;
+}
+
+a : float= 2;
+ce: int = 2.2 + 3;
+
+c0 := foo(foo(a+3));
+Print c0;
 
