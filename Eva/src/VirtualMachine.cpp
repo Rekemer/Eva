@@ -1557,8 +1557,9 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		case TokenType::EQUAL_EQUAL:
 		case TokenType::BANG_EQUAL:
 		{
-			GenerateCFGOperand(instr.operLeft, instr.returnType);
-			GenerateCFGOperand(instr.operRight, instr.returnType);
+			auto castType = HighestType(instr.operLeft.type, instr.operRight.type);
+			GenerateCFGOperand(instr.operLeft, castType);
+			GenerateCFGOperand(instr.operRight, castType);
 			currentFunc->opCode.push_back((Bytecode)InCode::EQUAL_EQUAL);
 			if (type == TokenType::BANG_EQUAL)
 			{
@@ -1569,8 +1570,9 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		case TokenType::GREATER:
 		case TokenType::GREATER_EQUAL:
 		{
-			GenerateCFGOperand(instr.operLeft, instr.returnType);
-			GenerateCFGOperand(instr.operRight, instr.returnType);
+			auto castType = HighestType(instr.operLeft.type, instr.operRight.type);
+			GenerateCFGOperand(instr.operLeft, castType);
+			GenerateCFGOperand(instr.operRight, castType);
 			auto left = instr.operLeft.type;
 			auto right = instr.operRight.type;
 			if (type == TokenType::GREATER_EQUAL)
@@ -1588,8 +1590,9 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		case TokenType::LESS:
 		case TokenType::LESS_EQUAL:
 		{
-			GenerateCFGOperand(instr.operLeft, instr.returnType);
-			GenerateCFGOperand(instr.operRight, instr.returnType);
+			auto castType = HighestType(instr.operLeft.type, instr.operRight.type);
+			GenerateCFGOperand(instr.operLeft, castType);
+			GenerateCFGOperand(instr.operRight, castType);
 			auto left = instr.operLeft.type;
 			auto right = instr.operRight.type;
 			if (type == TokenType::LESS_EQUAL)
@@ -1611,11 +1614,25 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::AND:
 		{
-			GenerateCFGOperand(instr.operLeft, instr.returnType);
-			auto indexFalse = JumpIfFalse(currentFunc->opCode);
-			EmitPop(currentFunc->opCode);
-			GenerateCFGOperand(instr.operRight, instr.returnType);
-			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+			if (instr.operRight.IsTemp())
+			{
+				currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
+				EmitPop(currentFunc->opCode);
+				GenerateCFGOperand(instr.operLeft, instr.returnType);
+				auto indexFalse = JumpIfFalse(currentFunc->opCode);
+				EmitPop(currentFunc->opCode);
+				currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
+				currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+			}
+			else
+			{
+				GenerateCFGOperand(instr.operLeft, instr.returnType);
+				auto indexFalse = JumpIfFalse(currentFunc->opCode);
+				EmitPop(currentFunc->opCode);
+				GenerateCFGOperand(instr.operRight, instr.returnType);
+				currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+			}
+
 			break;
 		}
 		case TokenType::OR:

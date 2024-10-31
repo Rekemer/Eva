@@ -599,7 +599,12 @@ Operand CFG::BinaryInstr(const Expression* expr, TokenType type)
 	auto right = ConvertExpressionAST(expr->right.get());
 	auto res = CreateTemp();
 	Instruction instr{ type,left,right,res };
-	GiveType(instr, res, HighestType(left.type,right.type));
+	auto resType = HighestType(left.type, right.type);
+	if (IsBinaryBoolOp(type))
+	{
+		resType = ValueType::BOOL;
+	}
+	GiveType(instr, res, resType);
 	currentBlock->instructions.push_back(instr);
 	return res;
 }

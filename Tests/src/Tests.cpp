@@ -16,7 +16,7 @@
 #define SCOPE 1
 #define DEDUCTION 1
 #define IF 1
-#define CONSTANT_FOLD 0
+#define CONSTANT_FOLD 1
 
 struct Tables
 {
@@ -1025,6 +1025,39 @@ TEST_CASE("functions")
 					)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<int>("g", 55, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("pass different temp var const data types to function")
+	{
+		auto a = R"(
+					fun sum(n : int, n1 : int, n2: int, n3:int) : int
+					{
+						return n + n1 + n2 + n3;
+					}
+					g: int = 0;
+					fun main() : int
+					{	
+						c:=10;
+						a := sum(c,10, g+ 10,g);
+						g = a;
+						return 0;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("g", 30, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+	SUBCASE("call function global")
+	{
+		auto a = R"(
+					fun sum(n : int, n1 : int, n2: int) : int
+					{
+						return n + n1 + n2;
+					}
+					g: int = sum(1,2,3);
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("g", 6, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 }

@@ -1523,6 +1523,8 @@ TokenType AST::TypeCheckExpression(Node* node, VirtualMachine& vm)
 
 	case TokenType::EQUAL_EQUAL:
 	case TokenType::BANG_EQUAL:
+	case TokenType::AND:
+	case TokenType::OR:
 	case TokenType::LESS:
 	case TokenType::LESS_EQUAL:
 	case TokenType::GREATER:
