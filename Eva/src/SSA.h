@@ -139,7 +139,7 @@ class CFG
 public:
 	CFG()
 	{
-		startBlock = currentBlock = CreateBlock(currentFunc, "[block_0]", {});
+		startBlock = currentBlock = CreateBlock(currentFunc, "[global_start]", {});
 	}
 	VirtualMachine* vm;
 	void BuildDominatorTree();

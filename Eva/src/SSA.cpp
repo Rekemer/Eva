@@ -665,27 +665,6 @@ void CFG::ConvertStatementAST(const Node* tree)
 	auto expr = tree->As<Expression>();
 	switch (type)
 	{
-	/*case TokenType::LEFT_PAREN:
-	{
-		auto call = static_cast<const Call*>(tree);
-		std::vector<Operand> args;
-		args.reserve(call->args.size());
-		for (auto i = 0; i < call->args.size(); i++)
-		{
-			auto& arg = call->args[i];
-			auto argOp = ConvertExpressionAST(arg.get());
-			args.push_back(argOp);
-
-		}
-		
-		auto res = CreateTemp();
-		Operand  funcNameOp{ {call->name},false,2};
-		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
-		GiveType(funcCall,res,vm->GetGlobalType(call->name));
-		funcCall.variables = args;
-		currentBlock->instructions.push_back(funcCall);
-		break;
-	}*/
 	case TokenType::DECLARE:
 	case TokenType::EQUAL:
 	{
@@ -718,6 +697,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto parentBlock = currentBlock;
 		auto forNode = tree->AsMut<For>();
+		auto prevScope = currentScope;
 		currentScope = &forNode->initScope;
 		auto forInitName = std::format("[for_init_{}]", Block::counterForInit++);
 		auto init = CreateConditionBlock(forInitName, currentBlock);
@@ -759,15 +739,18 @@ void CFG::ConvertStatementAST(const Node* tree)
 		ConvertStatementAST(forNode->body.get());
 
 		
-		auto parents = { parentBlock,currentBlock };
+		auto parents = { parentBlock,currentBlock,init };
 		auto merge = CreateMergeBlock(parents);
 		
-
+		// should not we emit block instr to merge block instead?
+		// it breaks on for in for loop case
 		currentBlock = parentBlock;
+		//currentBlock = merge;
 		//currentBlock->instructions.push_back(forAction);
 		Instruction instr{ TokenType::BLOCK,{},Operand{currentScope->popAmount,false,NOT_INIT_VERSION},{} };
 		currentBlock->instructions.push_back(instr);
-		
+		currentBlock = merge;
+		currentScope = prevScope;
 		break;
 	}
 	case TokenType::FUN:
@@ -777,12 +760,13 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock->instructions.push_back(funcInstr);
 		auto prevFunc = currentFunc;
 		currentFunc = func->name;
-		auto funcBlock = CreateBlock(currentFunc,func->name, {startBlock});
+		auto funcBlock = CreateBlock(currentFunc,func->name, {});
 		auto bodyName = "[" + func->name + "_body" + "]";
 		auto bodyBlock = CreateBlock(currentFunc, bodyName,{ funcBlock });
 		funcBlock->blocks.push_back(bodyBlock);
 		
-		startBlock->blocks.push_back(funcBlock);
+		//startBlock->blocks.push_back(funcBlock);
+		
 		currentBlock = funcBlock;
 
 		//auto prevScope = currentScope;

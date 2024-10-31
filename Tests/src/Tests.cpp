@@ -7,15 +7,15 @@
 #include <format>
 
 
-#define EXPR 0
-#define WHILE 0
-#define FOR 0
+#define EXPR 1
+#define WHILE 1
+#define FOR 1
 #define FUNC 1
-#define VAR 0
-#define STRINGS 0
-#define SCOPE 0
-#define DEDUCTION 0
-#define IF 0
+#define VAR 1
+#define STRINGS 1
+#define SCOPE 1
+#define DEDUCTION 1
+#define IF 1
 #define CONSTANT_FOLD 0
 
 struct Tables
@@ -691,7 +691,7 @@ TEST_CASE("folded for loop test")
 					}
 					)";
 		auto [res, vm] = Compile(a);
-		auto declRes = (1 + 2 + 3) * 3 + 2 + 4;
+		constexpr auto declRes = (1 + 2 + 3) * 3 + 2 + 4;
 
 		auto isPass = CheckVariable<int>("a", declRes, ValueType::INT, vm);
 		CHECK(isPass);
