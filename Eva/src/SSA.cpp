@@ -417,6 +417,84 @@ void CFG::InsertPhi()
 	Rename(startBlock);
 
 }
+
+void CFG::DeadCode()
+{
+	std::queue<std::pair<Block*,Instruction*>> workList;
+
+	auto markOperand = [&](Block* block,Operand& oper)
+		{
+			if (oper.IsVariable() or oper.IsTemp())
+			{
+
+				auto name = oper.IsTemp() ? oper.GetTempName() : oper.value.AsString();
+				auto& defsRes = block->defs.at(name);
+				for (auto i : defsRes)
+				{
+					block->instructions[i].isMarked = true;
+					workList.push({ block,&block->instructions[i] });
+				}
+			}
+		};
+	//mark
+	for (auto [key, block] : functionCFG)
+	{
+		for (auto& inst : block.start->instructions)
+		{
+			inst.isMarked = false;
+			if (inst.isCritical)
+			{
+				inst.isMarked = true;
+				workList.push({ block.start,&inst });
+			}
+		}
+		while (!workList.empty())
+		{
+			auto info = workList.front();
+			workList.pop();
+			auto instr = info.second;
+			markOperand(block.start, instr->operRight);
+			markOperand(block.start, instr->operLeft);
+			
+			// rdf traversal
+			//break;
+		}
+	}
+	// sweep 
+	//auto& instructions = functionCFG["global"].start->instructions;
+	for (auto [key, block] : functionCFG)
+	{
+		auto& instructions = block.start->instructions;
+		for (auto it = instructions.begin(); it != instructions.end(); )
+		{
+			if (!it->isMarked)
+			{
+				// branch
+				if ((int)it->instrType >= (int)TokenType::JUMP_BRANCH and 
+					(int)it->instrType <= (int)TokenType::BRANCH_FOR)
+				{
+
+				}
+				auto isJump = (int)it->instrType >= (int)TokenType::JUMP and (int)it->instrType <= (int)TokenType::JUMP_WHILE;
+				if (!isJump)
+				{
+					it = instructions.erase(it);
+				}
+				else
+				{
+					it++;
+				}
+			}
+			else
+			{
+				it++;
+			}
+		}
+
+	}
+	return;
+}
+
 void CFG::BuildDF()
 {
 	for (Block* b : tpgSort) {
@@ -426,6 +504,103 @@ void CFG::BuildDF()
 				while (runner != b->idom) {
 					runner->df.insert(b);
 					runner = runner->idom;
+				}
+			}
+		}
+	}
+
+	auto exitBlock = tpgSort.back();
+	// Initialize postdom sets
+	for (Block* b : tpgSort) {
+		if (b == exitBlock) {
+			b->postdom = { b };
+		}
+		else {
+			b->postdom = std::set<Block*>{ tpgSort.begin() ,tpgSort.end() }; // All blocks in the CFG
+			if (b->merge)
+			{
+				b->postdom.insert(b->merge);
+			}
+		}
+	}
+
+	bool changed = true;
+	while (changed) {
+		changed = false;
+		for (Block* b : tpgSort) {
+			if (b == exitBlock) continue;
+			std::set<Block*> new_postdom;
+			new_postdom.insert(b);
+
+			// Intersection of postdom(s) for all successors s of b
+			std::set<Block*> intersection;
+			bool first = true;
+			auto blocks = b->blocks;
+			if (b->merge)
+			{
+				blocks.push_back(b->merge);
+			}
+			for (Block* s : blocks) {
+				if (first) {
+					intersection = s->postdom;
+					first = false;
+				}
+				else {
+					std::set<Block*> temp;
+					std::set_intersection(
+						intersection.begin(), intersection.end(),
+						s->postdom.begin(), s->postdom.end(),
+						std::inserter(temp, temp.begin())
+					);
+					intersection = temp;
+				}
+			}
+			new_postdom.insert(intersection.begin(), intersection.end());
+
+			if (new_postdom != b->postdom) {
+				b->postdom = new_postdom;
+				changed = true;
+			}
+		}
+	}
+
+	for (auto it = tpgSort.rbegin(); it != tpgSort.rend(); ++it) {
+
+		auto b = *it;
+		// Get the strict post-dominators of b
+		// all post-dominators except oneself
+		std::set<Block*> strict_postdom = b->postdom;
+		strict_postdom.erase(b);
+
+		for (Block* d : strict_postdom) {
+			bool isImmediate = true;
+
+			// Check if d is post-dominated by any other post-dominator in strict_postdom
+			for (Block* other_d : strict_postdom) {
+				if (other_d == d) continue;
+				if (other_d->postdom.find(d) != other_d->postdom.end()) {
+					// If d is post-dominated by another post-dominator, it's not the immediate post-dominator
+					isImmediate = false;
+					break;
+				}
+			}
+
+			if (isImmediate) {
+				b->ipdom = d;
+				break;
+			}
+		}
+	}
+	// Ensure post-dominators are already calculated for each block
+	for (auto it = tpgSort.rbegin(); it != tpgSort.rend(); ++it) { // iterate in reverse
+		Block* b = *it;
+
+		if (b->blocks.size() >= 2) { // If b has multiple successors
+			for (Block* s : b->blocks) {
+				Block* runner = s;
+				while (runner != b->ipdom) { // ipdom is the immediate post-dominator
+					runner->rdf.insert(b);
+					runner = runner->ipdom;
 				}
 			}
 		}
@@ -459,12 +634,12 @@ void CFG::Bfs(Block* start, std::function<void (Block*)> action)
 				blockQueue.push(block);
 				visitedBlocks.insert(block);
 			}
-			auto merge = block->merge;
-			if (merge != nullptr && visitedBlocks.find(merge) == visitedBlocks.end())
-			{
-				blockQueue.push(merge);
-				visitedBlocks.insert(merge);
-			}
+		}
+		auto merge = blockToPrint->merge;
+		if (merge != nullptr && visitedBlocks.find(merge) == visitedBlocks.end())
+		{
+			blockQueue.push(merge);
+			visitedBlocks.insert(merge);
 		}
 	}
 }
@@ -504,14 +679,6 @@ Operand CFG::InitVariable(const std::string& name, int depth)
 	if (depth > 0)
 	{
 		InitLocal(resOp, name);
-		if (isNotPop)
-		{
-			notPoped.insert(name);
-		}
-		if (!isNotPop && notPoped.find(name) == notPoped.end())
-		{
-			currentScope->currentPopAmount++;
-		}
 	}
 	// global variable
 	else
@@ -529,39 +696,39 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	ValueType typeV = ValueType::NIL;
 	
 	auto resOp = InitVariable(left->value.AsString(), left->depth);
-	
 	Operand rightOp{};
 	if (expr->right != nullptr)
 	rightOp = ConvertExpressionAST(expr->right.get());
 
 	auto instruction = Instruction{ type,{},rightOp,resOp };
-	
+	if (resOp.depth == 0)
+	{
+		instruction.isCritical = true;
+	}
 	instruction.returnType = rightOp.type;
 	currentBlock->instructions.push_back(instruction);
 
-}
+	AddDef(left->value.AsString(), currentBlock->instructions.size() - 1);
 
+}
+void CFG::AddDef(const std::string& name, int index)
+{
+	currentBlock->defs[name].push_back(index);
+}
 void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 {
 	auto expr = tree->As<Expression>();
 	// left is variable
 	auto left = expr->left->As<Expression>();
 	auto name = left->value.AsString();
-	Operand resOp{ ValueContainer{name},false,-1 };
-	// local variable
-	if (left->depth > 0)
-	{
-		
-		InitLocal(resOp, name);
-	}
-		// global variable
-	else
-	{
-		InitGlobal(resOp, name);
-	}
-
+	auto resOp = InitVariable(name,left->depth);
 	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
+	if (resOp.depth == 0)
+	{
+		instruction.isCritical = true;
+	}
 	currentBlock->instructions.push_back(instruction);
+	AddDef(left->value.AsString(), currentBlock->instructions.size() - 1);
 
 }
 
@@ -569,6 +736,7 @@ Operand CFG::CreateTemp()
 {
 	Operand temp{ ValueContainer{ "t"} ,false,tempVersion++};
 	temp.isTemp = true;
+	AddDef(std::format("t{}", tempVersion - 1) , currentBlock->instructions.size());
 	if(currentScope == nullptr)
 	temp.depth = 0;
 	else temp.depth = currentScope->depth;
@@ -707,10 +875,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto forInitName = std::format("[for_init_{}]", Block::counterForInit++);
 		auto init = CreateConditionBlock(forInitName, currentBlock);
 		currentBlock = init;
-		isNotPop = true;
 		ConvertStatementAST(forNode->init.get());
 		// so we do not pop iterator
-		isNotPop = false;
 		
 
 		auto forConditionName = std::format("[for_condition_{}]", Block::counterForCondition++);
@@ -765,10 +931,12 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock->instructions.push_back(funcInstr);
 		auto prevFunc = currentFunc;
 		currentFunc = func->name;
-		auto funcBlock = CreateBlock(currentFunc,func->name, {});
+		auto funcBlock = CreateBlock(currentFunc,func->name, {currentBlock});
 		auto bodyName = "[" + func->name + "_body" + "]";
 		auto bodyBlock = CreateBlock(currentFunc, bodyName,{ funcBlock });
 		funcBlock->blocks.push_back(bodyBlock);
+		currentBlock->blocks.push_back(funcBlock);
+		currentBlock->blocks.push_back(bodyBlock);
 		
 		//startBlock->blocks.push_back(funcBlock);
 		
@@ -921,6 +1089,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto value = ConvertExpressionAST(expr->left.get());
 		Instruction instr{ type,{},value, CreateTemp()};
+		instr.isCritical = true;
 		currentBlock->instructions.push_back(instr);
 		break;
 	}

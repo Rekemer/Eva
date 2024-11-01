@@ -8,6 +8,7 @@
 #include <set>
 #include <functional>
 #include <stack>
+#include <format>
 #include "Value.h"
 
 const int LABEL_VERSION = -3;
@@ -24,6 +25,7 @@ struct Operand
 	int index = -1;
 	int depth = -1;
 	ValueType type = ValueType::NIL;
+	std::vector<int> defIndexes;
 	Operand(const ValueContainer& value, bool isConstant, int version) : value{ value},
 		version{ version },
 		isConstant{ isConstant }
@@ -34,7 +36,10 @@ struct Operand
 	{
 
 	}
-
+	std::string GetTempName()
+	{
+		return std::format("t{}",version);
+	}
 	bool IsVariable() const
 	{
 		return value.type == ValueType::STRING && isConstant == false && isTemp == false;
@@ -55,6 +60,8 @@ struct Instruction
 	Operand operLeft;
 	Operand operRight;
 	Operand result;
+	bool isMarked = false;
+	bool isCritical = false;
 	Instruction() = default;
 	Instruction(TokenType instr, Operand left, Operand right, Operand res) : 
 		instrType{ instr }, 
@@ -80,8 +87,6 @@ struct Instruction
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
 {
-	std::string funcName = "global";
-
 	std::string name;
 	
 	std::vector<Instruction> instructions;
@@ -94,12 +99,21 @@ struct Block
 
 	// blocks that dominate current block
 	std::set<Block*> dom;
+	// every path from this to postdom nodes must lead to exit
+	std::set<Block*> postdom;
 
 	// immediate dominator
 	Block* idom = nullptr;
+	// immediate post dominator
+	Block* ipdom = nullptr;
 
 	// dominance frontier
 	std::set<Block*> df;
+	// reverse dominance frontier
+	std::set<Block*> rdf;
+
+	std::unordered_map<std::string,std::vector<int>> defs;
+	std::unordered_map<std::string,std::vector<int>> uses;
 
 	// next blocks - children
 	std::vector<Block*> blocks;
@@ -147,8 +161,10 @@ public:
 	void TopSort();
 	void BuildDF();
 	void InsertPhi();
+	void DeadCode();
 	void Debug();
 private:
+	void AddDef(const std::string& name, int index);
 	Block* CreateConditionBlock(const std::string& name,  Block* currentBlock);
 	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
 	int NewName(const std::string& name);
@@ -199,8 +215,6 @@ private:
 	// topologically sorted graph
 	std::vector<Block*> tpgSort;
 	// so we do not pop variables that are already taken care of by the end of loops
-	std::unordered_set<std::string> notPoped;
-	bool isNotPop = false;
 	bool getAsParam = false;
 	ValueType paramType = ValueType::NIL;
 };

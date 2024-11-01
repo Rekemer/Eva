@@ -7,6 +7,7 @@
 #define DEBUG_STACK 1
 #define DEBUG_TOKENS 0
 #define SSA 1
+#define DEC 0
 #define CONSTANT_FOLD 0
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
@@ -65,6 +66,9 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 	cfg.BuildDominatorTree();
 	cfg.BuildDF();
 	cfg.InsertPhi();
+#if DEC
+	cfg.DeadCode();
+#endif
 	cfg.Debug();
 	//return {};
 #endif 
