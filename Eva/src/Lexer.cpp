@@ -589,10 +589,6 @@ bool Lexer::Parse(const char* source, VirtualMachine& vm)
 		EatWhiteSpace();
 		
 		startSymbol = currentSymbol;
-		if (currentSymbol[0] ==  'm')
-		{
-			std::cout << 's';
-		}
 
 		ParseDeclaration(vm);
 		

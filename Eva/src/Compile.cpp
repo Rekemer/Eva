@@ -7,7 +7,8 @@
 #define DEBUG_STACK 1
 #define DEBUG_TOKENS 0
 #define SSA 1
-#define DEC 0
+#define DEBUG_SSA 1
+#define DEC 1
 #define CONSTANT_FOLD 0
 std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 {
@@ -69,7 +70,11 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 #if DEC
 	cfg.DeadCode();
 #endif
+#if DEBUG_SSA 
+
 	cfg.Debug();
+#endif 
+
 	//return {};
 #endif 
 

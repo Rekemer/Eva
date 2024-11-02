@@ -84,6 +84,26 @@ struct Instruction
 	Block* argBlock;
 };
 
+// Custom hash function for std::pair<int, std::string>
+struct pair_hash {
+	std::size_t operator()(const std::pair<int, std::string>& p) const {
+		// Use std::hash to hash both the int and string parts of the pair
+		std::size_t h1 = std::hash<int>{}(p.first);
+		std::size_t h2 = std::hash<std::string>{}(p.second);
+
+		// Combine the two hashes (simple way to combine hashes)
+		return h1 ^ (h2 << 1); // XOR and bit shift to mix the hashes
+	}
+};
+struct pair_hash_block {
+	std::size_t operator()(const std::pair<Block*, std::string>& p) const {
+		std::size_t h1 = std::hash<Block*>{}(p.first);
+		std::size_t h2 = std::hash<std::string>{}(p.second);
+
+		return h1 ^ (h2 << 1);
+	}
+};
+
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
 {
@@ -112,7 +132,7 @@ struct Block
 	// reverse dominance frontier
 	std::set<Block*> rdf;
 
-	std::unordered_map<std::string,std::vector<int>> defs;
+	std::unordered_map<std::pair<int, std::string>,std::vector<int>, pair_hash> defs;
 	std::unordered_map<std::string,std::vector<int>> uses;
 
 	// next blocks - children
@@ -132,6 +152,7 @@ struct Block
 	static inline int counterForInit = 0;
 
 	bool isVisited = false;
+	bool isSweeped = false;
 };
 
 
@@ -164,7 +185,7 @@ public:
 	void DeadCode();
 	void Debug();
 private:
-	void AddDef(const std::string& name, int index);
+	void AddDef(int depth, const std::string& name, int index);
 	Block* CreateConditionBlock(const std::string& name,  Block* currentBlock);
 	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
 	int NewName(const std::string& name);
@@ -182,6 +203,7 @@ private:
 	void CreateVariableFrom(const Node* tree, const Operand& rightOp);
 	Operand ConvertExpressionAST(const Node* tree);
 	void ConvertStatementAST(const Node* tree);
+	void EmitPop(Block* currentBlock, int popAmount);
 	bool IsStatement(const Node* node);
 	Block* CreateBlock(const std::string& currentFunction, const std::string& name, std::vector<Block*>  parents);
 	Operand BinaryInstr(const Expression* expr, TokenType type);
@@ -211,7 +233,11 @@ private:
 	// for renaming stage
 	std::unordered_map<std::string, std::stack<int>> variableStack;
 	
+	// so we do not pop variables that are already taken care of by the end of loops
+	std::unordered_set<std::string> notPoped;
+	bool isNotPop = false;
 
+	std::unordered_map < std::pair<Block*, std::string> , std::vector<int >, pair_hash_block> globalDefs;
 	// topologically sorted graph
 	std::vector<Block*> tpgSort;
 	// so we do not pop variables that are already taken care of by the end of loops

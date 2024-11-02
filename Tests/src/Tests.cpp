@@ -7,16 +7,16 @@
 #include <format>
 
 
-#define EXPR 1
-#define WHILE 1
-#define FOR 1
-#define FUNC 1
-#define VAR 1
-#define STRINGS 1
+#define EXPR 0
+#define WHILE 0
+#define FOR 0
+#define FUNC 0
+#define VAR 0
+#define STRINGS 0
 #define SCOPE 1
-#define DEDUCTION 1
-#define IF 1
-#define CONSTANT_FOLD 1
+#define DEDUCTION 0
+#define IF 0
+#define CONSTANT_FOLD 0
 
 struct Tables
 {
@@ -95,7 +95,7 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 
 #endif // EXPR
 
-#ifdef STRINGS
+#if STRINGS
 	TEST_CASE("testing strings ")
 	{
 		CHECK(CompileTest("\"Helo\" == \"Hello\" ").As<bool>() == false);

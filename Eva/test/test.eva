@@ -397,22 +397,53 @@
 //check = 2.0 > 1;
 //Print check;
 
-a := 2+2;
-b :=2;
-Print a;
+//a := 2+2;
+//b :=2;
+//Print a;
 
-fun main() : int
-{
-	b := 4;
-	if true 
-	{
-	a = 2;
-	}
-	else
-	{
-		a = 5;
-	}
-	Print a;
-	//Print b;
-	return 0;
-}
+//fun main() : int
+//{
+//	//b := 4;
+//	//{
+//	//	b1:=3;
+//	//	//Print b1;
+//	//	b2:=42;
+//	//	//Print b2;
+//	//}
+//	//c := 4;
+//	//e := 4.2;
+//	//Print e;
+//
+//{
+//	a: float = 2;
+//	a+=2;
+//}
+//
+//{
+//	b : int = 15;
+//	b+=2;
+//	{
+//		c : float = -1;
+//		b*= c;
+//		a -=c;
+//	}
+//	a+=b;
+//}
+//{
+//	b : int = 15;
+//	b+=2;
+//	{
+//		c : float = -1;
+//		b*= c;
+//		a -=c;
+//	}
+//	a+=b;
+//}
+//Print a;
+//	return 10;
+//}
+a: int = 15;
+				{
+					a--;
+				}
+				Print a;

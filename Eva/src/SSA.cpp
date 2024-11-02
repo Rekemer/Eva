@@ -428,69 +428,169 @@ void CFG::DeadCode()
 			{
 
 				auto name = oper.IsTemp() ? oper.GetTempName() : oper.value.AsString();
-				auto& defsRes = block->defs.at(name);
+				auto& defsRes = oper.depth > 0 ? block->defs.at({ oper.depth,name }) : globalDefs[{block, name}];
 				for (auto i : defsRes)
 				{
-					block->instructions[i].isMarked = true;
-					workList.push({ block,&block->instructions[i] });
+					if (!block->instructions[i].isMarked)
+					{
+						block->instructions[i].isMarked = true;
+						workList.push({ block,&block->instructions[i] });
+					}
+				}
+			}
+		};
+
+	auto mark = [&](Block* b)
+		{
+			for (auto& inst : b->instructions)
+			{
+				inst.isMarked = false;
+				if (inst.isCritical)
+				{
+					inst.isMarked = true;
+					workList.push({ b,&inst });
+				}
+			}
+			while (!workList.empty())
+			{
+				auto info = workList.front();
+				workList.pop();
+				auto instr = info.second;
+				if (instr->instrType != TokenType::FUN)
+				{
+					markOperand(info.first, instr->operRight);
+					markOperand(info.first, instr->operLeft);
+					
+					markOperand(info.first, instr->result);
 				}
 			}
 		};
 	//mark
-	for (auto [key, block] : functionCFG)
+	for (auto [key, func] : functionCFG)
 	{
-		for (auto& inst : block.start->instructions)
+		mark(func.start);
+		for (auto block : func.start->blocks)
 		{
-			inst.isMarked = false;
-			if (inst.isCritical)
-			{
-				inst.isMarked = true;
-				workList.push({ block.start,&inst });
-			}
-		}
-		while (!workList.empty())
-		{
-			auto info = workList.front();
-			workList.pop();
-			auto instr = info.second;
-			markOperand(block.start, instr->operRight);
-			markOperand(block.start, instr->operLeft);
-			
-			// rdf traversal
-			//break;
+			mark(block);
 		}
 	}
+	
 	// sweep 
-	//auto& instructions = functionCFG["global"].start->instructions;
-	for (auto [key, block] : functionCFG)
-	{
-		auto& instructions = block.start->instructions;
-		for (auto it = instructions.begin(); it != instructions.end(); )
-		{
-			if (!it->isMarked)
+	auto sweep = [](Block* block)
+		{	
+			block->isSweeped = true;
+			auto currentDepth = 0;
+			std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
+			std::unordered_map<int, int> removedLocalTotal;
+			std::unordered_map<int,int> declaredLocal;
+			auto  set = [](std::unordered_map<std::pair<int, std::string>, int, pair_hash>& map, int key, const std::string& name) {
+				//auto it = map.find(key);
+				map[{key,name}]++;
+				//if (it == map.end())
+				//{
+				//	map[key] = -1;
+				//}
+				//else map[key]++;
+			};
+			auto& instructions = block->instructions;
+			for (auto it = instructions.begin(); it != instructions.end(); )
 			{
-				// branch
-				if ((int)it->instrType >= (int)TokenType::JUMP_BRANCH and 
-					(int)it->instrType <= (int)TokenType::BRANCH_FOR)
+				if (it->instrType == TokenType::FUN)
 				{
+					it++;
+					continue;
 
 				}
-				auto isJump = (int)it->instrType >= (int)TokenType::JUMP and (int)it->instrType <= (int)TokenType::JUMP_WHILE;
-				if (!isJump)
+				if (!it->isMarked)
 				{
-					it = instructions.erase(it);
+					// branch
+					if ((int)it->instrType >= (int)TokenType::JUMP_BRANCH and
+						(int)it->instrType <= (int)TokenType::BRANCH_FOR)
+					{
+
+					}
+					auto isJump = (int)it->instrType >= (int)TokenType::JUMP and (int)it->instrType <= (int)TokenType::JUMP_WHILE;
+					if (!isJump)
+					{
+						if (it->result.IsVariable())
+						{
+							//set(removedLocal, it->result.depth, it->result.value.AsString());
+							removedLocalTotal[it->result.depth]++;
+							
+						}
+						it = instructions.erase(it);
+					}
+					else
+					{
+						
+						it++;
+					}
 				}
 				else
 				{
+					if (it->operRight.depth == 0)
+					{
+						it++;
+						continue;
+					}
+					if (it->result.IsVariable() && it->result.depth > 0)
+					{
+						//set(declaredLocal, 0);
+						int total = 0;
+						for (const auto& pair : removedLocalTotal) {
+							if(pair.first <= it->result.depth)
+							total += pair.second;
+						}
+
+						removedLocal[{it->result.depth, it->result.value.AsString()}] =
+							total;
+
+					}
+					if (it->instrType == TokenType::BLOCK)
+					{
+						auto iter = removedLocalTotal.find(it->operRight.depth);
+						if (iter != removedLocalTotal.end())
+						{
+							it->operRight.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
+							removedLocalTotal.at(it->operRight.depth) = 0;
+							//declaredLocal[0] -= it->operRight.value.AsRef<int>();
+						}
+					}
+					if (it->operLeft.IsVariable())
+					{
+						//auto iter = removedLocal.find(it->operLeft.depth);
+						//if (iter != removedLocal.end())
+						//{
+						//	it->operLeft.index -= iter->second;
+						//}
+					}
+					if (it->operRight.IsVariable())
+					{
+						int total = removedLocal.at({ it->operRight.depth, it->operRight.value.AsString() });
+						//for (const auto& pair : removedLocal) {
+						//	if(pair.first <= it->operRight.depth)
+						//	total += pair.second;
+						//}
+						//auto iter = removedLocal.find(it->operRight.depth);
+						//if (iter != removedLocal.end())
+						{
+							//if (it->operRight.index >= total)
+							it->operRight.index -= total;
+							//it->operRight.index = declaredLocal[0]-1;
+						}
+					}
 					it++;
 				}
 			}
-			else
-			{
-				it++;
-			}
+		};
+	for (auto [key, func] : functionCFG)
+	{
+		sweep(func.start);
+		for (auto block : func.start->blocks)
+		{
+			if ( !block->isSweeped)
+			sweep(block);
 		}
-
 	}
 	return;
 }
@@ -594,9 +694,13 @@ void CFG::BuildDF()
 	// Ensure post-dominators are already calculated for each block
 	for (auto it = tpgSort.rbegin(); it != tpgSort.rend(); ++it) { // iterate in reverse
 		Block* b = *it;
-
-		if (b->blocks.size() >= 2) { // If b has multiple successors
-			for (Block* s : b->blocks) {
+		auto blocks = b->blocks;
+		if (b->merge)
+		{
+			blocks.push_back(b->merge);
+		}
+		if (blocks.size() >= 2) { // If b has multiple successors
+			for (Block* s : blocks) {
 				Block* runner = s;
 				while (runner != b->ipdom) { // ipdom is the immediate post-dominator
 					runner->rdf.insert(b);
@@ -679,6 +783,7 @@ Operand CFG::InitVariable(const std::string& name, int depth)
 	if (depth > 0)
 	{
 		InitLocal(resOp, name);
+		
 	}
 	// global variable
 	else
@@ -694,11 +799,24 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	auto left = expr->left->As<Expression>();
 	
 	ValueType typeV = ValueType::NIL;
-	
-	auto resOp = InitVariable(left->value.AsString(), left->depth);
+	auto resName = left->value.AsString();
+	auto resOp = InitVariable(resName, left->depth);
 	Operand rightOp{};
 	if (expr->right != nullptr)
-	rightOp = ConvertExpressionAST(expr->right.get());
+	{
+		rightOp = ConvertExpressionAST(expr->right.get());
+		if (left->depth > 0)
+		{
+			if (isNotPop)
+			{
+				notPoped.insert(resName);
+			}
+			if (!isNotPop && notPoped.find(resName) == notPoped.end())
+			{
+				currentScope->currentPopAmount = std::min(currentScope->currentPopAmount + 1, currentScope->popAmount);
+			}
+		}
+	}
 
 	auto instruction = Instruction{ type,{},rightOp,resOp };
 	if (resOp.depth == 0)
@@ -708,12 +826,20 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	instruction.returnType = rightOp.type;
 	currentBlock->instructions.push_back(instruction);
 
-	AddDef(left->value.AsString(), currentBlock->instructions.size() - 1);
+	AddDef(resOp.depth, left->value.AsString(), currentBlock->instructions.size() - 1);
 
 }
-void CFG::AddDef(const std::string& name, int index)
+void CFG::AddDef(int depth, const std::string& name, int index)
 {
-	currentBlock->defs[name].push_back(index);
+	if (depth > 0)
+	{
+		currentBlock->defs[{depth,name}].push_back(index);
+	}
+	else
+	{
+		globalDefs[{currentBlock, name}].push_back(index);
+	}
+
 }
 void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 {
@@ -728,7 +854,7 @@ void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 		instruction.isCritical = true;
 	}
 	currentBlock->instructions.push_back(instruction);
-	AddDef(left->value.AsString(), currentBlock->instructions.size() - 1);
+	AddDef(resOp.depth,left->value.AsString(), currentBlock->instructions.size() - 1);
 
 }
 
@@ -736,10 +862,10 @@ Operand CFG::CreateTemp()
 {
 	Operand temp{ ValueContainer{ "t"} ,false,tempVersion++};
 	temp.isTemp = true;
-	AddDef(std::format("t{}", tempVersion - 1) , currentBlock->instructions.size());
 	if(currentScope == nullptr)
 	temp.depth = 0;
 	else temp.depth = currentScope->depth;
+	AddDef(temp.depth,std::format("t{}", tempVersion - 1) , currentBlock->instructions.size());
 	return temp;
 }
 
@@ -809,9 +935,12 @@ Block* CFG::CreateConditionBlock(const std::string& name,  Block* currentBlock) 
 	currentBlock->blocks.push_back(conditionBlock);
 	return conditionBlock;
 }
-void EmitPop(Block* currentBlock,int popAmount)
+void CFG::EmitPop(Block* currentBlock,int popAmount)
 {	
-	Instruction instr{ TokenType::BLOCK,{},Operand{popAmount,false,NOT_INIT_VERSION},{} };
+	auto pops = Operand{ popAmount,false,NOT_INIT_VERSION };
+	pops.depth = currentScope->depth;
+	Instruction instr{ TokenType::BLOCK,{},pops,{} };
+	instr.isCritical = true;
 	currentBlock->instructions.push_back(instr);
 }
 void CFG::ConvertStatementAST(const Node* tree)
@@ -875,7 +1004,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto forInitName = std::format("[for_init_{}]", Block::counterForInit++);
 		auto init = CreateConditionBlock(forInitName, currentBlock);
 		currentBlock = init;
+		isNotPop = true;
 		ConvertStatementAST(forNode->init.get());
+		isNotPop = false;
 		// so we do not pop iterator
 		
 
@@ -918,8 +1049,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock = parentBlock;
 		//currentBlock = merge;
 		//currentBlock->instructions.push_back(forAction);
-		Instruction instr{ TokenType::BLOCK,{},Operand{currentScope->popAmount,false,NOT_INIT_VERSION},{} };
-		currentBlock->instructions.push_back(instr);
+		EmitPop(currentBlock, currentScope->popAmount);
 		currentBlock = merge;
 		currentScope = prevScope;
 		break;
@@ -928,6 +1058,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto func = tree->As<FunctionNode>();
 		Instruction funcInstr{ TokenType::FUN,{},Operand{func->name,false,2},{} };
+		funcInstr.isCritical = true;
 		currentBlock->instructions.push_back(funcInstr);
 		auto prevFunc = currentFunc;
 		currentFunc = func->name;
@@ -1097,7 +1228,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto tmp = currentScope;
 		// becase the last scope is argument scope, before that is body scope
-		while (tmp != nullptr && tmp->prevScope->prevScope!= nullptr)
+		while (tmp != nullptr && tmp->prevScope != nullptr)
 		{
 			EmitPop(currentBlock, tmp->currentPopAmount);
 			tmp = tmp->prevScope;
@@ -1105,6 +1236,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 		auto value = ConvertExpressionAST(expr->left.get());
 		Instruction instr{ type,{},value, CreateTemp() };
+		instr.isCritical = true;
 		currentBlock->instructions.push_back(instr);
 
 		break;
@@ -1153,12 +1285,12 @@ void CFG::ConvertStatementAST(const Node* tree)
 		{
 			ConvertStatementAST(statement.get());
 		}
+		// to know how many times we need to pop
+		EmitPop(block, scope->popAmount);
 		if (currentScope->prevScope)
 		{
 			currentScope = currentScope->prevScope;
 		}
-		// to know how many times we need to pop
-		EmitPop(block, scope->popAmount);
 		
 		break;
 	}
@@ -1249,6 +1381,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 			Instruction action{ type,{},{},var };
 			GiveType(action, action.result, expr->value.type);
 			currentBlock->instructions.push_back(action);
+			AddDef(var.depth, var.value.AsString(), currentBlock->instructions.size() - 1);
 			return var;
 
 		}
