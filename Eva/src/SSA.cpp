@@ -3,7 +3,6 @@
 #include "VirtualMachine.h"
 #include "Tokens.h"
 #include <cassert>
-#include <queue>
 #include <unordered_set>
 #include <format>
 
@@ -366,6 +365,15 @@ void CFG::Rename(Block* b)
 
 }
 
+Instruction CFG::CreatePhi(const std::string& name)
+{	
+	auto instr = Instruction{ TokenType::PHI ,{},{},Operand{ValueContainer{name},false,NOT_INIT_VERSION} };
+	return instr;
+}
+void MakeCritical(Instruction& instr)
+{
+	instr.isCritical = true;
+}
 void CFG::InsertPhi()
 {
 	// placing stage
@@ -393,10 +401,18 @@ void CFG::InsertPhi()
 					hasAlready.insert(blockDf);
 					auto name = v.first;
 										// Operand{name} is result  -  x = phi x x x x 
-					auto instr = Instruction{ TokenType::PHI ,{},{},Operand{ValueContainer{name},false,NOT_INIT_VERSION} };
+					auto instr = CreatePhi(name);
 					auto potentialChanges = blockDf->parents.size();
 					instr.variables.resize(potentialChanges);
 					blockDf->instructions.insert(blockDf->instructions.begin(), instr);
+					blockDf->offsetPhi++;
+					for (auto& [key,v]: blockDf->defs)
+					{
+						std::for_each(v.begin(), v.end(), [&blockDf](auto& index)
+							{
+								index += (blockDf->offsetPhi -1);
+							});
+					}
 					if (blockDf->phiInstructionIndexes.empty())
 					{
 						blockDf->phiInstructionIndexes.push_back(0);
@@ -418,11 +434,9 @@ void CFG::InsertPhi()
 
 }
 
-void CFG::DeadCode()
-{
-	std::queue<std::pair<Block*,Instruction*>> workList;
-
-	auto markOperand = [&](Block* block,Operand& oper)
+void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
+	{
+	auto markOperand = [&](Block* block, Operand& oper)
 		{
 			if (oper.IsVariable() or oper.IsTemp())
 			{
@@ -437,159 +451,205 @@ void CFG::DeadCode()
 						workList.push({ block,&block->instructions[i] });
 					}
 				}
-			}
-		};
-
-	auto mark = [&](Block* b)
-		{
-			for (auto& inst : b->instructions)
-			{
-				inst.isMarked = false;
-				if (inst.isCritical)
+				for (auto index : block->phiInstructionIndexes)
 				{
-					inst.isMarked = true;
-					workList.push({ b,&inst });
-				}
-			}
-			while (!workList.empty())
-			{
-				auto info = workList.front();
-				workList.pop();
-				auto instr = info.second;
-				if (instr->instrType != TokenType::FUN)
-				{
-					markOperand(info.first, instr->operRight);
-					markOperand(info.first, instr->operLeft);
+					auto& instr = block->instructions[index];
 					
-					markOperand(info.first, instr->result);
+					if (!instr.isMarked && instr.result.value.AsString() == name)
+					{
+						instr.isMarked = true;
+						workList.push({ block,&instr });
+						
+					}
 				}
 			}
 		};
-	//mark
-	for (auto [key, func] : functionCFG)
-	{
-		mark(func.start);
-		for (auto block : func.start->blocks)
+
+		for (auto& inst : b->instructions)
 		{
-			mark(block);
-		}
-	}
-	
-	// sweep 
-	auto sweep = [](Block* block)
-		{	
-			block->isSweeped = true;
-			auto currentDepth = 0;
-			std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
-			std::unordered_map<int, int> removedLocalTotal;
-			std::unordered_map<int,int> declaredLocal;
-			auto  set = [](std::unordered_map<std::pair<int, std::string>, int, pair_hash>& map, int key, const std::string& name) {
-				//auto it = map.find(key);
-				map[{key,name}]++;
-				//if (it == map.end())
-				//{
-				//	map[key] = -1;
-				//}
-				//else map[key]++;
-			};
-			auto& instructions = block->instructions;
-			for (auto it = instructions.begin(); it != instructions.end(); )
+			inst.isMarked = false;
+			if (inst.isCritical)
 			{
-				if (it->instrType == TokenType::FUN)
+				inst.isMarked = true;
+				workList.push({ b,&inst });
+			}
+		}
+		while (!workList.empty())
+		{
+			auto info = workList.front();
+			workList.pop();
+			auto instr = info.second;
+			if (instr->instrType != TokenType::FUN)
+			{
+				markOperand(info.first, instr->operRight);
+				markOperand(info.first, instr->operLeft);
+
+				markOperand(info.first, instr->result);
+			}
+			for (auto block : info.first->rdf)
+			{
+				auto& branch = block->instructions.back().instrType
+					== TokenType::BLOCK ? *(block->instructions.end() - 2) :
+					block->instructions.back();
+				if (!branch.isMarked)
 				{
-					it++;
-					continue;
+					branch.isMarked = true;
+					workList.push({ block,&branch });
+				}
+			}
+		}
+		
+		for (auto child : b->blocks)
+		{
+			Mark(child, workList);
+		}
+		if (b->merge)
+		{
+			Mark(b->merge, workList);
+		}
+}
+
+// sweep 
+void CFG::Sweep(Block* block)
+	{
+		block->isSweeped = true;
+		auto currentDepth = 0;
+		std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
+		std::unordered_map<int, int> removedLocalTotal;
+		std::unordered_map<int, int> declaredLocal;
+		auto  set = [](std::unordered_map<std::pair<int, std::string>, int, pair_hash>& map, int key, const std::string& name) {
+			//auto it = map.find(key);
+			map[{key, name}]++;
+			//if (it == map.end())
+			//{
+			//	map[key] = -1;
+			//}
+			//else map[key]++;
+			};
+		auto& instructions = block->instructions;
+		for (auto it = instructions.begin(); it != instructions.end(); )
+		{
+			if (it->instrType == TokenType::FUN)
+			{
+				it++;
+				continue;
+
+			}
+			if (!it->isMarked)
+			{
+				// branch
+				if ((int)it->instrType >= (int)TokenType::JUMP_BRANCH and
+					(int)it->instrType <= (int)TokenType::BRANCH_FOR)
+				{
 
 				}
-				if (!it->isMarked)
+				auto isJump = (int)it->instrType >= (int)TokenType::JUMP and (int)it->instrType <= (int)TokenType::JUMP_WHILE;
+				if (!isJump)
 				{
-					// branch
-					if ((int)it->instrType >= (int)TokenType::JUMP_BRANCH and
-						(int)it->instrType <= (int)TokenType::BRANCH_FOR)
+					if (it->result.IsVariable())
 					{
+						//set(removedLocal, it->result.depth, it->result.value.AsString());
+						removedLocalTotal[it->result.depth]++;
 
 					}
-					auto isJump = (int)it->instrType >= (int)TokenType::JUMP and (int)it->instrType <= (int)TokenType::JUMP_WHILE;
-					if (!isJump)
-					{
-						if (it->result.IsVariable())
-						{
-							//set(removedLocal, it->result.depth, it->result.value.AsString());
-							removedLocalTotal[it->result.depth]++;
-							
-						}
-						it = instructions.erase(it);
-					}
-					else
-					{
-						
-						it++;
-					}
+					it = instructions.erase(it);
 				}
 				else
 				{
-					if (it->operRight.depth == 0)
-					{
-						it++;
-						continue;
-					}
-					if (it->result.IsVariable() && it->result.depth > 0)
-					{
-						//set(declaredLocal, 0);
-						int total = 0;
-						for (const auto& pair : removedLocalTotal) {
-							if(pair.first <= it->result.depth)
-							total += pair.second;
-						}
 
-						removedLocal[{it->result.depth, it->result.value.AsString()}] =
-							total;
-
-					}
-					if (it->instrType == TokenType::BLOCK)
-					{
-						auto iter = removedLocalTotal.find(it->operRight.depth);
-						if (iter != removedLocalTotal.end())
-						{
-							it->operRight.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
-							removedLocalTotal.at(it->operRight.depth) = 0;
-							//declaredLocal[0] -= it->operRight.value.AsRef<int>();
-						}
-					}
-					if (it->operLeft.IsVariable())
-					{
-						//auto iter = removedLocal.find(it->operLeft.depth);
-						//if (iter != removedLocal.end())
-						//{
-						//	it->operLeft.index -= iter->second;
-						//}
-					}
-					if (it->operRight.IsVariable())
-					{
-						int total = removedLocal.at({ it->operRight.depth, it->operRight.value.AsString() });
-						//for (const auto& pair : removedLocal) {
-						//	if(pair.first <= it->operRight.depth)
-						//	total += pair.second;
-						//}
-						//auto iter = removedLocal.find(it->operRight.depth);
-						//if (iter != removedLocal.end())
-						{
-							//if (it->operRight.index >= total)
-							it->operRight.index -= total;
-							//it->operRight.index = declaredLocal[0]-1;
-						}
-					}
 					it++;
 				}
 			}
-		};
+			else
+			{
+				if (it->operRight.depth == 0)
+				{
+					it++;
+					continue;
+				}
+				if (it->result.IsVariable() && it->result.depth > 0)
+				{
+					//set(declaredLocal, 0);
+					int total = 0;
+					for (const auto& pair : removedLocalTotal) {
+						if (pair.first <= it->result.depth)
+							total += pair.second;
+					}
+
+					removedLocal[{it->result.depth, it->result.value.AsString()}] =
+						total;
+
+				}
+				if (it->instrType == TokenType::BLOCK)
+				{
+					auto iter = removedLocalTotal.find(it->operRight.depth);
+					if (iter != removedLocalTotal.end())
+					{
+						it->operRight.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
+						removedLocalTotal.at(it->operRight.depth) = 0;
+						//declaredLocal[0] -= it->operRight.value.AsRef<int>();
+					}
+				}
+				if (it->operLeft.IsVariable())
+				{
+					//auto iter = removedLocal.find(it->operLeft.depth);
+					//if (iter != removedLocal.end())
+					//{
+					//	it->operLeft.index -= iter->second;
+					//}
+				}
+				if (it->operRight.IsVariable())
+				{
+					int total = removedLocal.at({ it->operRight.depth, it->operRight.value.AsString() });
+					//for (const auto& pair : removedLocal) {
+					//	if(pair.first <= it->operRight.depth)
+					//	total += pair.second;
+					//}
+					//auto iter = removedLocal.find(it->operRight.depth);
+					//if (iter != removedLocal.end())
+					{
+						//if (it->operRight.index >= total)
+						it->operRight.index -= total;
+						//it->operRight.index = declaredLocal[0]-1;
+					}
+				}
+				it++;
+			}
+		}
+		for (auto b : block->blocks)
+		{
+			if (!block->isSweeped)
+			Sweep(b);
+		}
+		if (block->merge)
+		{
+			if (!block->merge->isSweeped)
+			Sweep(block->merge);
+		}
+}
+
+
+void CFG::DeadCode()
+{
+	std::queue<std::pair<Block*,Instruction*>> workList;
+	//mark
 	for (auto [key, func] : functionCFG)
 	{
-		sweep(func.start);
+		Mark(func.start, workList);
+		for (auto block : func.start->blocks)
+		{
+			Mark(block, workList);
+		}
+	}
+	
+	
+	for (auto [key, func] : functionCFG)
+	{
+		Sweep(func.start);
 		for (auto block : func.start->blocks)
 		{
 			if ( !block->isSweeped)
-			sweep(block);
+			Sweep(block);
 		}
 	}
 	return;
@@ -821,7 +881,7 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	auto instruction = Instruction{ type,{},rightOp,resOp };
 	if (resOp.depth == 0)
 	{
-		instruction.isCritical = true;
+		MakeCritical(instruction);
 	}
 	instruction.returnType = rightOp.type;
 	currentBlock->instructions.push_back(instruction);
@@ -833,11 +893,11 @@ void CFG::AddDef(int depth, const std::string& name, int index)
 {
 	if (depth > 0)
 	{
-		currentBlock->defs[{depth,name}].push_back(index);
+		currentBlock->defs[{depth,name}].push_back(index+currentBlock->offsetPhi);
 	}
 	else
 	{
-		globalDefs[{currentBlock, name}].push_back(index);
+		globalDefs[{currentBlock, name}].push_back(index+currentBlock->offsetPhi);
 	}
 
 }
@@ -851,7 +911,7 @@ void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
 	if (resOp.depth == 0)
 	{
-		instruction.isCritical = true;
+		MakeCritical(instruction); 
 	}
 	currentBlock->instructions.push_back(instruction);
 	AddDef(resOp.depth,left->value.AsString(), currentBlock->instructions.size() - 1);
@@ -940,7 +1000,7 @@ void CFG::EmitPop(Block* currentBlock,int popAmount)
 	auto pops = Operand{ popAmount,false,NOT_INIT_VERSION };
 	pops.depth = currentScope->depth;
 	Instruction instr{ TokenType::BLOCK,{},pops,{} };
-	instr.isCritical = true;
+	MakeCritical(instr);
 	currentBlock->instructions.push_back(instr);
 }
 void CFG::ConvertStatementAST(const Node* tree)
@@ -1058,7 +1118,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto func = tree->As<FunctionNode>();
 		Instruction funcInstr{ TokenType::FUN,{},Operand{func->name,false,2},{} };
-		funcInstr.isCritical = true;
+		MakeCritical(funcInstr);
 		currentBlock->instructions.push_back(funcInstr);
 		auto prevFunc = currentFunc;
 		currentFunc = func->name;
@@ -1130,6 +1190,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 					auto conditionName = std::format("[elif_condition_{}]", std::to_string(Block::counterElif++));
 					auto conditionBlock = CreateBlock(currentFunc,conditionName, { currentBlock });
+					conditionBlock->isSweeped = true;
 					currentBlock->blocks.push_back(conditionBlock);
 					if (prevConditionBlock)
 					{
@@ -1220,7 +1281,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto value = ConvertExpressionAST(expr->left.get());
 		Instruction instr{ type,{},value, CreateTemp()};
-		instr.isCritical = true;
+		MakeCritical(instr);
 		currentBlock->instructions.push_back(instr);
 		break;
 	}
@@ -1236,7 +1297,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 		auto value = ConvertExpressionAST(expr->left.get());
 		Instruction instr{ type,{},value, CreateTemp() };
-		instr.isCritical = true;
+		MakeCritical(instr);
 		currentBlock->instructions.push_back(instr);
 
 		break;
@@ -1379,6 +1440,10 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		{
 			auto var = ConvertExpressionAST(expr->left.get());
 			Instruction action{ type,{},{},var };
+			if (var.depth == 0)
+			{
+				MakeCritical(action);
+			}
 			GiveType(action, action.result, expr->value.type);
 			currentBlock->instructions.push_back(action);
 			AddDef(var.depth, var.value.AsString(), currentBlock->instructions.size() - 1);

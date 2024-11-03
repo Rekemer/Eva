@@ -6,6 +6,7 @@
 #include "Tokens.h"
 #include <ostream>
 #include <set>
+#include <queue>
 #include <functional>
 #include <stack>
 #include <format>
@@ -153,6 +154,7 @@ struct Block
 
 	bool isVisited = false;
 	bool isSweeped = false;
+	int offsetPhi = 0;
 };
 
 
@@ -185,6 +187,9 @@ public:
 	void DeadCode();
 	void Debug();
 private:
+	Instruction CreatePhi(const std::string& name);
+	void Sweep(Block* block);
+	void Mark(Block* b, std::queue<std::pair<Block*, Instruction*>>& workList);
 	void AddDef(int depth, const std::string& name, int index);
 	Block* CreateConditionBlock(const std::string& name,  Block* currentBlock);
 	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);

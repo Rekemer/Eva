@@ -13,9 +13,9 @@
 #define FUNC 0
 #define VAR 0
 #define STRINGS 0
-#define SCOPE 1
+#define SCOPE 0
 #define DEDUCTION 0
-#define IF 0
+#define IF 1
 #define CONSTANT_FOLD 0
 
 struct Tables
