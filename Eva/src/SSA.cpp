@@ -219,6 +219,12 @@ void PrintBlock(Block* block)
 		std::cout << std::endl;
 	}
 
+	if (block->merge)
+	{
+		std::cout << "[merge]\n[ ";
+		std::cout << block->merge->name;
+		std::cout << "]" << std::endl;
+	}
 	//std::cout << std::endl << "------------" << std::endl;
 }
 int CFG::NewName(const std::string& name)
@@ -433,22 +439,79 @@ void CFG::InsertPhi()
 	Rename(startBlock);
 
 }
-
+void MarkInstruction(Instruction& instr, Block* b)
+{
+	instr.isMarked = true;
+	b->hasMarked = true;
+}
+bool isBranchType(TokenType instrType)
+{
+	return static_cast<int>(instrType) >= static_cast<int>(TokenType::JUMP_BRANCH) &&
+		static_cast<int>(instrType) <= static_cast<int>(TokenType::BRANCH_FOR);
+}
 void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 	{
+
+	auto findDef = [](Block* block, int depth, const std::string& name)->
+		std::unordered_map<Block*, std::vector<int>>
+	{
+		auto b = block;
+		std::unordered_map<Block*, std::vector<int>> defs;
+		auto iter = b->defs.find({ depth, name });
+		if (iter != b->defs.end())
+		{
+			defs[b].insert(defs[b].end(), iter->second.begin(), iter->second.end());
+		}
+		while (b != nullptr)
+		{
+			iter = b->defs.find({ depth, name });
+			if (iter != b->defs.end())
+			{
+				defs[b].insert(defs[b].end(), iter->second.begin(), iter->second.end());
+			}
+			b= b->prevDefsBlock;
+		}
+		return defs;
+	};
 	auto markOperand = [&](Block* block, Operand& oper)
 		{
 			if (oper.IsVariable() or oper.IsTemp())
 			{
 
 				auto name = oper.IsTemp() ? oper.GetTempName() : oper.value.AsString();
-				auto& defsRes = oper.depth > 0 ? block->defs.at({ oper.depth,name }) : globalDefs[{block, name}];
-				for (auto i : defsRes)
+				if (oper.depth > 0)
 				{
-					if (!block->instructions[i].isMarked)
+					auto defs = findDef(block, oper.depth, name);
+					
+					for (auto [b,indexesDef] : defs)
 					{
-						block->instructions[i].isMarked = true;
-						workList.push({ block,&block->instructions[i] });
+						for (auto i : indexesDef)
+						{
+							if (!b->instructions[i].isMarked)
+							{
+								MarkInstruction(b->instructions[i], b);
+								workList.push({ b,&b->instructions[i] });
+							}
+						}
+					}
+				}
+				else
+				{
+					// for now like this, will change
+					for (auto [k, v] : globalDefs)
+					{
+						if (k.second == name)
+						{
+							auto b = k.first;
+							for (auto i : v)
+							{
+								if (!b->instructions[i].isMarked)
+								{
+									MarkInstruction(b->instructions[i], b);
+									workList.push({ b,&b->instructions[i] });
+								}
+							}
+						}
 					}
 				}
 				for (auto index : block->phiInstructionIndexes)
@@ -457,7 +520,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 					
 					if (!instr.isMarked && instr.result.value.AsString() == name)
 					{
-						instr.isMarked = true;
+						MarkInstruction(instr, block);
 						workList.push({ block,&instr });
 						
 					}
@@ -470,7 +533,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			inst.isMarked = false;
 			if (inst.isCritical)
 			{
-				inst.isMarked = true;
+				MarkInstruction(inst, b);
 				workList.push({ b,&inst });
 			}
 		}
@@ -493,7 +556,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 					block->instructions.back();
 				if (!branch.isMarked)
 				{
-					branch.isMarked = true;
+					MarkInstruction(branch, b);
 					workList.push({ block,&branch });
 				}
 			}
@@ -503,10 +566,38 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 		{
 			Mark(child, workList);
 		}
-		if (b->merge)
+		//auto& branch = b->instructions.back().instrType
+		//	== TokenType::BLOCK ? *(b->instructions.end() - 2) :
+		//	b->instructions.back();
+		//
+		//if (isBranchType(branch.instrType))
+		//{
+		//	if (branch.targets[0]->hasMarked)
+		//	{
+		//		b->hasMarked = true;
+		//	}
+		//}
+		if (b->merge != nullptr)
 		{
 			Mark(b->merge, workList);
 		}
+		return;
+}
+
+std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
+std::unordered_map<int, int> removedLocalTotal;
+std::unordered_map<int, int> declaredLocal;
+
+void AdjustOperandIndex(Operand& operand, const std::unordered_map<std::pair<int, std::string>, int, pair_hash>& removedLocal)
+{
+	// Retrieve the total removed count based on depth and value
+	int total = removedLocal.at({ operand.depth, operand.value.AsString() });
+
+	// Adjust the index by subtracting the total removed count
+	operand.index -= total;
+
+	// Ensure the index remains non-negative
+	assert(operand.index >= 0);
 }
 
 // sweep 
@@ -514,9 +605,6 @@ void CFG::Sweep(Block* block)
 	{
 		block->isSweeped = true;
 		auto currentDepth = 0;
-		std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
-		std::unordered_map<int, int> removedLocalTotal;
-		std::unordered_map<int, int> declaredLocal;
 		auto  set = [](std::unordered_map<std::pair<int, std::string>, int, pair_hash>& map, int key, const std::string& name) {
 			//auto it = map.find(key);
 			map[{key, name}]++;
@@ -526,6 +614,7 @@ void CFG::Sweep(Block* block)
 			//}
 			//else map[key]++;
 			};
+
 		auto& instructions = block->instructions;
 		for (auto it = instructions.begin(); it != instructions.end(); )
 		{
@@ -538,15 +627,14 @@ void CFG::Sweep(Block* block)
 			if (!it->isMarked)
 			{
 				// branch
-				if ((int)it->instrType >= (int)TokenType::JUMP_BRANCH and
-					(int)it->instrType <= (int)TokenType::BRANCH_FOR)
+				if (isBranchType(it->instrType))
 				{
 
 				}
 				auto isJump = (int)it->instrType >= (int)TokenType::JUMP and (int)it->instrType <= (int)TokenType::JUMP_WHILE;
 				if (!isJump)
 				{
-					if (it->result.IsVariable())
+					if (it->instrType == TokenType::DECLARE && it->result.IsVariable())
 					{
 						//set(removedLocal, it->result.depth, it->result.value.AsString());
 						removedLocalTotal[it->result.depth]++;
@@ -562,12 +650,13 @@ void CFG::Sweep(Block* block)
 			}
 			else
 			{
-				if (it->operRight.depth == 0)
+				if (it->operRight.depth == 0 )
 				{
 					it++;
 					continue;
 				}
-				if (it->result.IsVariable() && it->result.depth > 0)
+				// declare a variable
+				if (it->instrType == TokenType::DECLARE && it->result.IsVariable() && it->result.depth > 0)
 				{
 					//set(declaredLocal, 0);
 					int total = 0;
@@ -590,35 +679,37 @@ void CFG::Sweep(Block* block)
 						//declaredLocal[0] -= it->operRight.value.AsRef<int>();
 					}
 				}
-				if (it->operLeft.IsVariable())
+				if (it->operLeft.depth > 0 && it->operLeft.IsVariable())
 				{
-					//auto iter = removedLocal.find(it->operLeft.depth);
-					//if (iter != removedLocal.end())
-					//{
-					//	it->operLeft.index -= iter->second;
-					//}
+					AdjustOperandIndex(it->operLeft, removedLocal);
+				}
+				if (it->result.depth > 0 && it->result.IsVariable() && it->instrType == TokenType::EQUAL)
+				{
+					AdjustOperandIndex(it->result, removedLocal);
+				}
+				if (it->operRight.IsVariable() && isBranchType(it->instrType))
+				{
+					AdjustOperandIndex(it->operRight, removedLocal);
+					//int total = removedLocal.at({ it->operRight.depth, it->operRight.value.AsString() });
+					//it->operRight.index -= total;
+					//assert(it->operRight.index >= 0);
+				}
+				else if (it->operRight.IsVariable())
+				{
+					AdjustOperandIndex(it->operRight, removedLocal);
 				}
 				if (it->operRight.IsVariable())
 				{
-					int total = removedLocal.at({ it->operRight.depth, it->operRight.value.AsString() });
-					//for (const auto& pair : removedLocal) {
-					//	if(pair.first <= it->operRight.depth)
-					//	total += pair.second;
-					//}
-					//auto iter = removedLocal.find(it->operRight.depth);
-					//if (iter != removedLocal.end())
-					{
-						//if (it->operRight.index >= total)
-						it->operRight.index -= total;
-						//it->operRight.index = declaredLocal[0]-1;
-					}
+					AdjustOperandIndex(it->operRight, removedLocal);
 				}
+
 				it++;
 			}
 		}
+		
 		for (auto b : block->blocks)
 		{
-			if (!block->isSweeped)
+			if (!b->isSweeped)
 			Sweep(b);
 		}
 		if (block->merge)
@@ -636,21 +727,12 @@ void CFG::DeadCode()
 	for (auto [key, func] : functionCFG)
 	{
 		Mark(func.start, workList);
-		for (auto block : func.start->blocks)
-		{
-			Mark(block, workList);
-		}
 	}
 	
 	
 	for (auto [key, func] : functionCFG)
 	{
 		Sweep(func.start);
-		for (auto block : func.start->blocks)
-		{
-			if ( !block->isSweeped)
-			Sweep(block);
-		}
 	}
 	return;
 }
@@ -1166,12 +1248,15 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge++));
 		//// then
 		auto then = CreateBranchBlock(parentBlock, branch, thenBranch, thenBlockName, mergeName);
+
+		then->prevDefsBlock = parentBlock;
+		
 		parentBlock->instructions.push_back(branch);
 		mergeParents.push_back(currentBlock);
 
 		bool isElseCase = flows->As<Expression>()->left != nullptr;
 
-		Block* prevConditionBlock = parentBlock;
+		Block* prevConditionBlock = nullptr;
 		if (isElseCase)
 		{
 			// handle elif cases
@@ -1187,10 +1272,14 @@ void CFG::ConvertStatementAST(const Node* tree)
 					Instruction branchElif = Instruction{ TokenType::BRANCH_ELIF,{},{},NullOperand() };
 					auto elifBlockName = std::format("[elif_{}]", std::to_string(Block::counterElif));
 					auto conditionNode = elifNode->As<Expression>()->left.get();
-
+					
 					auto conditionName = std::format("[elif_condition_{}]", std::to_string(Block::counterElif++));
 					auto conditionBlock = CreateBlock(currentFunc,conditionName, { currentBlock });
+					parentBlock->instructions.back().targets.push_back(conditionBlock);
+
+					///
 					conditionBlock->isSweeped = true;
+					///
 					currentBlock->blocks.push_back(conditionBlock);
 					if (prevConditionBlock)
 					{
@@ -1210,7 +1299,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 					auto elifFlows = elifNode->As<Expression>()->right.get();
 					auto block = elifFlows->As<Expression>()->right.get();
 					auto body = CreateBranchBlock(conditionBlock, branchElif, block,elifBlockName, mergeName);
-
+					
+					body->prevDefsBlock = parentBlock;
+					
 					conditionBlock->instructions.push_back(branchElif);
 
 
@@ -1240,6 +1331,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto elseBlockName = std::format("[else_{}]", std::to_string(Block::counterElse++));
 		auto els = CreateBranchBlock(parentBlock, branch, elseBranch, elseBlockName, mergeName);
 
+		els->prevDefsBlock = parentBlock;
+		
+		parentBlock->instructions.back().targets.push_back(els);
 		if (prevConditionBlock)
 		{
 			prevConditionBlock->instructions.back().targets.push_back(els);
@@ -1253,8 +1347,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 
 
-		auto merge = CreateBlock(currentFunc,mergeName, { });
-
+		auto merge = CreateBlock(currentFunc,mergeName, {});
+		merge->prevDefsBlock = parentBlock;
 		for (auto parent : mergeParents)
 		{
 
