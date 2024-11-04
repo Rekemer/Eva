@@ -479,15 +479,19 @@ d_g :=0;
 			  }
 			   d := 6;
 			  d = 2 ;
-			check := false;
-			if (check)
+			check := 2;
+			if check == 4
 			{
 			d = 5;
 			}
-			else 
+			elif check == 2
 			{
-			d = 10;
+				d = 10;
 			}
+			//else
+			//{
+			//	d == 1;
+			//}
 			c = 5;
 			d_g = d;
 			c_g = c;

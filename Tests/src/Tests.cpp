@@ -11,7 +11,7 @@
 #define WHILE 0
 #define FOR 0
 #define FUNC 0
-#define VAR 0
+#define VAR 1
 #define STRINGS 0
 #define SCOPE 1
 #define DEDUCTION 0
@@ -383,10 +383,14 @@ TEST_CASE("scope test")
 			  }
 			   d := 6;
 			  d = 2 ;
-			check := false;
-			if (check)
+			check := 2;
+			if (check == 4)
 			{
 			d = 5;
+			}
+			elif check == 5 
+			{
+			d = -1;
 			}
 			else 
 			{

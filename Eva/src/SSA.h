@@ -104,7 +104,7 @@ struct pair_hash_block {
 		return h1 ^ (h2 << 1);
 	}
 };
-using DefMap = std::unordered_map<std::pair<int, std::string>, std::vector<int>, pair_hash>;
+using DefMap = std::unordered_map<std::string, std::vector<int>>;
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
 {
@@ -134,7 +134,6 @@ struct Block
 	std::set<Block*> rdf;
 
 	DefMap defs;
-	Block* prevDefsBlock = nullptr;
 	std::unordered_map<std::string,std::vector<int>> uses;
 
 	// next blocks - children
@@ -155,7 +154,7 @@ struct Block
 
 	bool isVisited = false;
 	bool isSweeped = false;
-	bool hasMarked = false;
+	bool markAll = false;
 	int offsetPhi = 0;
 };
 
@@ -189,6 +188,7 @@ public:
 	void DeadCode();
 	void Debug();
 private:
+	void MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*, Instruction*>>& workList);
 	Instruction CreatePhi(const std::string& name);
 	void Sweep(Block* block);
 	void Mark(Block* b, std::queue<std::pair<Block*, Instruction*>>& workList);
