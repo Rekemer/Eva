@@ -436,7 +436,7 @@ auto findDef = [](Block* block, int depth, const std::string& name)-> std::vecto
 {
 	auto b = block;
 	std::unordered_map<Block*, std::vector<int>> defs;
-	auto iter = b->defs.find(name);
+	auto iter = b->defs.find(std::pair{ depth,name });
 	return  iter != b->defs.end() ? iter->second : std::vector<int>{};
 };
 
@@ -938,7 +938,7 @@ void CFG::AddDef(int depth, const std::string& name, int index)
 {
 	if (depth > 0)
 	{
-		currentBlock->defs[name].push_back(index+currentBlock->offsetPhi);
+		currentBlock->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
 	}
 	else
 	{

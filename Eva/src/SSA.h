@@ -104,7 +104,7 @@ struct pair_hash_block {
 		return h1 ^ (h2 << 1);
 	}
 };
-using DefMap = std::unordered_map<std::string, std::vector<int>>;
+using DefMap = std::unordered_map<std::pair<int, std::string>, std::vector<int>, pair_hash>;
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
 {

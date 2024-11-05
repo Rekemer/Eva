@@ -482,16 +482,19 @@ d_g :=0;
 			check := 2;
 			if check == 4
 			{
-			d = 5;
+				c :="sd";
+				d = 5;
 			}
 			elif check == 2
 			{
+				c :="sd";
 				d = 10;
 			}
-			//else
-			//{
-			//	d == 1;
-			//}
+			else
+			{
+				c :="sd";
+				d = 1;
+			}
 			c = 5;
 			d_g = d;
 			c_g = c;
