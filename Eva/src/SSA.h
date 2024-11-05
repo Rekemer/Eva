@@ -234,7 +234,7 @@ private:
 
 	std::unordered_map<std::string, std::vector<Block*>> globalAssigned;
 	std::unordered_map<std::string, std::vector<Block*>> localAssigned;
-
+	std::stack<int> forDepth;
 	int tempVersion = 0;
 	std::unordered_map<std::string, Block > graph;
 	// for renaming stage

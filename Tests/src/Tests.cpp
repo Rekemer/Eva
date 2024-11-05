@@ -14,9 +14,9 @@
 #define VAR 1
 #define STRINGS 0
 #define SCOPE 1
-#define DEDUCTION 0
+#define DEDUCTION 1
 #define IF 1
-#define CONSTANT_FOLD 0
+#define CONSTANT_FOLD 1
 
 struct Tables
 {
@@ -262,6 +262,7 @@ TEST_CASE("scope test")
 	{
 		auto a = R"(a: int = 15;
 				{
+					sd:="sd";
 					a--;
 				}
 					)";
@@ -273,6 +274,7 @@ TEST_CASE("scope test")
 	{
 		auto a = R"(a: int = 3;
 		{
+			sd:="sd";
 			b : int = 15;
 			b+=2;
 			b-=2;
@@ -295,6 +297,7 @@ TEST_CASE("scope test")
 			{
 				c : float = -1;
 				b*= c;
+				sd:="sd";
 				a -=c;
 			}
 			a+=b;
@@ -314,6 +317,7 @@ TEST_CASE("scope test")
 			b+=2;
 			{
 				c : float = -1;
+				sd:="sd";
 				b*= c;
 				a -=c;
 			}
@@ -339,16 +343,23 @@ TEST_CASE("scope test")
 			
 			{
 				b : int = 15;
+				sd:="sd";
+				sd1:="sd";
+				sd2:="sd";
 				b+=2;
 				{
+					sd1:="sd";
 					c : float = -1;
 					b*= c;
+					sd2:="sd";
 					a -=c;
 				}
+				sd3:="sd";
 				a+=b;
 			}
 			{
 				b : int = 15;
+				sd:="sd";
 				b+=2;
 				{
 					c : float = -1;
@@ -356,6 +367,7 @@ TEST_CASE("scope test")
 					a -=c;
 				}
 				a+=b;
+				sd5:="sd";
 			}
 
 					)";
@@ -384,19 +396,24 @@ TEST_CASE("scope test")
 			   d := 6;
 			  d = 2 ;
 			check := 2;
+			sd:="sd";
 			if (check == 4)
 			{
-			d = 5;
+				sd:="sd";
+				d = 5;
 			}
 			elif check == 5 
 			{
-			d = -1;
+				sd:="sd";
+				d = -1;
 			}
 			else 
-			{
-			d = 10;
+			{	
+				sd:="sd";
+				d = 10;
 			}
-			 c = 5;
+			sd1:="sd";
+			c = 5;
 			d_g = d;
 			c_g = c;
 			
@@ -452,6 +469,7 @@ TEST_CASE("while statement")
 		auto a = R"(a: int = 15;
 						while a  >= 5 
 					{
+						sd:="sd";
 						a--;
 					}
 						)";
@@ -467,15 +485,50 @@ TEST_CASE("while statement")
 					while a < 5
 					{	
 						a++;
+						sd:="sd";
 						if (a % 2 == 1) == true
 						{
+							
+							sd:="sd";
 							continue;
 						}
+						sd1:="sd";
 						g+=a;
 					}
 					)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<int>("g", (2 + 4), ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("while continue in multiple if")
+	{
+		auto a = R"(
+					g := 0;
+					a := 0;
+					unused1 := 100; // Unused variable
+					while a < 5
+					{
+					    a++;
+					    sd1 := "even";
+					    sd := "sd"; // Potentially unused depending on the branches
+					    if (a % 2 == 1) == true
+					    {
+					        sd := "odd";
+					        unused2 := "test"; // Another unused variable inside a conditional
+					        if (a > 3)
+					        {
+					            unused3 := a * 10; // Unused variable in nested if
+					            continue;
+					        }
+					    }
+					    sd1 = "even";
+					    g += a;
+					    unused4 := g * 2; // Unused variable after update
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("g", 10, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 
@@ -508,14 +561,17 @@ TEST_CASE("while statement")
 					{
 						i++;
 						if i % 2 == 1 
-						{
+						{	
 							continue;
 						}
 						a+=2;
 						while j < 2
-						{
+						{	
+							sd:="sd";
 							j++;
+							sd1:="sd";
 							a+=2;
+							sd2:="sd";
 						}
 						j =0;
 					}
@@ -548,10 +604,14 @@ TEST_CASE("basic for loop test")
 					g := 0;
 					for i:=1; i < 5; i++;
 					{	
+						sd2:="sd";
 						if i % 2 == 1
-						{
+						{	
+							
+							sd2:="sd";
 							continue;
 						}
+						sd3:="sd";
 						g+=i;
 					}
 					)";
@@ -661,8 +721,10 @@ TEST_CASE("folded for loop test")
 				g := 0;
 				for i:= 1..5
 				{	
+					c:=2;
 					if i == 4 
 					{
+						c:=5;
 						break;
 					}
 					g+=i;
@@ -679,17 +741,22 @@ TEST_CASE("folded for loop test")
 					a:=0;
 					for i:= 0..5
 					{
+						sd6:="sd";
 						if i % 2 == 1 
 						{
+							sd5:="sd";
 							continue;
 						}
 						a+=i;
 						for j:=0; j < 5; j++; 
 						{
+							sd3:="sd";
 							if j == 4
-							{
+							{	
+								sd3:="sd";
 								break;
 							}
+							sd4:="sd";
 							a+=j;
 						}
 					}

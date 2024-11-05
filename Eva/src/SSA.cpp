@@ -596,6 +596,8 @@ void CFG::Sweep(Block* block)
 				continue;
 
 			}
+			auto isJump = (int)it->instrType >= (int)TokenType::JUMP and
+				(int)it->instrType <= (int)TokenType::JUMP_WHILE;
 			if (!it->isMarked)
 			{
 				// branch
@@ -603,7 +605,8 @@ void CFG::Sweep(Block* block)
 				{
 
 				}
-				auto isJump = (int)it->instrType >= (int)TokenType::JUMP and (int)it->instrType <= (int)TokenType::JUMP_WHILE;
+							
+
 				if (!isJump)
 				{
 					if (it->instrType == TokenType::DECLARE && it->result.IsVariable())
@@ -626,6 +629,18 @@ void CFG::Sweep(Block* block)
 					it++;
 					continue;
 				}
+				if (isJump)
+				{
+					Sweep(it->targets[0]);
+				}
+				if (it->instrType == TokenType::BRANCH)
+				{
+					for (auto target : it->targets)
+					{
+						Sweep(target);
+					}
+
+				}
 				// declare a variable
 				if (it->instrType == TokenType::DECLARE && it->result.IsVariable() && it->result.depth > 0)
 				{
@@ -642,11 +657,30 @@ void CFG::Sweep(Block* block)
 				}
 				if (it->instrType == TokenType::BLOCK)
 				{
-					auto iter = removedLocalTotal.find(it->operRight.depth);
-					if (iter != removedLocalTotal.end())
+					auto flowCommand = (it + 1);
+					if (flowCommand != instructions.end() &&
+						(flowCommand->instrType == TokenType::CONTINUE || flowCommand->instrType == TokenType::BREAK))
 					{
-						it->operRight.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
-						removedLocalTotal.at(it->operRight.depth) = 0;
+						auto total = 0;
+						auto loopDepth = flowCommand->operRight.value.As<int>();
+						for (auto [k, v] : removedLocalTotal)
+						{
+							if (k >= loopDepth)
+							{
+								total+=removedLocalTotal.at(k);
+								//removedLocalTotal.at(k) = 0;
+							}
+						}
+						it->operRight.value.AsRef<int>() -= total;
+					}
+					else
+					{
+						auto iter = removedLocalTotal.find(it->operRight.depth);
+						if (iter != removedLocalTotal.end())
+						{
+							it->operRight.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
+							removedLocalTotal.at(it->operRight.depth) = 0;
+						}
 					}
 				}
 				if (it->operLeft.depth > 0 && it->operLeft.IsVariable())
@@ -660,6 +694,12 @@ void CFG::Sweep(Block* block)
 				if (it->operRight.IsVariable() && isBranchType(it->instrType))
 				{
 					AdjustOperandIndex(it->operRight, removedLocal);
+				}
+				else if (it->result.IsVariable() && it->result.depth > 0 && 
+					(it->instrType == TokenType::MINUS_MINUS
+						|| it->instrType == TokenType::PLUS_PLUS))
+				{
+					AdjustOperandIndex(it->result, removedLocal);
 				}
 				else if (it->operRight.IsVariable())
 				{
@@ -1100,12 +1140,20 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::BREAK:
 	{
 		
-		Instruction command= Instruction{ type,{},{},NullOperand() };
+		Instruction command = Instruction{ type,{},Operand{ValueContainer{forDepth.top()},true,NOT_INIT_VERSION},NullOperand()};
 		command.isCritical = true;
 		assert(currentScope->prevScope != nullptr);
 		assert(currentScope != nullptr);
-		EmitPop(currentBlock, currentScope->currentPopAmount);
-		EmitPop(currentBlock, currentScope->prevScope->currentPopAmount);
+		auto diffDepth = currentScope->depth - forDepth.top();
+		auto total = 0;
+		Scope* temp = currentScope;
+		while (diffDepth >= 0)
+		{
+			total += temp->currentPopAmount;
+			temp = temp->prevScope;
+			diffDepth--;
+		}
+		EmitPop(currentBlock, total);
 		// for 
 		currentBlock->instructions.push_back(command);
 		break;
@@ -1121,6 +1169,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 
 		currentBlock = init;
+		forDepth.push(currentScope != nullptr ? currentScope->depth : 0);
 		isNotPop = true;
 		ConvertStatementAST(forNode->init.get());
 		isNotPop = false;
@@ -1167,6 +1216,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		//currentBlock = merge;
 		//currentBlock->instructions.push_back(forAction);
 		EmitPop(currentBlock, currentScope->popAmount);
+		forDepth.pop();
 		currentBlock = merge;
 		currentScope = prevScope;
 		break;
@@ -1384,6 +1434,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto branch = CreateBranchInstruction(TokenType::BRANCH_WHILE, cond, body, {});
 
 		currentBlock = body;
+		forDepth.push(currentScope != nullptr ? (currentScope->depth+1) : 1);
 		ConvertStatementAST(expr->right.get());
 		currentBlock->instructions.
 			push_back(condJump);
@@ -1399,7 +1450,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		jumpBack.targets.push_back(parentBlock);
 		merge->instructions.push_back(jumpBack);
 		currentBlock = parentBlock;
-
+		forDepth.pop();
 		break;
 	}
 	case TokenType::BLOCK:
@@ -1411,8 +1462,15 @@ void CFG::ConvertStatementAST(const Node* tree)
 		{
 			ConvertStatementAST(statement.get());
 		}
+
+		auto acc = 0;
+		while (block->instructions.size() > 0 && block->instructions.back().instrType == TokenType::BLOCK)
+		{
+			acc += block->instructions.back().operRight.value.As<int>();
+			block->instructions.pop_back();
+		}
 		// to know how many times we need to pop
-		EmitPop(block, scope->popAmount);
+		EmitPop(block, scope->popAmount+acc);
 		if (currentScope->prevScope)
 		{
 			currentScope = currentScope->prevScope;

@@ -548,21 +548,108 @@
 //              }
 //          }
 
-a:=0;
-					for i:= 0..5
-					{
-						if i % 2 == 1 
-						{
-							continue;
-						}
-						a+=i;
-						for j:=0; j < 5; j++; 
-						{
-							if j == 4
-							{
-								break;
-							}
-							a+=j;
-						}
-					}
-Print a;
+//a:=0;
+//for i:= 0..5
+//{
+//	sd:="sd";
+//	if i % 2 == 1 
+//	{
+//		//sd:="sd";
+//		continue;
+//	}
+//	a+=i;
+//	for j:=0; j < 5; j++; 
+//	{
+//		sd:="sd";
+//		if j == 4
+//		{
+//		sd:="sd";
+//			break;
+//		}
+//		a+=j;
+//	}
+//}
+//Print a;
+//g := 0;
+//{
+//	sd:="sd";
+//	for  i:= 0; i < 10; i++;
+//	{
+//		sd:="Hello prdord";
+//		g+=i;
+//	}
+//}
+//Print g;
+
+//g := 0;
+//a := 0;
+//unused1 := 100; // Unused variable
+//while a < 5
+//{
+//    a++;
+//    sd1 := "even";
+//    sd := "sd"; // Potentially unused depending on the branches
+//    if (a % 2 == 1) == true
+//    {
+//        sd := "odd";
+//        unused2 := "test"; // Another unused variable inside a conditional
+//        if (a > 3)
+//        {
+//            unused3 := a * 10; // Unused variable in nested if
+//            continue;
+//        }
+//    }
+//    sd1 = "even";
+//    g += a;
+//    unused4 := g * 2; // Unused variable after update
+//}
+//Print g;
+
+
+//a:=0;
+//for i:= 0..5
+//{
+//	sd6:="sd";
+//	if i % 2 == 1 
+//	{
+//		sd5:="sd";
+//		continue;
+//	}
+//	a+=i;
+//	for j:=0; j < 5; j++; 
+//	{
+//		sd3:="sd";
+//		if j == 4
+//		{	
+//			sd3:="sd";
+//			break;
+//		}
+//		sd4:="sd";
+//		a+=j;
+//	}
+//}
+
+
+
+g := 0;
+a := 0;
+unused1 := 100; // Unused variable
+while a < 5
+{
+    a++;
+    sd1 := "even";
+    sd := "sd"; // Potentially unused depending on the branches
+    if (a % 2 == 1) == true
+    {
+       sd := "odd";
+        unused2 := "test"; // Another unused variable inside a conditional
+        if (a > 3)
+        {
+            unused3 := a * 10; // Unused variable in nested if
+            continue;
+        }
+    }
+    sd1 = "even";
+    g += a;
+    unused4 := g * 2; // Unused variable after update
+}
