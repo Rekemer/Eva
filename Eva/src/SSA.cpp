@@ -365,7 +365,7 @@ void MakeCritical(Instruction& instr)
 void CFG::InsertPhi()
 {
 	// placing stage
-	for (auto v : localAssigned)
+	for (auto& v : localAssigned)
 	{
 		// because one block can be in multiple dominance frontiers
 		// we need to track whether the phi is placed already
@@ -393,6 +393,7 @@ void CFG::InsertPhi()
 					auto potentialChanges = blockDf->parents.size();
 					instr.variables.resize(potentialChanges);
 					blockDf->instructions.insert(blockDf->instructions.begin(), instr);
+
 					blockDf->offsetPhi++;
 					for (auto& [k,v]: blockDf->defs)
 					{
@@ -402,6 +403,7 @@ void CFG::InsertPhi()
 						}
 					}
 					blockDf->offsetPhi = 0;
+					
 					if (blockDf->phiInstructionIndexes.empty())
 					{
 						blockDf->phiInstructionIndexes.push_back(0);
@@ -527,12 +529,18 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			//auto instr = &block->instructions[i];
 			if (instr->instrType == TokenType::PHI)
 			{
-				assert(instr->targets.size() == instr->variables.size());
-				for (int i = 0; i < instr->targets.size(); i++)
+				auto isIPhi = instr->variables[0].version == -1;
+				
+				if (!isIPhi)
 				{
-					instr->variables[i].depth = 1;
-					MarkOperand(instr->targets[i], instr->variables[i], workList);
+					assert(instr->targets.size() == instr->variables.size());
+					for (int i = 0; i < instr->targets.size(); i++)
+					{
+						instr->variables[i].depth = 1;
+						MarkOperand(instr->targets[i], instr->variables[i], workList);
+					}
 				}
+
 			}
 			for (auto block : info.first->rdf)
 			{
@@ -1037,6 +1045,7 @@ Instruction CreateJumpInstruction(TokenType jumpType, std::initializer_list<Bloc
 // Helper function to create a block and add a jump to it from the current block
 Block* CFG::CreateConditionBlock(const std::string& name,  Block* currentBlock) {
 	auto conditionBlock = CreateBlock(currentFunc,name, { currentBlock });
+	conditionBlock->markAll = true;
 	currentBlock->blocks.push_back(conditionBlock);
 	return conditionBlock;
 }
@@ -1092,6 +1101,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		
 		Instruction command= Instruction{ type,{},{},NullOperand() };
+		command.isCritical = true;
 		assert(currentScope->prevScope != nullptr);
 		assert(currentScope != nullptr);
 		EmitPop(currentBlock, currentScope->currentPopAmount);
@@ -1108,6 +1118,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentScope = &forNode->initScope;
 		auto forInitName = std::format("[for_init_{}]", Block::counterForInit++);
 		auto init = CreateConditionBlock(forInitName, currentBlock);
+
+
 		currentBlock = init;
 		isNotPop = true;
 		ConvertStatementAST(forNode->init.get());
@@ -1117,9 +1129,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 		auto forConditionName = std::format("[for_condition_{}]", Block::counterForCondition++);
 		auto condition = CreateConditionBlock(forConditionName, init);
-		
 		auto forActionName = std::format("[for_action_{}]", Block::counterForAction++);
 		auto action = CreateBlock(currentFunc,forActionName, { condition });
+		action->markAll = true;
 		//currentBlock = action;
 		//currentBlock = condition;
 
@@ -1146,7 +1158,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		ConvertStatementAST(forNode->body.get());
 
 		
-		auto parents = { parentBlock,currentBlock,init };
+		auto parents = { parentBlock,currentBlock,/*init*/ };
 		auto merge = CreateMergeBlock(parents);
 		
 		// should not we emit block instr to merge block instead?
