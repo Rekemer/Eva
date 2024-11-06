@@ -515,6 +515,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 				workList.push({ b,&inst });
 			}
 		}
+		std::vector<Instruction*> funcCalls;
 		while (!workList.empty())
 		{
 			auto info = workList.front();
@@ -525,6 +526,12 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 				MarkOperand(info.first, instr->operRight, workList);
 				MarkOperand(info.first, instr->operLeft, workList);
 				MarkOperand(info.first, instr->result, workList);
+				if (instr->instrType == TokenType::LEFT_PAREN)
+				{
+					assert(instr->argBlock != nullptr);
+					funcCalls.push_back(instr);
+
+				}
 			}
 			//auto instr = &block->instructions[i];
 			if (instr->instrType == TokenType::PHI)
@@ -554,7 +561,10 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 				}
 			}
 		}
-		
+		for (auto f : funcCalls)
+		{
+			Mark(f->argBlock, workList);
+		}
 		for (auto child : b->blocks)
 		{
 			Mark(child, workList);
@@ -700,6 +710,14 @@ void CFG::Sweep(Block* block)
 						|| it->instrType == TokenType::PLUS_PLUS))
 				{
 					AdjustOperandIndex(it->result, removedLocal);
+				}
+				else if (it->instrType == TokenType::LEFT_PAREN)
+				{
+					if (it->result.IsVariable())
+					{
+						AdjustOperandIndex(it->result, removedLocal);
+					}
+
 				}
 				else if (it->operRight.IsVariable())
 				{
@@ -1230,6 +1248,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto prevFunc = currentFunc;
 		currentFunc = func->name;
 		auto funcBlock = CreateBlock(currentFunc,func->name, {currentBlock});
+		funcBlock->markAll = true;
 		auto bodyName = "[" + func->name + "_body" + "]";
 		auto bodyBlock = CreateBlock(currentFunc, bodyName,{ funcBlock });
 		funcBlock->blocks.push_back(bodyBlock);
@@ -1507,7 +1526,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		funcCall.argBlock = &graph[name];
 		funcCall.argBlock->name = name;
 		funcCall.argBlock->parents = {currentBlock};
-
+		funcCall.argBlock->markAll = true;
 		GiveType(funcCall, res, vm->GetGlobalType(call->name));
 		currentBlock->instructions.push_back(funcCall);
 		auto funcCallIndex = currentBlock->instructions.size() - 1;
