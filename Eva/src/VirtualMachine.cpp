@@ -1714,8 +1714,15 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		{
 			if (m_FuncReturnType != ValueType::NIL)
 			{
+				auto popAmount = instr.operLeft.value.As<int>();
+
 				GenerateCFGOperand(instr.operRight, m_FuncReturnType);
-				currentFunc->opCode.push_back((uint8_t)InCode::RETURN);
+				currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
+				currentFunc->opCode.push_back((Bytecode)InCode::POP);
+				for (int i = 0; i < popAmount; i++)
+					EmitPop(currentFunc->opCode);
+				currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
+				currentFunc->opCode.push_back((Bytecode)InCode::RETURN);
 			}
 			break;
 		}

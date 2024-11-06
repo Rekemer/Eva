@@ -662,25 +662,54 @@
 //
 //fun main() : int 
 //{
-//	a := sum(10,3,4);
-//	//Print a;
-//	Print "Hello, World! ";
-//	return 0;
+//	x := 2;
+//	y := 4;
+//	result := x * y;
+//    unusedFuncVar := result + 100; // Unused variable
+//    return result;
+//	//a := sum(10,3,4);
+//	////Print a;
+//	//Print "Hello, World! ";
+//	//return 0;
 //}
 
 
-fun sum(n : int, n1 : int, n2: int, n3:int) : int
-					{
-						return n + n1 + n2 + n3;
-					}
-					g: int = 0;
-					fun main() : int
-					{	
-						c:=10;
-						a := sum(c,10, g+ 10,g);
-						g = a;
-						Print g;
-						Print a;
-						return 0;
-					}
+fun sum(n : int, n1 : int, n2 : int, n3 : int) : int
+{
+    unusedParam := n + n1; // Unused variable in the function scope
+    return n + n1 + n2 + n3;
+}
+
+fun multiply(x : int, y : int) : int
+{
+    result := x * y;
+    unusedFuncVar := result + 100; // Unused variable
+    return result;
+}
+
+g : int = 2;
+fun main() : int
+{
+    c := 10;
+    d := 20; // Unused variable in main function
+    a := sum(c, 10, g + 10, g);
+    
+    if (a > 20)
+    {
+         b := multiply(a, g); // Used only in this branch
+        if (b > 100)
+        {
+            unusedInnerVar := b + 1; // Unused variable in nested if
+        }
+        g = b;
+    }
+    else
+    {
+        g = a;
+    }
+    
+    unusedAfterBranch := g * 2; // Unused variable after branches
+    Print g;
+    return 0;
+}
 

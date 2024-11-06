@@ -1118,6 +1118,52 @@ TEST_CASE("functions")
 		auto isPass = CheckVariable<int>("g", 30, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+
+	SUBCASE("call functions in main with ifs and dec")
+	{
+		auto a = R"(
+					fun sum(n : int, n1 : int, n2 : int, n3 : int) : int
+					{
+					    unusedParam := n + n1; // Unused variable in the function scope
+					    return n + n1 + n2 + n3;
+					}
+					
+					fun multiply(x : int, y : int) : int
+					{
+					    result := x * y;
+					    unusedFuncVar := result + 100; // Unused variable
+					    return result;
+					}
+					
+					g : int = 2;
+					fun main() : int
+					{
+					    c := 10;
+					    d := 20; // Unused variable in main function
+					    a := sum(c, 10, g + 10, g);
+					    if (a > 20)
+					    {
+					        b := multiply(a, g); // Used only in this branch
+					        if (b > 100)
+					        {
+					            unusedInnerVar := b + 1; // Unused variable in nested if
+					        }
+					        g = b;
+					    }
+					    else
+					    {
+					        g = a;
+					    }
+					    unusedAfterBranch := g * 2; // Unused variable after branches
+					    return 0;
+					}
+
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("g", 68, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
 	SUBCASE("call function global")
 	{
 		auto a = R"(

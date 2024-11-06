@@ -388,7 +388,9 @@ void CFG::InsertPhi()
 				{
 					hasAlready.insert(blockDf);
 					auto name = v.first;
-										// Operand{name} is result  -  x = phi x x x x 
+					
+					
+					// Operand{name} is result  -  x = phi x x x x 
 					auto instr = CreatePhi(name);
 					auto potentialChanges = blockDf->parents.size();
 					instr.variables.resize(potentialChanges);
@@ -536,7 +538,13 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			//auto instr = &block->instructions[i];
 			if (instr->instrType == TokenType::PHI)
 			{
-				auto isIPhi = instr->variables[0].version == -1;
+				// we have problem of phi instructions leaking...
+				// should avoid it happening
+				auto isIPhi = false;
+				for (auto& v : instr->variables)
+				{
+					isIPhi = v.version == -1;
+				}
 				
 				if (!isIPhi)
 				{
@@ -643,6 +651,11 @@ void CFG::Sweep(Block* block)
 				{
 					Sweep(it->targets[0]);
 				}
+
+				if (it->instrType == TokenType::LEFT_PAREN)
+				{
+					Sweep(it->argBlock);
+				}
 				if (it->instrType == TokenType::BRANCH)
 				{
 					for (auto target : it->targets)
@@ -693,6 +706,15 @@ void CFG::Sweep(Block* block)
 						}
 					}
 				}
+				else if (it->instrType == TokenType::RETURN)
+				{
+					auto iter = removedLocalTotal.find(it->operRight.depth);
+					if (iter != removedLocalTotal.end())
+					{
+						it->operLeft.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
+						removedLocalTotal.at(it->operRight.depth) = 0;
+					}
+				}
 				if (it->operLeft.depth > 0 && it->operLeft.IsVariable())
 				{
 					AdjustOperandIndex(it->operLeft, removedLocal);
@@ -711,7 +733,7 @@ void CFG::Sweep(Block* block)
 				{
 					AdjustOperandIndex(it->result, removedLocal);
 				}
-				else if (it->instrType == TokenType::LEFT_PAREN)
+				else if (it->result.depth > 0 && (it->instrType == TokenType::LEFT_PAREN || it->instrType == TokenType::VAR))
 				{
 					if (it->result.IsVariable())
 					{
@@ -1423,16 +1445,18 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto tmp = currentScope;
 		// becase the last scope is argument scope, before that is body scope
+		auto total = 0;
 		while (tmp != nullptr && tmp->prevScope != nullptr)
 		{
-			EmitPop(currentBlock, tmp->currentPopAmount);
+			//EmitPop(currentBlock, tmp->currentPopAmount);
+			total += tmp->currentPopAmount;
 			tmp = tmp->prevScope;
 		}
-
 		auto value = ConvertExpressionAST(expr->left.get());
-		Instruction instr{ type,{},value, CreateTemp() };
+		Instruction instr{ type,Operand{ValueContainer{total},false,IS_TEMP},value, CreateTemp() };
 		MakeCritical(instr);
 		currentBlock->instructions.push_back(instr);
+
 
 		break;
 	}
@@ -1600,6 +1624,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	{
 		auto number = expr->value.As<int>();
 		Operand op{ number,true,0 };
+		op.depth = currentScope != nullptr ? currentScope->depth : 0;
 		op.type = ValueType::INT;
 		return op;
 		break;
@@ -1608,6 +1633,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	{
 		auto number = expr->value.As<float>();
 		Operand op{ number,true,0 };
+		op.depth = currentScope != nullptr ? currentScope->depth : 0;
 		op.type = ValueType::FLOAT;
 		return op;
 		break;
@@ -1617,6 +1643,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto number = expr->value.As<std::string>();
 		Operand op{ number,true,0 };
 		op.type = ValueType::STRING;
+		op.depth = currentScope != nullptr ? currentScope->depth : 0;
 		return op;
 		break;
 	}
@@ -1626,6 +1653,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto value = expr->value.As<bool>();
 		Operand op{ value,true,0 };
 		op.type = ValueType::BOOL;
+		op.depth = currentScope != nullptr ? currentScope->depth : 0;
 		return op;
 		break;
 	}
