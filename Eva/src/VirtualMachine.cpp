@@ -1370,6 +1370,7 @@ void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrT
 }
 void VirtualMachine::GenerateBlockInstructions(Block* block)
 {
+	if (block->isVisited) return;
 	block->isVisited = true;
 
 	auto tokenToInCodeOp = [](TokenType type)
@@ -1779,7 +1780,8 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 		case TokenType::BRANCH:
 		{
 
-			auto& branches = block->blocks;
+			//auto & branches = block->blocks;
+			auto& branches = instr.targets;
 			auto mergeBlock = HandleBranch(branches,instr);
 			break;
 		}
@@ -1802,6 +1804,8 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			// body
 			GenerateBlockInstructions(instr.targets[2]);
 
+
+
 			EndContinue();
 
 			auto jump = JumpBack(currentFunc->opCode);
@@ -1812,6 +1816,8 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 
 			EmitPop(currentFunc->opCode);
 			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
+			GenerateBlockInstructions(instr.targets[3]);
+
 			//ClearScope(currentScope, currentScope->stack, currentFunc->opCode);
 			break;
 		}
@@ -1839,6 +1845,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			EmitPop(currentFunc->opCode);
 			currentFunc->opCode[indexJumpFalse] = CalculateJumpIndex(currentFunc->opCode, indexJumpFalse);
 			conditionIndex.pop();
+			GenerateBlockInstructions(instr.targets[1]);
 			break;
 		}
 		case TokenType::CONTINUE:
@@ -1854,6 +1861,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			break;
 		}
 		case TokenType::PHI:
+		case TokenType::JUMP_BACK:
 		case TokenType::BRANCH_ELIF:
 			break;
 		default:
@@ -1904,7 +1912,7 @@ Block* VirtualMachine::HandleBranch(std::vector<Block*> branches,const  Instruct
 	//else
 	EmitPop(currentFunc->opCode);
 	GenerateBlockInstructions(branches.back());
-	auto mergeBlock = branches.back()->merge;
+	auto mergeBlock = branches[0]->merge;
 	for ( auto index : indexJumps)
 	{
 		currentFunc->opCode[index] = currentFunc->opCode.size() - index;
@@ -1922,7 +1930,11 @@ void VirtualMachine::GenerateCFG(Block* block)
 	{
 		if(!child->isVisited)
 		GenerateCFG(child);
-	
+	}
+
+	if (block->merge && !block->merge->isVisited)
+	{
+		GenerateCFG(block->merge);
 	}
 }
 

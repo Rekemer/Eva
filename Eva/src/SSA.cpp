@@ -1,5 +1,6 @@
 #include "SSA.h"
 #include "AST.h"
+#include "Nodes.h"
 #include "VirtualMachine.h"
 #include "Tokens.h"
 #include <cassert>
@@ -168,63 +169,63 @@ void PrintBlock(Block* block)
 		std::cout << instr;
 	}
 	std::cout << std::endl;
-	std::cout << "[dominator children]\n[ ";
-
-	for (auto dominator : block->dominatorChildren)
-	{
-		if (dominator != block)
-			std::cout << dominator->name << " ";
-	}
-	std::cout << "]" << std::endl;
-
-	std::cout << "[children]\n[ ";
-
-	for (auto dominator : block->blocks)
-	{
-		if (dominator != block)
-			std::cout << dominator->name << " ";
-	}
-	std::cout << "]" << std::endl;
-
-	std::cout << "[parents]\n[ ";
-
-	for (auto dominator : block->parents)
-	{
-		if (dominator != block)
-			std::cout << dominator->name << " ";
-	}
-	std::cout << "]" << std::endl;
-
-	std::cout << "[dominators]\n[ ";
-
-	for (auto dominator : block->dom)
-	{
-		if (dominator != block)
-		std::cout << dominator->name << " ";
-	}
-	std::cout << "]" << std::endl;
-
-	if (block->idom)
-	{
-		std::cout << "[immediate dominator] " << block->idom->name << std::endl;
-	}
-
-	if (block->df.size() > 0)
-	{
-		std::cout << "[dominance frontier] ";
-		for (auto b : block->df)
-		{
-			std::cout << b->name;
-		}
-		std::cout << std::endl;
-	}
-
-	if (block->merge)
-	{
-		std::cout << "[merge]\n[ ";
-		std::cout << block->merge->name;
-		std::cout << "]" << std::endl;
-	}
+	//std::cout << "[dominator children]\n[ ";
+	//
+	//for (auto dominator : block->dominatorChildren)
+	//{
+	//	if (dominator != block)
+	//		std::cout << dominator->name << " ";
+	//}
+	//std::cout << "]" << std::endl;
+	//
+	//std::cout << "[children]\n[ ";
+	//
+	//for (auto dominator : block->blocks)
+	//{
+	//	if (dominator != block)
+	//		std::cout << dominator->name << " ";
+	//}
+	//std::cout << "]" << std::endl;
+	//
+	//std::cout << "[parents]\n[ ";
+	//
+	//for (auto dominator : block->parents)
+	//{
+	//	if (dominator != block)
+	//		std::cout << dominator->name << " ";
+	//}
+	//std::cout << "]" << std::endl;
+	//
+	//std::cout << "[dominators]\n[ ";
+	//
+	//for (auto dominator : block->dom)
+	//{
+	//	if (dominator != block)
+	//	std::cout << dominator->name << " ";
+	//}
+	//std::cout << "]" << std::endl;
+	//
+	//if (block->idom)
+	//{
+	//	std::cout << "[immediate dominator] " << block->idom->name << std::endl;
+	//}
+	//
+	//if (block->df.size() > 0)
+	//{
+	//	std::cout << "[dominance frontier] ";
+	//	for (auto b : block->df)
+	//	{
+	//		std::cout << b->name;
+	//	}
+	//	std::cout << std::endl;
+	//}
+	//
+	//if (block->merge)
+	//{
+	//	std::cout << "[merge]\n[ ";
+	//	std::cout << block->merge->name;
+	//	std::cout << "]" << std::endl;
+	//}
 	//std::cout << std::endl << "------------" << std::endl;
 }
 int CFG::NewName(const std::string& name)
@@ -249,7 +250,7 @@ void CFG::Rename(Block* b)
 	for (auto& instr : b->instructions)
 	{
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
-			instr.instrType == TokenType::BLOCK || instr.instrType == TokenType::JUMP_FOR
+			instr.instrType == TokenType::BLOCK || instr.instrType == TokenType::JUMP_BACK || instr.instrType == TokenType::JUMP_FOR
 			|| instr.instrType == TokenType::LEFT_PAREN || instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN) continue;
 		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
@@ -544,6 +545,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 				for (auto& v : instr->variables)
 				{
 					isIPhi = v.version == -1;
+					if (isIPhi) break;
 				}
 				
 				if (!isIPhi)
@@ -1244,15 +1246,24 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentBlock = action;
 		ConvertStatementAST(forNode->action.get());
 		currentBlock = body;
-		ConvertStatementAST(forNode->body.get());
+		auto prevprevScope = currentScope;
+		currentScope = forNode->body->AsMut<Scope>();
+ 		ConvertStatementAST(forNode->body.get());
 
 		
+		assert(currentBlock->instructions.back().instrType == TokenType::BLOCK);
+
+		auto jumpBack = Instruction{ TokenType::JUMP_BACK,{},{},{} };
+
+		currentBlock->instructions.insert(currentBlock->instructions.end(), jumpBack);
+
+
 		auto parents = { parentBlock,currentBlock,/*init*/ };
 		auto merge = CreateMergeBlock(parents);
-		
+		init->instructions.back().targets.push_back(merge);
 		// should not we emit block instr to merge block instead?
 		// it breaks on for in for loop case
-		currentBlock = parentBlock;
+		currentBlock = merge;
 		//currentBlock = merge;
 		//currentBlock->instructions.push_back(forAction);
 		EmitPop(currentBlock, currentScope->popAmount);
@@ -1420,6 +1431,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 			instr.targets.push_back(merge);
 			merge->parents.push_back(parent);
 		}
+		then->merge = merge;
+		els->merge = merge;
 
 		for (auto& elif : elifBlocks)
 		{
@@ -1492,7 +1505,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		Instruction jumpBack= Instruction{ TokenType::JUMP_BRANCH,{} ,{},NullOperand() };
 		jumpBack.targets.push_back(parentBlock);
 		merge->instructions.push_back(jumpBack);
-		currentBlock = parentBlock;
+		currentBlock = merge;
 		forDepth.pop();
 		break;
 	}
@@ -1507,6 +1520,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		}
 
 		auto acc = 0;
+		block = currentBlock;
 		while (block->instructions.size() > 0 && block->instructions.back().instrType == TokenType::BLOCK)
 		{
 			acc += block->instructions.back().operRight.value.As<int>();

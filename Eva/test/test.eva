@@ -636,12 +636,13 @@
 //unused1 := 100; // Unused variable
 //while a < 5
 //{
+//	Print "start while";
 //    a++;
 //    sd1 := "even";
 //    sd := "sd"; // Potentially unused depending on the branches
 //    if (a % 2 == 1) == true
 //    {
-//       sd := "odd";
+//        sd := "odd";
 //        unused2 := "test"; // Another unused variable inside a conditional
 //        if (a > 3)
 //        {
@@ -652,6 +653,7 @@
 //    sd1 = "even";
 //    g += a;
 //    unused4 := g * 2; // Unused variable after update
+//	Print "end while";
 //}
 
 //fun sum(a : int, b : int, c : int) : int 
@@ -674,42 +676,63 @@
 //}
 
 
-fun sum(n : int, n1 : int, n2 : int, n3 : int) : int
-{
-    unusedParam := n + n1; // Unused variable in the function scope
-    return n + n1 + n2 + n3;
-}
+//fun sum(n : int, n1 : int, n2 : int, n3 : int) : int
+//{
+//    unusedParam := n + n1; // Unused variable in the function scope
+//    return n + n1 + n2 + n3;
+//}
+//
+//fun multiply(x : int, y : int) : int
+//{
+//    result := x * y;
+//    unusedFuncVar := result + 100; // Unused variable
+//    return result;
+//}
+//
+//g : int = 2;
+//fun main() : int
+//{
+//    c := 10;
+//    d := 20; // Unused variable in main function
+//    a := sum(c, 10, g + 10, g);
+//    
+//    if (a > 20)
+//    {
+//         b := multiply(a, g); // Used only in this branch
+//        if (b > 100)
+//        {
+//            unusedInnerVar := b + 1; // Unused variable in nested if
+//        }
+//        g = b;
+//    }
+//    else
+//    {
+//        g = a;
+//    }
+//    
+//    unusedAfterBranch := g * 2; // Unused variable after branches
+//    Print g;
+//    return 0;
+//}
 
-fun multiply(x : int, y : int) : int
-{
-    result := x * y;
-    unusedFuncVar := result + 100; // Unused variable
-    return result;
-}
-
-g : int = 2;
-fun main() : int
-{
-    c := 10;
-    d := 20; // Unused variable in main function
-    a := sum(c, 10, g + 10, g);
-    
-    if (a > 20)
-    {
-         b := multiply(a, g); // Used only in this branch
-        if (b > 100)
-        {
-            unusedInnerVar := b + 1; // Unused variable in nested if
-        }
-        g = b;
-    }
-    else
-    {
-        g = a;
-    }
-    
-    unusedAfterBranch := g * 2; // Unused variable after branches
-    Print g;
-    return 0;
-}
-
+a:=0;
+					i:= 0;
+					j:= 0;
+					while i < 5
+					{
+						i++;
+						if i % 2 == 1 
+						{	
+							continue;
+						}
+						a+=2;
+						while j < 2
+						{	
+							sd:="sd";
+							j++;
+							sd1:="sd";
+							a+=2;
+							sd2:="sd";
+						}
+						j =0;
+					}

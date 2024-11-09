@@ -54,6 +54,7 @@ enum class TokenType : uint8_t {
 	BRANCH_FOR,
 	//jumps to compile
 	JUMP,
+	JUMP_BACK,
 	JUMP_FOR,
 	JUMP_WHILE,
 	CALL,

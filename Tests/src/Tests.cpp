@@ -1119,7 +1119,98 @@ TEST_CASE("functions")
 		CHECK(isPass);
 	}
 
-	SUBCASE("call functions in main with ifs and dec")
+	SUBCASE("main with for while and if ")
+	{
+		auto a = R"(
+					a:=0;
+					fun main() : int
+					{
+					    // Unused variables in main
+					    unusedVar1 := 50;
+					    unusedVar2 := 100;
+					
+					    // Variables used in different loops and		conditions
+					    x := 0;
+					    y := 10;
+					
+					        result := 5;
+					   
+					    // A for loop with nested if conditions and an  	unused   	variable
+					    for i := 0; i < 1; i++
+					    {
+					      tempVar := i + 200; // Unused variable	within		the		loop
+					      if (false)
+					      {
+					         //Print "result += i";
+					         //result += 20;
+					      }
+					      else
+					      {
+					          //Print "result -= i";
+					          result -= 20;
+					         // if (true)
+					          if (result <0 )
+					          {
+					              a = result;
+					              unusedNestedIf := 3 * 2; // Unused variable in	nested if
+					          }
+					      }
+					      //Print "clean for";
+					    }
+					   // Print "back to main";
+					   //// A while loop with an unused variable and	break
+					  while x < y
+					  {
+					      x++;
+					      if (x > 5)
+					      {
+					          break;
+					      }
+					      unusedInWhile := x * 3; // Unused variable	in		while	loop
+					  }
+					  ////// An if-else statement with additional		conditions
+					  if (result > 10)
+					  {
+					      result += 5;
+					  }
+					  elif (result == 0)
+					  {
+					      result = y;
+					  }
+					  else
+					  {
+					      unusedInElse := y * 2; // Unused variable in  	else		block
+					      result += x;
+					  }
+					   
+						a = result;
+					   // Unused variable after control flow	constructs
+					   unusedAfterLoops := result * 2;
+					    // Final Print statements
+					    return result;
+					}
+
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("a", -9, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("call function global")
+	{
+		auto a = R"(
+					fun sum(n : int, n1 : int, n2: int) : int
+					{
+						return n + n1 + n2;
+					}
+					g: int = sum(1,2,3);
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<int>("g", 6, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("call functions from main unused variables")
 	{
 		auto a = R"(
 					fun sum(n : int, n1 : int, n2 : int, n3 : int) : int
@@ -1141,9 +1232,10 @@ TEST_CASE("functions")
 					    c := 10;
 					    d := 20; // Unused variable in main function
 					    a := sum(c, 10, g + 10, g);
+					    
 					    if (a > 20)
 					    {
-					        b := multiply(a, g); // Used only in this branch
+					         b := multiply(a, g); // Used only in this branch
 					        if (b > 100)
 					        {
 					            unusedInnerVar := b + 1; // Unused variable in nested if
@@ -1154,29 +1246,19 @@ TEST_CASE("functions")
 					    {
 					        g = a;
 					    }
+					    
 					    unusedAfterBranch := g * 2; // Unused variable after branches
+					    Print g;
 					    return 0;
 					}
-
 					)";
 		auto [res, vm] = Compile(a);
 		auto isPass = CheckVariable<int>("g", 68, ValueType::INT, vm);
 		CHECK(isPass);
 	}
 
-	SUBCASE("call function global")
-	{
-		auto a = R"(
-					fun sum(n : int, n1 : int, n2: int) : int
-					{
-						return n + n1 + n2;
-					}
-					g: int = sum(1,2,3);
-					)";
-		auto [res, vm] = Compile(a);
-		auto isPass = CheckVariable<int>("g", 6, ValueType::INT, vm);
-		CHECK(isPass);
-	}
+
+
 }
 
 #endif
