@@ -715,24 +715,110 @@
 //    return 0;
 //}
 
+//a:=0;
+//					i:= 0;
+//					j:= 0;
+//					while i < 5
+//					{
+//						i++;
+//						if i % 2 == 1 
+//						{	
+//							continue;
+//						}
+//						a+=2;
+//						while j < 2
+//						{	
+//							sd:="sd";
+//							j++;
+//							sd1:="sd";
+//							a+=2;
+//							sd2:="sd";
+//						}
+//						j =0;
+//					}
+
+
+//a := 2;
+//if  a == 2
+//{
+//	c := 2;
+//	a = 4;
+//}
+//elif  a == 4 
+//{
+//	c := 2;
+//}
+//else
+//{
+//	c := 2;
+//	Print "Hello World!";
+//}
+//Print a;
+
 a:=0;
-					i:= 0;
-					j:= 0;
-					while i < 5
+					fun main() : int
 					{
-						i++;
-						if i % 2 == 1 
-						{	
-							continue;
-						}
-						a+=2;
-						while j < 2
-						{	
-							sd:="sd";
-							j++;
-							sd1:="sd";
-							a+=2;
-							sd2:="sd";
-						}
-						j =0;
+					    // Unused variables in main
+					    unusedVar1 := 50;
+					    unusedVar2 := 100;
+					
+					    // Variables used in different loops and		conditions
+					    x := 0;
+					    y := 10;
+					
+					        result := 5;
+					   
+					    // A for loop with nested if conditions and an  	unused   	variable
+					    for i := 0; i < 1; i++
+					    {
+					      tempVar := i + 200; // Unused variable	within		the		loop
+					      if (false)
+					      {
+					         //Print "result += i";
+					         //result += 20;
+					      }
+					      else
+					      {
+					          //Print "result -= i";
+					          result -= 20;
+					         // if (true)
+					          if (result <0 )
+					          {
+					              a = result;
+					              unusedNestedIf := 3 * 2; // Unused variable in	nested if
+					          }
+					      }
+					      //Print "clean for";
+					    }
+					   // Print "back to main";
+					   //// A while loop with an unused variable and	break
+					  while x < y
+					  {
+					      x++;
+					      if (x > 5)
+					      {
+					          break;
+					      }
+					      unusedInWhile := x * 3; // Unused variable	in		while	loop
+					  }
+					  ////// An if-else statement with additional		conditions
+					  if (result > 10)
+					  {
+					      result += 5;
+					  }
+					  elif (result == 0)
+					  {
+					      result = y;
+					  }
+					  else
+					  {
+					      unusedInElse := y * 2; // Unused variable in  	else		block
+					      result += x;
+					  }
+					   
+						a = result;
+					   // Unused variable after control flow	constructs
+					   unusedAfterLoops := result * 2;
+					    // Final Print statements
+					    return result;
 					}

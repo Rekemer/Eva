@@ -232,8 +232,11 @@ private:
 	std::unordered_map<std::string, int> variableCounterGlobal;
 	std::unordered_map<std::string, int> variableCounterLocal;
 
-	std::unordered_map<std::string, std::vector<Block*>> globalAssigned;
 	std::unordered_map<std::string, std::vector<Block*>> localAssigned;
+	std::unordered_map<std::string, std::vector<Block*>> localUses;
+
+	bool writeToVariable = false;
+
 	std::stack<int> forDepth;
 	int tempVersion = 0;
 	std::unordered_map<std::string, Block > graph;

@@ -375,6 +375,7 @@ void CFG::InsertPhi()
 		std::queue<Block*> workList;
 		for (auto b : v.second)
 		{
+			
 			workList.push(b);
 		}
 
@@ -387,6 +388,20 @@ void CFG::InsertPhi()
 			{
 				if (hasAlready.find(blockDf) == hasAlready.end())
 				{
+					// Check if varName is assigned along multiple paths to blockDf
+					int defsInPredecessors = 0;
+					for (auto pred : blockDf->parents)
+					{
+
+						auto iter = std::find(localAssigned[v.first].begin(), localAssigned[v.first].end(), pred);
+						if (iter != localAssigned[v.first].end())
+						{
+							defsInPredecessors++;
+
+						}
+					}
+					if (defsInPredecessors <= 1) continue;
+					
 					hasAlready.insert(blockDf);
 					auto name = v.first;
 					
@@ -539,25 +554,12 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			//auto instr = &block->instructions[i];
 			if (instr->instrType == TokenType::PHI)
 			{
-				// we have problem of phi instructions leaking...
-				// should avoid it happening
-				auto isIPhi = false;
-				for (auto& v : instr->variables)
+				assert(instr->targets.size() == instr->variables.size());
+				for (int i = 0; i < instr->targets.size(); i++)
 				{
-					isIPhi = v.version == -1;
-					if (isIPhi) break;
+					instr->variables[i].depth = 1;
+					MarkOperand(instr->targets[i], instr->variables[i], workList);
 				}
-				
-				if (!isIPhi)
-				{
-					assert(instr->targets.size() == instr->variables.size());
-					for (int i = 0; i < instr->targets.size(); i++)
-					{
-						instr->variables[i].depth = 1;
-						MarkOperand(instr->targets[i], instr->variables[i], workList);
-					}
-				}
-
 			}
 			for (auto block : info.first->rdf)
 			{
@@ -959,7 +961,14 @@ void CFG::Debug()
 void  CFG::InitLocal(Operand& op,const std::string& name)
 {
 	variableCounterLocal[name] = 0;
-	localAssigned[name].push_back(currentBlock);
+	if (writeToVariable)
+	{
+		localAssigned[name].push_back(currentBlock);
+	}
+	else
+	{
+		localUses[name].push_back(currentBlock);
+	}
 	auto [isExist, index, depth] = currentScope->IsLocalExist(name, currentScope->depth);
 	assert(isExist);
 	op.index = index;
@@ -968,7 +977,14 @@ void  CFG::InitLocal(Operand& op,const std::string& name)
 }
 void CFG::InitGlobal(Operand& op,const std::string& name)
 {
-	localAssigned[name].push_back(currentBlock);
+	if (writeToVariable)
+	{
+		localAssigned[name].push_back(currentBlock);
+	}
+	else
+	{
+		localUses[name].push_back(currentBlock);
+	}
 	op.type = vm->GetGlobalType(name);
 	op.depth = 0;
 }
@@ -980,7 +996,6 @@ Operand CFG::InitVariable(const std::string& name, int depth)
 		InitLocal(resOp, name);
 		
 	}
-	// global variable
 	else
 	{
 		InitGlobal(resOp, name);
@@ -995,7 +1010,9 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	
 	ValueType typeV = ValueType::NIL;
 	auto resName = left->value.AsString();
+	writeToVariable = true;
 	auto resOp = InitVariable(resName, left->depth);
+	writeToVariable = false;
 	Operand rightOp{};
 	if (expr->right != nullptr)
 	{
@@ -1022,7 +1039,7 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	currentBlock->instructions.push_back(instruction);
 
 	AddDef(resOp.depth, left->value.AsString(), currentBlock->instructions.size() - 1);
-
+	
 }
 void CFG::AddDef(int depth, const std::string& name, int index)
 {
@@ -1036,13 +1053,16 @@ void CFG::AddDef(int depth, const std::string& name, int index)
 	}
 
 }
+
 void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 {
 	auto expr = tree->As<Expression>();
 	// left is variable
 	auto left = expr->left->As<Expression>();
 	auto name = left->value.AsString();
+	writeToVariable = true;
 	auto resOp = InitVariable(name,left->depth);
+	writeToVariable = false;
 	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
 	if (resOp.depth == 0)
 	{
@@ -1618,7 +1638,9 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		}
 		else if (type == TokenType::PLUS_PLUS || type == TokenType::MINUS_MINUS)
 		{
+			writeToVariable = true;
 			auto var = ConvertExpressionAST(expr->left.get());
+			writeToVariable = false;
 			Instruction action{ type,{},{},var };
 			if (var.depth == 0)
 			{
@@ -1626,6 +1648,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 			}
 			GiveType(action, action.result, expr->value.type);
 			currentBlock->instructions.push_back(action);
+
 			AddDef(var.depth, var.value.AsString(), currentBlock->instructions.size() - 1);
 			return var;
 
