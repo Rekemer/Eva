@@ -92,7 +92,7 @@ do {                                                           \
     return {};                                                 \
 } while (0)
 
-ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm)
+ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContainer& v2)
 {
 	bool isNumber = AreBothNumeric(v1.type, v2.type);
 	assert(v1.type == v2.type || isNumber);

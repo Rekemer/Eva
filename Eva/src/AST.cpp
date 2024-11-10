@@ -578,7 +578,7 @@ void Print(const Expression* tree, int level) {
 	 switch (op)
 	 {
 	 case TokenType::PLUS:
-		 node->value = ValueContainer::Add(left->value, right->value, *vm);
+		 node->value = ValueContainer::Add(left->value, right->value);
 		 break;
 	 case TokenType::MINUS:
 		 node->value = ValueContainer::Substract(left->value, right->value);
@@ -823,25 +823,30 @@ void Print(const Expression* tree, int level) {
 
  void AST::StartFolding(Node* node)
  {
-	 auto expr = node->AsMut<Expression>();
-	 auto left = expr->left.get()->AsMut<Expression>();
-	 auto right = expr->right.get()->AsMut<Expression>();
+	 auto updateNode = [](std::unique_ptr<Node>& target, Node* newNode) {
+		 if (newNode && target.get() != newNode) {
+			 target = std::unique_ptr<Node>(newNode);
+		 }
+	 };
+	if (node->type == TokenType::FOR)
+	{
+		 auto forNode = node->AsMut<For>();
+		 StartFolding(forNode->init.get());
+		 auto newNodeCond= FoldConstants(forNode->condition.get());
+		 updateNode(forNode->condition, newNodeCond);
+		 auto newNodeAction= FoldConstants(forNode->action.get());
+		 updateNode(forNode->action, newNodeAction);
+	}
+	else
+	 {
+		 auto expr = node->AsMut<Expression>();
+		 auto left = expr->left.get()->AsMut<Expression>();
+		 auto right = expr->right.get()->AsMut<Expression>();
 
-	 auto newNodeLeft = FoldConstants(left);
-	 if (newNodeLeft)
-	 {
-		 if (expr->left.get() != newNodeLeft)
-		 {
-			 expr->left = std::unique_ptr<Node>(static_cast<Node*>(newNodeLeft));
-		 }
-	 }
-	 auto newNodeRight = FoldConstants(right);
-	 if (newNodeRight)
-	 {
-		 if (expr->right.get() != newNodeRight)
-		 {
-			 expr->right = std::unique_ptr<Node>(static_cast<Node*>(newNodeRight));
-		 }
+		 auto newNodeLeft = FoldConstants(left);
+		 updateNode(expr->left, newNodeLeft);
+		 auto newNodeRight = FoldConstants(right);
+		 updateNode(expr->right, newNodeRight);
 	 }
  }
 
@@ -870,7 +875,9 @@ void Print(const Expression* tree, int level) {
 	 else if (tree->type == TokenType::FOR)
 	 {
 		 auto forNode = static_cast<For*>(tree.get());
-		 FoldBlockConstants(&forNode->initScope);
+		 StartFolding(forNode->init.get());
+		 StartFolding(forNode->condition.get());
+		 StartFolding(forNode->action.get());
 	 }
 	 else if (tree->type == TokenType::FUN)
 	 {

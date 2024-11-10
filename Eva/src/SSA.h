@@ -105,6 +105,7 @@ struct pair_hash_block {
 	}
 };
 using DefMap = std::unordered_map<std::pair<int, std::string>, std::vector<int>, pair_hash>;
+using ValueMap = std::unordered_map<std::pair<int, std::string>, ValueContainer, pair_hash>;
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
 {
@@ -186,12 +187,17 @@ public:
 	void BuildDF();
 	void InsertPhi();
 	void DeadCode();
+	void ConstPropagation();
 	void Debug();
 private:
+	void CalculateConstant(TokenType op, Operand& left, Operand& right, Operand& newValue);
+	void ConstProp(Block* b);
 	void MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*, Instruction*>>& workList);
 	Instruction CreatePhi(const std::string& name);
 	void Sweep(Block* block);
 	void Mark(Block* b, std::queue<std::pair<Block*, Instruction*>>& workList);
+	
+	void AddUse(int depth, const std::string& name, int index);
 	void AddDef(int depth, const std::string& name, int index);
 	Block* CreateConditionBlock(const std::string& name,  Block* currentBlock);
 	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
@@ -235,6 +241,9 @@ private:
 	std::unordered_map<std::string, std::vector<Block*>> localAssigned;
 	std::unordered_map<std::string, std::vector<Block*>> localUses;
 
+	std::unordered_map < std::pair<Block*, std::string> , std::vector<int >, pair_hash_block> globalDefs;
+	std::unordered_map < std::pair<Block*, std::string>, std::vector<int >, pair_hash_block>globalUses;
+
 	bool writeToVariable = false;
 
 	std::stack<int> forDepth;
@@ -247,7 +256,6 @@ private:
 	std::unordered_set<std::string> notPoped;
 	bool isNotPop = false;
 
-	std::unordered_map < std::pair<Block*, std::string> , std::vector<int >, pair_hash_block> globalDefs;
 	// topologically sorted graph
 	std::vector<Block*> tpgSort;
 	// so we do not pop variables that are already taken care of by the end of loops

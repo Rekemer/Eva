@@ -765,7 +765,131 @@ void CFG::Sweep(Block* block)
 		}
 }
 
+ValueMap value;
 
+void CFG::CalculateConstant(TokenType op, Operand& left, Operand& right, Operand& newValue)
+{
+	auto node = newValue;
+	switch (op)
+	{
+	case TokenType::PLUS:
+		node.value = ValueContainer::Add(left.value, right.value);
+		break;
+	case TokenType::MINUS:
+		node.value = ValueContainer::Substract(left.value, right.value);
+		break;
+	case TokenType::STAR:
+		node.value = ValueContainer::Multiply(left.value, right.value);
+		break;
+	case TokenType::SLASH:
+		node.value = ValueContainer::Divide(left.value, right.value);
+		break;
+	case TokenType::EQUAL_EQUAL:
+		node.value = ValueContainer::Equal(left.value, right.value);
+		break;
+	case TokenType::BANG_EQUAL:
+	{
+		auto newValue = ValueContainer::Equal(left.value, right.value);
+		node.value = !newValue.AsRef<bool>();
+		break;
+	}
+	case TokenType::GREATER:
+		node.value = ValueContainer::Greater(left.value, right.value);
+		break;
+	case TokenType::GREATER_EQUAL:
+	{
+		auto newValue = ValueContainer::Equal(left.value, right.value);
+		node.value = !newValue.AsRef<bool>();
+		break;
+	}
+	case TokenType::LESS:
+		node.value = ValueContainer::Less(left.value, right.value);
+		break;
+	case TokenType::LESS_EQUAL:
+	{
+		auto newValue = ValueContainer::Greater(left.value, right.value);
+		node.value = !newValue.AsRef<bool>();
+		break;
+	}
+	default:
+		assert(false && "unknown binary operation on literals");
+		break;
+	}
+}
+
+void CFG::ConstProp(Block* b)
+{
+	auto updateOperand = [](Operand& op, std::pair<int,std::string> var)
+		{
+			if (op.IsVariable() &&
+				op.value.AsString() == var.second)
+			{
+				op.value = value.at(var);
+				op.isConstant = true;
+			}
+	};
+
+
+	std::queue<std::pair<int,std::string>> workList;
+
+	for (auto [k , defsBlocks] : localAssigned)
+	for (auto b: defsBlocks)
+
+	for (auto [k, v] : b->defs)
+	{
+		for (auto i : v)
+		{
+			auto instr = b->instructions[i];
+			if (instr.operRight.isConstant)
+			{
+				value[k] = instr.operRight.value;
+
+			}
+			else
+			{
+				value[k].type = ValueType::NIL;
+			}
+			if (value[k].type != ValueType::NIL)
+			{
+				workList.push(k);
+			}
+		}
+	}
+
+	while (!workList.empty())
+	{
+		auto n = workList.front();
+		workList.pop();
+		auto& varName = n.second;
+		auto& blocks = localUses.at(varName);
+
+		for (auto b : blocks)
+		{
+			auto& opsI = b->uses.at(varName);
+
+			for (auto i : opsI)
+			{
+				auto& instr = b->instructions[i];
+
+				updateOperand(instr.operLeft, n);
+				updateOperand(instr.operRight, n);
+
+				if (instr.operLeft.isConstant && instr.operRight.isConstant)
+				{
+					
+				}
+
+
+			}
+		}
+
+	}
+
+	for (auto [key, func] : functionCFG)
+	{
+		//Mark(func.start, workList);
+	}
+}
 void CFG::DeadCode()
 {
 
@@ -961,16 +1085,17 @@ void CFG::Debug()
 void  CFG::InitLocal(Operand& op,const std::string& name)
 {
 	variableCounterLocal[name] = 0;
+	auto [isExist, index, depth] = currentScope->IsLocalExist(name, currentScope->depth);
+	assert(isExist);
 	if (writeToVariable)
 	{
 		localAssigned[name].push_back(currentBlock);
 	}
 	else
 	{
+		AddUse(0, name, currentBlock->instructions.size());
 		localUses[name].push_back(currentBlock);
 	}
-	auto [isExist, index, depth] = currentScope->IsLocalExist(name, currentScope->depth);
-	assert(isExist);
 	op.index = index;
 	op.depth = depth;
 	op.type = currentScope->GetType(name);
@@ -983,6 +1108,7 @@ void CFG::InitGlobal(Operand& op,const std::string& name)
 	}
 	else
 	{
+		AddUse(0,name,currentBlock->instructions.size());
 		localUses[name].push_back(currentBlock);
 	}
 	op.type = vm->GetGlobalType(name);
@@ -1041,6 +1167,19 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	AddDef(resOp.depth, left->value.AsString(), currentBlock->instructions.size() - 1);
 	
 }
+
+void CFG::AddUse(int depth, const std::string& name, int index)
+{
+	if (depth > 0)
+	{
+		currentBlock->uses[{name}].push_back(index + currentBlock->offsetPhi);
+	}
+	else
+	{
+		globalUses[{currentBlock, name}].push_back(index);
+	}
+}
+
 void CFG::AddDef(int depth, const std::string& name, int index)
 {
 	if (depth > 0)

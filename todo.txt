@@ -73,3 +73,4 @@ check why in for after branching we have operations in parent block
 check compiler errors on return from functions
 add init
 arg1, arg2, arg3  := 2 ,2, 2, 
+add support for 0..(2+2)

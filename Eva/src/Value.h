@@ -107,7 +107,7 @@ public:
 
 	ValueContainer& operator = (const ValueContainer& v);
 
-	static ValueContainer Add(const ValueContainer& v1, const ValueContainer& v2, VirtualMachine& vm);
+	static ValueContainer Add(const ValueContainer& v1, const ValueContainer& v2);
 	static ValueContainer Substract(const ValueContainer& v1, const ValueContainer& v2);
 	static ValueContainer Multiply(const ValueContainer& v1, const ValueContainer& v2);
 	static ValueContainer Divide(const ValueContainer& v1, const ValueContainer& v2);
