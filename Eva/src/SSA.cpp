@@ -491,7 +491,7 @@ void  CFG::MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*,
 			}
 			else
 			{
-				// for now like this, will change
+				// not optimal
 				for (auto [k, v] : globalDefs)
 				{
 					if (k.second == name)
@@ -592,11 +592,32 @@ std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
 std::unordered_map<int, int> removedLocalTotal;
 std::unordered_map<int, int> declaredLocal;
 
-void AdjustOperandIndex(Operand& operand, const std::unordered_map<std::pair<int, std::string>, int, pair_hash>& removedLocal)
-{
-	// Retrieve the total removed count based on depth and value
-	int total = removedLocal.at({ operand.depth, operand.value.AsString() });
 
+
+std::unordered_map<std::string , bool> updateDefsUses;
+void AdjustOperandIndex(Operand& operand, 
+	const std::unordered_map<std::pair<int, std::string>, int, pair_hash>& removedLocal,
+	Block* b)
+{
+	auto varName = operand.value.AsString();
+	// Retrieve the total removed count based on depth and value
+	auto key = std::pair{ operand.depth,varName };
+	int total = removedLocal.at(key);
+	if (!updateDefsUses[varName])
+	{
+		for (auto& i : b->defs.at(key))
+		{
+			i -= total;
+			assert(i >= 0);
+		}
+		for (auto& i : b->uses.at(varName))
+		{
+			i -= total;
+			assert(i >= 0);
+		}
+		updateDefsUses[varName] = true;
+	}
+	
 	// Adjust the index by subtracting the total removed count
 	operand.index -= total;
 
@@ -721,33 +742,33 @@ void CFG::Sweep(Block* block)
 				}
 				if (it->operLeft.depth > 0 && it->operLeft.IsVariable())
 				{
-					AdjustOperandIndex(it->operLeft, removedLocal);
+					AdjustOperandIndex(it->operLeft, removedLocal,block);
 				}
 				if (it->result.depth > 0 && it->result.IsVariable() && it->instrType == TokenType::EQUAL)
 				{
-					AdjustOperandIndex(it->result, removedLocal);
+					AdjustOperandIndex(it->result, removedLocal,block);
 				}
 				if (it->operRight.IsVariable() && isBranchType(it->instrType))
 				{
-					AdjustOperandIndex(it->operRight, removedLocal);
+					AdjustOperandIndex(it->operRight, removedLocal,block);
 				}
 				else if (it->result.IsVariable() && it->result.depth > 0 && 
 					(it->instrType == TokenType::MINUS_MINUS
 						|| it->instrType == TokenType::PLUS_PLUS))
 				{
-					AdjustOperandIndex(it->result, removedLocal);
+					AdjustOperandIndex(it->result, removedLocal,block);
 				}
 				else if (it->result.depth > 0 && (it->instrType == TokenType::LEFT_PAREN || it->instrType == TokenType::VAR))
 				{
 					if (it->result.IsVariable())
 					{
-						AdjustOperandIndex(it->result, removedLocal);
+						AdjustOperandIndex(it->result, removedLocal,block);
 					}
 
 				}
 				else if (it->operRight.IsVariable())
 				{
-					AdjustOperandIndex(it->operRight, removedLocal);
+					AdjustOperandIndex(it->operRight, removedLocal,block);
 				}
 				it++;
 			}
@@ -767,53 +788,74 @@ void CFG::Sweep(Block* block)
 
 ValueMap value;
 
-void CFG::CalculateConstant(TokenType op, Operand& left, Operand& right, Operand& newValue)
+void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction& instr)
 {
-	auto node = newValue;
+	const std::string& varName = instr.result.value.AsString();
+	int depth = instr.result.depth;
 	switch (op)
 	{
 	case TokenType::PLUS:
-		node.value = ValueContainer::Add(left.value, right.value);
+		right.value = ValueContainer::Add(left.value, right.value);
+		value[{depth, varName}] = right.value;
 		break;
 	case TokenType::MINUS:
-		node.value = ValueContainer::Substract(left.value, right.value);
+		right.value = ValueContainer::Substract(left.value, right.value);
+		value[{depth, varName}] = right.value;
 		break;
 	case TokenType::STAR:
-		node.value = ValueContainer::Multiply(left.value, right.value);
+		right.value = ValueContainer::Multiply(left.value, right.value);
+		value[{depth, varName}] = right.value;
 		break;
 	case TokenType::SLASH:
-		node.value = ValueContainer::Divide(left.value, right.value);
+		right.value = ValueContainer::Divide(left.value, right.value);
+		value[{depth, varName}] = right.value;
 		break;
 	case TokenType::EQUAL_EQUAL:
-		node.value = ValueContainer::Equal(left.value, right.value);
+		right.value = ValueContainer::Equal(left.value, right.value);
+		value[{depth, varName}] = right.value;
 		break;
 	case TokenType::BANG_EQUAL:
 	{
 		auto newValue = ValueContainer::Equal(left.value, right.value);
-		node.value = !newValue.AsRef<bool>();
+		right.value = !newValue.AsRef<bool>();
+		value[{depth, varName}] = right.value;
 		break;
 	}
 	case TokenType::GREATER:
-		node.value = ValueContainer::Greater(left.value, right.value);
+		right.value = ValueContainer::Greater(left.value, right.value);
+		value[{depth, varName}] = right.value;
 		break;
 	case TokenType::GREATER_EQUAL:
 	{
 		auto newValue = ValueContainer::Equal(left.value, right.value);
-		node.value = !newValue.AsRef<bool>();
+		right.value = !newValue.AsRef<bool>();
+		value[{depth, varName}] = right.value;
 		break;
 	}
 	case TokenType::LESS:
-		node.value = ValueContainer::Less(left.value, right.value);
+		right.value = ValueContainer::Less(left.value, right.value);
+		value[{depth, varName}] = right.value;
 		break;
 	case TokenType::LESS_EQUAL:
 	{
 		auto newValue = ValueContainer::Greater(left.value, right.value);
-		node.value = !newValue.AsRef<bool>();
+		right.value = !newValue.AsRef<bool>();
+		value[{depth, varName}] = right.value;
 		break;
 	}
 	default:
 		assert(false && "unknown binary operation on literals");
 		break;
+	}
+	//instr.instrType = TokenType::EQUAL;
+}
+
+
+void CFG::ConstPropagation()
+{
+	for (auto [key, func] : functionCFG)
+	{
+		ConstProp(func.start);
 	}
 }
 
@@ -830,11 +872,10 @@ void CFG::ConstProp(Block* b)
 	};
 
 
-	std::queue<std::pair<int,std::string>> workList;
+	std::deque<std::pair<int,std::string>> workList;
 
 	for (auto [k , defsBlocks] : localAssigned)
 	for (auto b: defsBlocks)
-
 	for (auto [k, v] : b->defs)
 	{
 		for (auto i : v)
@@ -843,26 +884,27 @@ void CFG::ConstProp(Block* b)
 			if (instr.operRight.isConstant)
 			{
 				value[k] = instr.operRight.value;
-
 			}
 			else
 			{
 				value[k].type = ValueType::NIL;
 			}
-			if (value[k].type != ValueType::NIL)
+			if ((instr.instrType == TokenType::EQUAL || instr.instrType == TokenType::DECLARE)&& value[k].type != ValueType::NIL)
 			{
-				workList.push(k);
+				// better find other ways
+				if (std::find(workList.begin(), workList.end(), k) == workList.end())
+				workList.push_back(k);
 			}
 		}
 	}
 
+	std::unordered_map<Block*, std::vector<int>> eraseIndexes;
 	while (!workList.empty())
 	{
 		auto n = workList.front();
-		workList.pop();
+		workList.pop_front();
 		auto& varName = n.second;
 		auto& blocks = localUses.at(varName);
-
 		for (auto b : blocks)
 		{
 			auto& opsI = b->uses.at(varName);
@@ -873,21 +915,65 @@ void CFG::ConstProp(Block* b)
 
 				updateOperand(instr.operLeft, n);
 				updateOperand(instr.operRight, n);
-
+				// update result
 				if (instr.operLeft.isConstant && instr.operRight.isConstant)
 				{
-					
+					auto varName = instr.result.value.AsString();
+					CalculateConstant(instr.instrType, instr.operLeft, 
+						instr.operRight, instr);
+					if (instr.result.IsVariable())
+					workList.push_back({ instr.result.depth,instr.result.value.AsString() });
+					else if (instr.result.IsTemp())
+					{
+						auto iterInstr = instr;
+						auto iterIndex = i + 1;
+						auto& nextInstr = b->instructions[iterIndex];
+						eraseIndexes[b].push_back(i);
+						while ((nextInstr.instrType != TokenType::DECLARE &&
+							nextInstr.instrType != TokenType::EQUAL) && iterIndex < b->instructions.size())
+						{
+								if (nextInstr.operRight.value.AsString() == iterInstr.result.value.AsString())
+									CalculateConstant(nextInstr.instrType, instr.operLeft, iterInstr.result, nextInstr);
+								else if (nextInstr.operLeft.value.AsString() == iterInstr.result.value.AsString())
+								{
+									CalculateConstant(nextInstr.instrType, iterInstr.result, nextInstr.operRight, nextInstr);
+
+								}
+								eraseIndexes[b].push_back(iterIndex);
+								iterInstr = nextInstr;
+								nextInstr = b->instructions[iterIndex];
+								iterIndex++;
+						}
+						if (nextInstr.result.IsVariable())
+						{
+							nextInstr.operRight = iterInstr.operRight;
+							value[{instr.result.depth, nextInstr.result.value.AsString()}] = nextInstr.operRight.value;
+							workList.push_back({ instr.result.depth,nextInstr.result.value.AsString() });
+							eraseIndexes[b].push_back(iterIndex);
+						}
+					}
 				}
-
-
 			}
 		}
 
 	}
-
-	for (auto [key, func] : functionCFG)
+	for (auto [k, v] : eraseIndexes)
 	{
-		//Mark(func.start, workList);
+		int adjustIndex = 0;
+		for (auto i : v)
+		{
+			auto erIter = k->instructions.begin() + i + adjustIndex;
+			adjustIndex--;
+			k->instructions.erase(erIter);
+		}
+	}
+	for (auto child : b->blocks)
+	{
+		ConstProp(child);
+	}
+	if (b->merge != nullptr)
+	{
+		ConstProp(b->merge);
 	}
 }
 void CFG::DeadCode()
@@ -1090,6 +1176,8 @@ void  CFG::InitLocal(Operand& op,const std::string& name)
 	if (writeToVariable)
 	{
 		localAssigned[name].push_back(currentBlock);
+		currentBlock->uses[{name}];
+		localUses[name];
 	}
 	else
 	{
@@ -1105,6 +1193,8 @@ void CFG::InitGlobal(Operand& op,const std::string& name)
 	if (writeToVariable)
 	{
 		localAssigned[name].push_back(currentBlock);
+		currentBlock->uses[{name}];
+		localUses[name];
 	}
 	else
 	{
@@ -1170,14 +1260,18 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 
 void CFG::AddUse(int depth, const std::string& name, int index)
 {
-	if (depth > 0)
-	{
+	//if (depth > 0)
+	//{
+	//	currentBlock->uses[{name}].push_back(index + currentBlock->offsetPhi);
+	//}
+	//else
+	//{
+	//	currentBlock->uses[{name}].push_back(index + currentBlock->offsetPhi);
+	//	//globalUses[{currentBlock, name}].push_back(index);
+	//	localUses[ name].push_back(currentBlock);
+	//}
 		currentBlock->uses[{name}].push_back(index + currentBlock->offsetPhi);
-	}
-	else
-	{
-		globalUses[{currentBlock, name}].push_back(index);
-	}
+		localUses[ name].push_back(currentBlock);
 }
 
 void CFG::AddDef(int depth, const std::string& name, int index)
@@ -1188,6 +1282,7 @@ void CFG::AddDef(int depth, const std::string& name, int index)
 	}
 	else
 	{
+		currentBlock->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
 		globalDefs[{currentBlock, name}].push_back(index);
 	}
 
@@ -1216,9 +1311,12 @@ Operand CFG::CreateTemp()
 {
 	Operand temp{ ValueContainer{ "t"} ,false,tempVersion++};
 	temp.isTemp = true;
+	
 	if(currentScope == nullptr)
 	temp.depth = 0;
-	else temp.depth = currentScope->depth;
+	else 
+	temp.depth = currentScope->depth;
+
 	AddDef(temp.depth,std::format("t{}", tempVersion - 1) , currentBlock->instructions.size());
 	return temp;
 }

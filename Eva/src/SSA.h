@@ -190,7 +190,6 @@ public:
 	void ConstPropagation();
 	void Debug();
 private:
-	void CalculateConstant(TokenType op, Operand& left, Operand& right, Operand& newValue);
 	void ConstProp(Block* b);
 	void MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*, Instruction*>>& workList);
 	Instruction CreatePhi(const std::string& name);

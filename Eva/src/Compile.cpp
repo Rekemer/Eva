@@ -73,7 +73,6 @@ std::tuple<ValueContainer,VirtualMachine> Compile(const char* line)
 #endif
 #if CONST_PROP
 	cfg.ConstPropagation();
-	return { };
 #endif
 #if DEBUG_SSA 
 
