@@ -130,9 +130,19 @@ public:
 		if (&v == this) return *this;
 		type = v.type;
 		as = std::move(v.as);
-
 	}
 
+	bool operator == (const ValueContainer& v) const
+	{
+		if (&v == this) return true;
+		return Equal(*this, v).As<bool>();
+	}
+	bool operator != (const ValueContainer& v) const 
+	{
+		if (&v == this) return false;
+		return !Equal(*this, v).As<bool>();
+
+	}
 	template <typename T>
 	T As() const 
 	{

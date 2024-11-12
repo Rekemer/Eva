@@ -7,6 +7,7 @@
 #include <ostream>
 #include <set>
 #include <queue>
+#include <deque>
 #include <functional>
 #include <stack>
 #include <format>
@@ -51,6 +52,12 @@ struct Operand
 	}
 };
 
+enum LatticeValueType { TOP, CONSTANT, BOTTOM };
+
+struct LatticeValue {
+	LatticeValueType type;
+	ValueContainer value; // holds actual constant if type == CONSTANT
+};
 
 struct Block;
 struct Instruction 
@@ -156,6 +163,7 @@ struct Block
 	bool isVisited = false;
 	bool isSweeped = false;
 	bool markAll = false;
+	bool updateIndex = false;
 	int offsetPhi = 0;
 };
 
@@ -190,7 +198,7 @@ public:
 	void ConstPropagation();
 	void Debug();
 private:
-	void ConstProp(Block* b);
+	void ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList);
 	void MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*, Instruction*>>& workList);
 	Instruction CreatePhi(const std::string& name);
 	void Sweep(Block* block);

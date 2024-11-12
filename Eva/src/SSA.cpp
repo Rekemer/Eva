@@ -603,20 +603,24 @@ void AdjustOperandIndex(Operand& operand,
 	// Retrieve the total removed count based on depth and value
 	auto key = std::pair{ operand.depth,varName };
 	int total = removedLocal.at(key);
-	if (!updateDefsUses[varName])
-	{
-		for (auto& i : b->defs.at(key))
-		{
-			i -= total;
-			assert(i >= 0);
-		}
-		for (auto& i : b->uses.at(varName))
-		{
-			i -= total;
-			assert(i >= 0);
-		}
-		updateDefsUses[varName] = true;
-	}
+	//if (!updateDefsUses[varName] && b->updateIndex)
+	//{
+	//	auto isDef = b->defs.find(key) != b->defs.end();
+	//	if (isDef)
+	//	{
+	//		for (auto& i : b->defs.at(key))
+	//		{
+	//			i -= total;
+	//			assert(i >= 0);
+	//		}
+	//	}
+	//	for (auto& i : b->uses.at(varName))
+	//	{
+	//		i -= total;
+	//		assert(i >= 0);
+	//	}
+	//	updateDefsUses[varName] = true;
+	//}
 	
 	// Adjust the index by subtracting the total removed count
 	operand.index -= total;
@@ -643,12 +647,6 @@ void CFG::Sweep(Block* block)
 				(int)it->instrType <= (int)TokenType::JUMP_WHILE;
 			if (!it->isMarked)
 			{
-				// branch
-				if (isBranchType(it->instrType))
-				{
-
-				}
-							
 
 				if (!isJump)
 				{
@@ -657,7 +655,13 @@ void CFG::Sweep(Block* block)
 						removedLocalTotal[it->result.depth]++;
 
 					}
-					it = instructions.erase(it);
+					if (!isBranchType(it->instrType))
+					{
+						it = instructions.erase(it);
+						block->updateIndex = true;
+					}
+					else
+					it++;
 				}
 				else
 				{
@@ -785,139 +789,372 @@ void CFG::Sweep(Block* block)
 			Sweep(block->merge);
 		}
 }
+//enum LatticeValueType { TOP, CONSTANT, BOTTOM };
+//
+//struct LatticeValue {
+//	LatticeValueType type;
+//	ValueContainer value; // holds actual constant if type == CONSTANT
+//};
+//std::unordered_map<std::pair<int, std::string>, LatticeValue> value;
+//
+//void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction& instr)
+//{
+//	const std::string& varName = instr.result.value.AsString();
+//	int depth = instr.result.depth;
+//	switch (op)
+//	{
+//	case TokenType::PLUS:
+//		right.value = ValueContainer::Add(left.value, right.value);
+//		value[{depth, varName}].value = right.value;
+//		break;
+//	case TokenType::MINUS:
+//		right.value = ValueContainer::Substract(left.value, right.value);
+//		value[{depth, varName}] .value= right.value;
+//		break;
+//	case TokenType::STAR:
+//		right.value = ValueContainer::Multiply(left.value, right.value);
+//		value[{depth, varName}].value = right.value;
+//		break;
+//	case TokenType::SLASH:
+//		right.value = ValueContainer::Divide(left.value, right.value);
+//		value[{depth, varName}].value = right.value;
+//		break;
+//	case TokenType::EQUAL_EQUAL:
+//		right.value = ValueContainer::Equal(left.value, right.value);
+//		value[{depth, varName}].value = right.value;
+//		break;
+//	case TokenType::BANG_EQUAL:
+//	{
+//		auto newValue = ValueContainer::Equal(left.value, right.value);
+//		right.value = !newValue.AsRef<bool>();
+//		value[{depth, varName}].value = right.value;
+//		break;
+//	}
+//	case TokenType::GREATER:
+//		right.value = ValueContainer::Greater(left.value, right.value);
+//		value[{depth, varName}].value = right.value;
+//		break;
+//	case TokenType::GREATER_EQUAL:
+//	{
+//		auto newValue = ValueContainer::Equal(left.value, right.value);
+//		right.value = !newValue.AsRef<bool>();
+//		value[{depth, varName}] .value= right.value;
+//		break;
+//	}
+//	case TokenType::LESS:
+//		right.value = ValueContainer::Less(left.value, right.value);
+//		value[{depth, varName}] .value= right.value;
+//		break;
+//	case TokenType::LESS_EQUAL:
+//	{
+//		auto newValue = ValueContainer::Greater(left.value, right.value);
+//		right.value = !newValue.AsRef<bool>();
+//		value[{depth, varName}].value = right.value;
+//		break;
+//	}
+//	default:
+//		assert(false && "unknown binary operation on literals");
+//		break;
+//	}
+//	//instr.instrType = TokenType::EQUAL;
+//}
+//
+//
+//void CFG::ConstPropagation()
+//{
+//	for (auto [key, func] : functionCFG)
+//	{
+//		ConstProp(func.start);
+//	}
+//}
+//
+//void CFG::ConstProp(Block* b)
+//{
+//	auto updateOperand = [](Operand& op, std::pair<int,std::string> var)
+//		{
+//			if (op.IsVariable() &&
+//				op.value.AsString() == var.second)
+//			{
+//				op.value = value.at(var);
+//				op.isConstant = true;
+//			}
+//	};
+//
+//	
+//
+//	std::deque<std::pair<int,std::string>> workList;
+//
+//	for (auto [k , defsBlocks] : localAssigned)
+//	for (auto b: defsBlocks)
+//	for (auto [k, v] : b->defs)
+//	{
+//		for (auto i : v)
+//		{
+//			auto instr = b->instructions[i];
+//			bool isComplexAssign = (int)instr.instrType >=
+//				(int)TokenType::PLUS_EQUAL and (int)instr.instrType <=
+//				(int)TokenType::STAR_EQUAL || 
+//				(int)instr.instrType >=
+//				(int)TokenType::PLUS_PLUS and (int)instr.instrType <=
+//				(int)TokenType::MINUS_MINUS;
+//			if (instr.operRight.isConstant)
+//			{
+//				value[k].value = instr.operRight.value;
+//				value[k].type = LatticeValueType::CONSTANT;
+//			}
+//			else if (!isComplexAssign)
+//			{
+//				
+//				value[k].type = LatticeValueType::TOP;
+//			}
+//			if ((instr.instrType == TokenType::EQUAL || instr.instrType == TokenType::DECLARE)&& value[k].type != LatticeValueType::TOP)
+//			{
+//				// better find other ways
+//				if (std::find(workList.begin(), workList.end(), k) == workList.end())
+//				workList.push_back(k);
+//			}
+//		}
+//	}
+//
+//	while (!workList.empty())
+//	{
+//		auto n = workList.front();
+//		workList.pop_front();
+//		auto& varName = n.second;
+//		auto& blocks = localUses.at(varName);
+//		for (auto b : blocks)
+//		{
+//			auto& opsI = b->uses.at(varName);
+//
+//			for (auto i : opsI)
+//			{
+//				if (value[n].type == LatticeValueType::BOTTOM) break;
+//
+//				auto& instr = b->instructions[i];
+//
+//				updateOperand(instr.operLeft, n);
+//				updateOperand(instr.operRight, n);
+//				// update result
+//				if (instr.operLeft.isConstant && instr.operRight.isConstant)
+//				{
+//					auto varName = instr.result.value.AsString();
+//					CalculateConstant(instr.instrType, instr.operLeft, 
+//						instr.operRight, instr);
+//					if (instr.result.IsVariable())
+//					workList.push_back({ instr.result.depth,instr.result.value.AsString() });
+//					else if (instr.result.IsTemp())
+//					{
+//						auto iterInstr = instr;
+//						auto iterIndex = i + 1;
+//						auto& nextInstr = b->instructions[iterIndex];
+//						// update temp values 
+//						while ((nextInstr.instrType != TokenType::DECLARE &&
+//							nextInstr.instrType != TokenType::EQUAL) && iterIndex < b->instructions.size())
+//						{
+//								if (nextInstr.operRight.value.AsString() == iterInstr.result.value.AsString())
+//									CalculateConstant(nextInstr.instrType, instr.operLeft, iterInstr.result, nextInstr);
+//								else if (nextInstr.operLeft.value.AsString() == iterInstr.result.value.AsString())
+//								{
+//									CalculateConstant(nextInstr.instrType, iterInstr.result, nextInstr.operRight, nextInstr);
+//
+//								}
+//								iterInstr = nextInstr;
+//								nextInstr = b->instructions[iterIndex];
+//								iterIndex++;
+//						}
+//						if (nextInstr.result.IsVariable())
+//						{
+//							nextInstr.operRight = iterInstr.operRight;
+//							value[{instr.result.depth, nextInstr.result.value.AsString()}].value = nextInstr.operRight.value;
+//							workList.push_back({ instr.result.depth,nextInstr.result.value.AsString() });
+//						}
+//					}
+//				}
+//			}
+//		}
+//
+//	}
+//	for (auto child : b->blocks)
+//	{
+//		ConstProp(child);
+//	}
+//	if (b->merge != nullptr)
+//	{
+//		ConstProp(b->merge);
+//	}
+//}
 
-ValueMap value;
+// Map from variable identifier to its lattice value
+std::unordered_map<std::pair<int, std::string>, LatticeValue, pair_hash> value;
+
+// Set to keep track of visited blocks to prevent infinite recursion
+std::unordered_set<Block*> visitedBlocks;
+
+// Set to keep track of variables already in the worklist
+std::set<std::pair<int, std::string>> workListSet;
 
 void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction& instr)
 {
 	const std::string& varName = instr.result.value.AsString();
 	int depth = instr.result.depth;
+	ValueContainer resultValue;
+
 	switch (op)
 	{
 	case TokenType::PLUS:
-		right.value = ValueContainer::Add(left.value, right.value);
-		value[{depth, varName}] = right.value;
+		resultValue = ValueContainer::Add(left.value, right.value);
 		break;
 	case TokenType::MINUS:
-		right.value = ValueContainer::Substract(left.value, right.value);
-		value[{depth, varName}] = right.value;
+		resultValue = ValueContainer::Substract(left.value, right.value);
 		break;
 	case TokenType::STAR:
-		right.value = ValueContainer::Multiply(left.value, right.value);
-		value[{depth, varName}] = right.value;
+		resultValue = ValueContainer::Multiply(left.value, right.value);
 		break;
 	case TokenType::SLASH:
-		right.value = ValueContainer::Divide(left.value, right.value);
-		value[{depth, varName}] = right.value;
+		//// Handle division by zero
+		//if (right.value.IsZero()) {
+		//	// Set the variable's lattice value to BOTTOM
+		//	value[{depth, varName}].type = LatticeValueType::BOTTOM;
+		//	return;
+		//}
+		resultValue = ValueContainer::Divide(left.value, right.value);
 		break;
-	case TokenType::EQUAL_EQUAL:
-		right.value = ValueContainer::Equal(left.value, right.value);
-		value[{depth, varName}] = right.value;
-		break;
-	case TokenType::BANG_EQUAL:
-	{
-		auto newValue = ValueContainer::Equal(left.value, right.value);
-		right.value = !newValue.AsRef<bool>();
-		value[{depth, varName}] = right.value;
-		break;
-	}
-	case TokenType::GREATER:
-		right.value = ValueContainer::Greater(left.value, right.value);
-		value[{depth, varName}] = right.value;
-		break;
-	case TokenType::GREATER_EQUAL:
-	{
-		auto newValue = ValueContainer::Equal(left.value, right.value);
-		right.value = !newValue.AsRef<bool>();
-		value[{depth, varName}] = right.value;
-		break;
-	}
-	case TokenType::LESS:
-		right.value = ValueContainer::Less(left.value, right.value);
-		value[{depth, varName}] = right.value;
-		break;
-	case TokenType::LESS_EQUAL:
-	{
-		auto newValue = ValueContainer::Greater(left.value, right.value);
-		right.value = !newValue.AsRef<bool>();
-		value[{depth, varName}] = right.value;
-		break;
-	}
+		// Add other operations as needed
 	default:
 		assert(false && "unknown binary operation on literals");
-		break;
+		return;
 	}
-	//instr.instrType = TokenType::EQUAL;
-}
 
+	// Update the instruction and lattice value
+	instr.operRight.value = resultValue;
+	instr.result.isConstant = true;
+	value[{depth, varName}].value = resultValue;
+	value[{depth, varName}].type = LatticeValueType::CONSTANT;
+}
 
 void CFG::ConstPropagation()
 {
-	for (auto [key, func] : functionCFG)
+	std::deque<std::pair<int, std::string>> workList;
+	// Initialize the worklist with variables assigned constants
+	for (auto& [varKey, defsBlocks] : localAssigned)
 	{
-		ConstProp(func.start);
-	}
-}
-
-void CFG::ConstProp(Block* b)
-{
-	auto updateOperand = [](Operand& op, std::pair<int,std::string> var)
+		for (auto block : defsBlocks)
 		{
-			if (op.IsVariable() &&
-				op.value.AsString() == var.second)
+			for (auto& [defVarKey, indices] : block->defs)
 			{
-				op.value = value.at(var);
-				op.isConstant = true;
-			}
-	};
-
-
-	std::deque<std::pair<int,std::string>> workList;
-
-	for (auto [k , defsBlocks] : localAssigned)
-	for (auto b: defsBlocks)
-	for (auto [k, v] : b->defs)
-	{
-		for (auto i : v)
-		{
-			auto instr = b->instructions[i];
-			if (instr.operRight.isConstant)
-			{
-				value[k] = instr.operRight.value;
-			}
-			else
-			{
-				value[k].type = ValueType::NIL;
-			}
-			if ((instr.instrType == TokenType::EQUAL || instr.instrType == TokenType::DECLARE)&& value[k].type != ValueType::NIL)
-			{
-				// better find other ways
-				if (std::find(workList.begin(), workList.end(), k) == workList.end())
-				workList.push_back(k);
+				for (auto idx : indices)
+				{
+					auto& instr = block->instructions[idx];
+					bool isSimpleAssign = (instr.instrType == TokenType::EQUAL || instr.instrType == TokenType::DECLARE);
+					if (isSimpleAssign && instr.operRight.isConstant)
+					{
+						auto& latticeVal = value[defVarKey];
+						if (latticeVal.type == LatticeValueType::TOP)
+						{
+							latticeVal.value = instr.operRight.value;
+							latticeVal.type = LatticeValueType::CONSTANT;
+							if (workListSet.find(defVarKey) == workListSet.end())
+							{
+								workList.push_back(defVarKey);
+								
+							}
+						}
+						else if (latticeVal.type == LatticeValueType::CONSTANT)
+						{
+							if (latticeVal.value != instr.operRight.value)
+							{
+								latticeVal.type = LatticeValueType::BOTTOM;
+							}
+						}
+					}
+					else
+					{
+						bool isComplexAssign = (int)instr.instrType >=
+											(int)TokenType::PLUS_EQUAL and (int)instr.instrType <=
+											(int)TokenType::STAR_EQUAL || 
+											(int)instr.instrType >=
+											(int)TokenType::PLUS_PLUS and (int)instr.instrType <=
+											(int)TokenType::MINUS_MINUS;
+						//if (isComplexAssign)
+						//{
+						if (value.find(defVarKey) == value.end())
+							value[defVarKey].type = LatticeValueType::BOTTOM;
+					//	}
+					}
+				}
 			}
 		}
 	}
 
-	std::unordered_map<Block*, std::vector<int>> eraseIndexes;
+	for (auto& [key, func] : functionCFG)
+	{
+		ConstProp(func.start, workList);
+	}
+}
+
+
+
+void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
+{
+	// Check if the block has already been visited
+	if (visitedBlocks.find(b) != visitedBlocks.end())
+		return;
+	visitedBlocks.insert(b);
+
+	auto updateOperand = [](Operand& op)
+		{
+			if (op.IsVariable())
+			{
+				auto varKey = std::make_pair(op.depth, op.value.AsString());
+				auto it = value.find(varKey);
+				if (it != value.end() && it->second.type == LatticeValueType::CONSTANT)
+				{
+					//annotated[op.value.AsString()] = it->second.value;
+					op.value = it->second.value;
+					op.isConstant = true;
+				}
+			}
+		};
+
+	
+
+
+	// Process the worklist
 	while (!workList.empty())
 	{
-		auto n = workList.front();
+		auto varKey = workList.front();
 		workList.pop_front();
-		auto& varName = n.second;
-		auto& blocks = localUses.at(varName);
-		for (auto b : blocks)
+		//workListSet.erase(varKey);
+
+
+		const std::string& varName = varKey.second;
+		auto it = localUses.find(varName);
+		if (it == localUses.end())
+			continue;
+
+		auto& blocks = it->second;
+		for (auto block : blocks)
 		{
-			auto& opsI = b->uses.at(varName);
+			auto opIt = block->uses.find(varName);
+			if (opIt == block->uses.end())
+				continue;
 
-			for (auto i : opsI)
+			auto& instrIndices = opIt->second;
+			for (auto idx : instrIndices)
 			{
-				auto& instr = b->instructions[i];
+				if (value[varKey].type == LatticeValueType::BOTTOM)
+					continue;
+				auto& instr = block->instructions[idx];
 
-				updateOperand(instr.operLeft, n);
-				updateOperand(instr.operRight, n);
-				// update result
+				updateOperand(instr.operLeft);
+				updateOperand(instr.operRight);
+
+				// If both operands are constant, fold the instruction
 				if (instr.operLeft.isConstant && instr.operRight.isConstant)
 				{
+					//CalculateConstant(instr.instrType, instr.operLeft, instr.operRight, instr);
+
+
 					auto varName = instr.result.value.AsString();
 					CalculateConstant(instr.instrType, instr.operLeft, 
 						instr.operRight, instr);
@@ -926,54 +1163,67 @@ void CFG::ConstProp(Block* b)
 					else if (instr.result.IsTemp())
 					{
 						auto iterInstr = instr;
-						auto iterIndex = i + 1;
+						auto iterIndex = idx + 1;
 						auto& nextInstr = b->instructions[iterIndex];
-						eraseIndexes[b].push_back(i);
+						// update temp values 
 						while ((nextInstr.instrType != TokenType::DECLARE &&
 							nextInstr.instrType != TokenType::EQUAL) && iterIndex < b->instructions.size())
 						{
-								if (nextInstr.operRight.value.AsString() == iterInstr.result.value.AsString())
-									CalculateConstant(nextInstr.instrType, instr.operLeft, iterInstr.result, nextInstr);
-								else if (nextInstr.operLeft.value.AsString() == iterInstr.result.value.AsString())
-								{
-									CalculateConstant(nextInstr.instrType, iterInstr.result, nextInstr.operRight, nextInstr);
+							if (nextInstr.operRight.value.AsString() == iterInstr.result.value.AsString())
+								CalculateConstant(nextInstr.instrType, instr.operLeft, iterInstr.result, nextInstr);
+							else if (nextInstr.operLeft.value.AsString() == iterInstr.result.value.AsString())
+							{
+								CalculateConstant(nextInstr.instrType, iterInstr.result, nextInstr.operRight, nextInstr);
 
-								}
-								eraseIndexes[b].push_back(iterIndex);
-								iterInstr = nextInstr;
-								nextInstr = b->instructions[iterIndex];
-								iterIndex++;
+							}
+							iterInstr = nextInstr;
+							nextInstr = b->instructions[iterIndex];
+
+
 						}
+						// If the result is a variable, add it to the worklist
 						if (nextInstr.result.IsVariable())
 						{
-							nextInstr.operRight = iterInstr.operRight;
-							value[{instr.result.depth, nextInstr.result.value.AsString()}] = nextInstr.operRight.value;
-							workList.push_back({ instr.result.depth,nextInstr.result.value.AsString() });
-							eraseIndexes[b].push_back(iterIndex);
+							auto resultVarKey = std::make_pair(nextInstr.result.depth,	nextInstr.result.value.AsString());
+							if (workListSet.find(resultVarKey) == workListSet.end())
+							{
+								workList.push_back(resultVarKey);
+								//workListSet.insert(resultVarKey);
+								value[resultVarKey].value = b->instructions[iterIndex-1].operRight.value;
+								value[resultVarKey].type = LatticeValueType::CONSTANT;
+							}
 						}
+					}
+				}
+				else
+				{
+					// If operands are not constant, set the result variable to BOTTOM
+					if (instr.result.IsVariable())
+					{
+						auto resultVarKey = std::make_pair(instr.result.depth, instr.result.value.AsString());
+						value[resultVarKey].type = LatticeValueType::BOTTOM;
+					}
+					if (instr.result.IsVariable() && instr.operRight.isConstant)
+					{
+						auto key = std::pair{ instr.result.depth,instr.result.value.AsString() };
+						value[key].type = LatticeValueType::TOP;
+						value[key].value = instr.operRight.value;
+						workList.push_back(key);
 					}
 				}
 			}
 		}
+		workListSet.insert(varKey);
+	}
 
-	}
-	for (auto [k, v] : eraseIndexes)
-	{
-		int adjustIndex = 0;
-		for (auto i : v)
-		{
-			auto erIter = k->instructions.begin() + i + adjustIndex;
-			adjustIndex--;
-			k->instructions.erase(erIter);
-		}
-	}
+	// Recursively process child blocks
 	for (auto child : b->blocks)
 	{
-		ConstProp(child);
+		ConstProp(child, workList);
 	}
 	if (b->merge != nullptr)
 	{
-		ConstProp(b->merge);
+		ConstProp(b->merge, workList);
 	}
 }
 void CFG::DeadCode()
@@ -1182,7 +1432,7 @@ void  CFG::InitLocal(Operand& op,const std::string& name)
 	else
 	{
 		AddUse(0, name, currentBlock->instructions.size());
-		localUses[name].push_back(currentBlock);
+		//localUses[name].push_back(currentBlock);
 	}
 	op.index = index;
 	op.depth = depth;
@@ -1199,7 +1449,7 @@ void CFG::InitGlobal(Operand& op,const std::string& name)
 	else
 	{
 		AddUse(0,name,currentBlock->instructions.size());
-		localUses[name].push_back(currentBlock);
+		//localUses[name].push_back(currentBlock);
 	}
 	op.type = vm->GetGlobalType(name);
 	op.depth = 0;
