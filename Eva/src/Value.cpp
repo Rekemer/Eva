@@ -36,14 +36,13 @@ ValueContainer::ValueContainer(const ValueContainer& v)
 	//else as = v.as;
 };
 
-void ValueContainer::UpdateType(ValueType type)
+
+
+void ValueContainer::UpdateType(ValueType newType)
 {
-	//if (type == ValueType::STRING)
-	//{
-	//	as = std::make_shared<String>();
-	//}
-	this->type = type;
-	
+	if (newType == this->type) return;
+	auto prevType = this->type;
+	this->type = newType;
 }
 bool AreBothNumeric(ValueType left, ValueType right)
 {

@@ -21,15 +21,17 @@ bool HashTable::IsExist(std::string_view key) const
 void HashTable::Print()
 {
 	auto index = 0;
+	std::cout << "HASH TABLE DATA --------;\n";
 	while (index < m_Size)
 	{
 		auto data = &m_Data[index];
 		if (IsSet(data))
 		{
-			std::cout << data->key << std::endl;
+			std::cout << data->key << ": " << data->value <<  std::endl;
 		}
 		index +=1;
 	}
+	std::cout << "--------;\n";
 }
 Entry* HashTable::Get(std::string_view key) const
 {

@@ -64,6 +64,7 @@ class Object;
 class String;
 struct Func;
 class VirtualMachine;
+using AsType = std::variant<bool, float, int, std::string, std::shared_ptr<Func>>;
 const char* ValueToStr(ValueType valueType);
 class ValueContainer
 {
@@ -102,7 +103,6 @@ public:
 		as = v;
 		return *this;
 	}
-
 	void UpdateType(ValueType type);
 
 	ValueContainer& operator = (const ValueContainer& v);
@@ -163,6 +163,5 @@ public:
 private:
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
 	friend class VirtualMachine;
-
-	std::variant<bool, float, int, std::string,std::shared_ptr<Func>> as;
+	AsType  as;
 };

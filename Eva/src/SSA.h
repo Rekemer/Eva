@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -27,7 +27,7 @@ struct Operand
 	int index = -1;
 	int depth = -1;
 	ValueType type = ValueType::NIL;
-	std::vector<int> defIndexes;
+	std::string originalName;
 	Operand(const ValueContainer& value, bool isConstant, int version) : value{ value},
 		version{ version },
 		isConstant{ isConstant }
@@ -42,6 +42,11 @@ struct Operand
 	{
 		return std::format("t{}",version);
 	}
+	std::string GetVariableVerName()
+	{
+		return std::format("{}_{}", originalName,version);
+	}
+
 	bool IsVariable() const
 	{
 		return value.type == ValueType::STRING && isConstant == false && isTemp == false;
@@ -52,10 +57,14 @@ struct Operand
 	}
 };
 
+//If n’s value cannot be known—for example, it is
+//defined by reading a value from external media—sscp sets Value(n) to bottom.
+//Finally, if n’s value is not known, sscp sets Value(n) to top .If Value(n) is
+//not > , the algorithm adds n to the worklist.
 enum LatticeValueType { TOP, CONSTANT, BOTTOM };
 
 struct LatticeValue {
-	LatticeValueType type;
+	LatticeValueType type = TOP;
 	ValueContainer value; // holds actual constant if type == CONSTANT
 };
 
@@ -111,8 +120,10 @@ struct pair_hash_block {
 		return h1 ^ (h2 << 1);
 	}
 };
+//depth name version inde
 using DefMap = std::unordered_map<std::pair<int, std::string>, std::vector<int>, pair_hash>;
 using ValueMap = std::unordered_map<std::pair<int, std::string>, ValueContainer, pair_hash>;
+using LatticeMap = std::unordered_map<std::pair<int, std::string>, LatticeValue, pair_hash>;
 // Straight-Line Code : code that has only one flow of execution (not jumps like if and else)
 struct Block
 {
@@ -198,6 +209,8 @@ public:
 	void ConstPropagation();
 	void Debug();
 private:
+	bool UpdateOperand(Operand& op);
+	void PropagateTempValues(Block* block, size_t startIndex, Instruction& initialInstr, std::deque<std::pair<int, std::string>>& workList);
 	void ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList);
 	void MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*, Instruction*>>& workList);
 	Instruction CreatePhi(const std::string& name);
@@ -268,4 +281,6 @@ private:
 	// so we do not pop variables that are already taken care of by the end of loops
 	bool getAsParam = false;
 	ValueType paramType = ValueType::NIL;
+	// Map from variable identifier to its lattice value
+	LatticeMap value;
 };

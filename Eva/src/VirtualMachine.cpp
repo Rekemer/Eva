@@ -1028,7 +1028,8 @@ void VirtualMachine::Execute()
 		// usually memory is freed when we want to allocate new memory
 		//CollectStrings();
 		auto inst = frame->function->opCode[frame->ip++];
-
+		//std::cout << std::format("instr index: {}\n",frame->ip - 1);
+		//globalVariables.Print();
 		switch (static_cast<InCode>(inst))
 		{
 		case InCode::CONST_VALUE:

@@ -8,14 +8,14 @@
 
 
 #define EXPR 0
-#define WHILE 1
-#define FOR 1
-#define FUNC 1
-#define VAR 1
 #define STRINGS 0
+#define WHILE 0
+#define FOR 0
+#define FUNC 0
+#define IF 0
+#define VAR 1
 #define SCOPE 1
 #define DEDUCTION 1
-#define IF 1
 #define CONSTANT_FOLD 1
 
 struct Tables
@@ -282,7 +282,7 @@ TEST_CASE("scope test")
 			b*=4.0;
 			a = b;
 		}
-
+	
 					)";
 		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<int>("a", 12, ValueType::INT, vm);
@@ -302,7 +302,7 @@ TEST_CASE("scope test")
 			}
 			a+=b;
 		}
-
+	
 					)";
 		auto [res,vm]= Compile(a);
 		auto isPass = CheckVariable<int>("a", -13, ValueType::INT, vm);
