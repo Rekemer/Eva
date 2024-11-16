@@ -217,8 +217,8 @@ private:
 	void Sweep(Block* block);
 	void Mark(Block* b, std::queue<std::pair<Block*, Instruction*>>& workList);
 	
-	void AddUse(int depth, const std::string& name, int index);
-	void AddDef(int depth, const std::string& name, int index);
+	void AddUse(int depth, const std::string& name, int index, Block* b);
+	void AddDef(int depth, const std::string& name, int index, Block* b);
 	Block* CreateConditionBlock(const std::string& name,  Block* currentBlock);
 	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
 	int NewName(const std::string& name);

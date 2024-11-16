@@ -243,6 +243,7 @@ void CFG::Rename(Block* b)
 	{
 		auto& phi = b->instructions[index];
 		phi.result.version = NewName(phi.result.value.AsString());
+		AddDef(phi.result.depth, phi.result.value.AsString(), index,b);
 	}
 
 	auto& types = vm->GetGlobalsType();
@@ -257,21 +258,21 @@ void CFG::Rename(Block* b)
 		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
-			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(),i);
+			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(),i,b);
 			continue;
 		}
 		
 		if (instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
-			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(), i);
+			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(), i,b);
 		}
 		if (!instr.IsUnary())
 		{
 			if (instr.operLeft.IsVariable())
 			{
 				instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top();
-				AddUse(instr.operLeft.depth, instr.operLeft.GetVariableVerName(), i);
+				AddUse(instr.operLeft.depth, instr.operLeft.GetVariableVerName(), i,b);
 			}
 		}
 		
@@ -279,7 +280,6 @@ void CFG::Rename(Block* b)
 		if (!instr.result.IsTemp())
 		{
 			instr.result.version = NewName(instr.result.value.AsString());
-			//AddUse(instr.result.depth, instr.result.GetVariableVerName(), i);
 		}
 		if (instr.instrType != TokenType::PRINT)
 		{
@@ -406,10 +406,26 @@ void CFG::InsertPhi()
 						if (iter != localAssigned[v.first].end())
 						{
 							defsInPredecessors++;
-
+						}
+						else
+						{
+							//defsInPredecessors--;
+							if (pred->parents.size() == 0)
+							{
+								defsInPredecessors--;
+								continue;
+							}
+							auto iter = std::find(localAssigned[v.first].begin(), localAssigned[v.first].end(),
+								pred->parents[0]);
+							if (iter == localAssigned[v.first].end())
+							{
+								defsInPredecessors--;
+							}
+							else 
+								defsInPredecessors++;
 						}
 					}
-					if (defsInPredecessors <= 1) continue;
+					if (defsInPredecessors < 1) continue;
 					
 					hasAlready.insert(blockDf);
 					auto name = v.first;
@@ -1423,11 +1439,11 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	instruction.returnType = rightOp.type;
 	currentBlock->instructions.push_back(instruction);
 
-	AddDef(resOp.depth, left->value.AsString(), currentBlock->instructions.size() - 1);
+	AddDef(resOp.depth, left->value.AsString(), currentBlock->instructions.size() - 1,currentBlock);
 	
 }
 
-void CFG::AddUse(int depth, const std::string& name, int index)
+void CFG::AddUse(int depth, const std::string& name, int index,Block* b)
 {
 	//if (depth > 0)
 	//{
@@ -1439,20 +1455,20 @@ void CFG::AddUse(int depth, const std::string& name, int index)
 	//	//globalUses[{currentBlock, name}].push_back(index);
 	//	localUses[ name].push_back(currentBlock);
 	//}
-	currentBlock->uses[{name}].push_back(index + currentBlock->offsetPhi);
-	AddLocalInfo(localUses, name, currentBlock);
+	b->uses[{name}].push_back(index + b->offsetPhi);
+	AddLocalInfo(localUses, name, b);
 }
 
-void CFG::AddDef(int depth, const std::string& name, int index)
+void CFG::AddDef(int depth, const std::string& name, int index,Block* b)
 {
 	if (depth > 0)
 	{
-		currentBlock->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
+		b->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
 	}
 	else
 	{
-		currentBlock->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
-		globalDefs[{currentBlock, name}].push_back(index);
+		b->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
+		globalDefs[{b, name}].push_back(index);
 	}
 
 }
@@ -1472,7 +1488,7 @@ void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 		MakeCritical(instruction); 
 	}
 	currentBlock->instructions.push_back(instruction);
-	AddDef(resOp.depth,left->value.AsString(), currentBlock->instructions.size() - 1);
+	AddDef(resOp.depth,left->value.AsString(), currentBlock->instructions.size() - 1, currentBlock);
 
 }
 
@@ -1486,7 +1502,7 @@ Operand CFG::CreateTemp()
 	else 
 	temp.depth = currentScope->depth;
 
-	AddDef(temp.depth,std::format("t{}", tempVersion - 1) , currentBlock->instructions.size());
+	AddDef(temp.depth,std::format("t{}", tempVersion - 1) , currentBlock->instructions.size(),currentBlock);
 	return temp;
 }
 
@@ -1840,6 +1856,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		}
 
 		mergeParents.push_back(currentBlock);
+		//mergeParents.push_back(parentBlock);
 
 
 
@@ -1850,11 +1867,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto merge = CreateBlock(currentFunc,mergeName, {});
 		for (auto parent : mergeParents)
 		{
-
-			parent->merge = merge;
 			auto& instr = parent->instructions.back();
 			assert(instr.instrType == TokenType::JUMP_BRANCH);
+			//if(parent != parentBlock)
 			instr.targets.push_back(merge);
+			parent->merge = merge;
 			merge->parents.push_back(parent);
 		}
 		then->merge = merge;
@@ -2056,7 +2073,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 			GiveType(action, action.result, expr->value.type);
 			currentBlock->instructions.push_back(action);
 
-			AddDef(var.depth, var.value.AsString(), currentBlock->instructions.size() - 1);
+			AddDef(var.depth, var.value.AsString(), currentBlock->instructions.size() - 1,currentBlock);
 			//AddUse(var.depth, var.value.AsString(), currentBlock->instructions.size() - 1);
 			return var;
 
