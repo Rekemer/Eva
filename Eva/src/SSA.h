@@ -283,4 +283,7 @@ private:
 	ValueType paramType = ValueType::NIL;
 	// Map from variable identifier to its lattice value
 	LatticeMap value;
+
+	std::unordered_set<Block*> visitedBlocks;
+
 };

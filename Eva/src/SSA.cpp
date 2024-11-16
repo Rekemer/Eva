@@ -802,9 +802,6 @@ void CFG::Sweep(Block* block)
 
 
 
-// Set to keep track of visited blocks to prevent infinite recursion
-std::unordered_set<Block*> visitedBlocks;
-
 // Set to keep track of variables already in the worklist
 std::set<std::pair<int, std::string>> workListSet;
 
@@ -931,6 +928,32 @@ std::string removeVersion(const std::string& input)
 	size_t pos = input.find('_');
 	return (pos != std::string::npos) ? input.substr(0, pos) : input;
 }
+std::string getVersion(const std::string& input)
+{
+	size_t pos = input.find('_');
+	return (pos != std::string::npos) ? input.substr(pos, input.size()) : input;
+}
+std::pair<int, std::string> GetLatest(LatticeMap& value, int depth, const std::string& name)
+{
+	assert(depth >= 0);
+	std::pair<int, std::string> latest;
+	auto origName = removeVersion(name);
+	auto origVersion= getVersion(name);
+	auto it = value.find(std::pair{ depth, name });
+	if (it != value.end()) return it->first;
+	for (auto& [k, v] : value)
+	{
+		auto vers = getVersion(k.second);
+		if (k.first <= depth && 
+			removeVersion(k.second) == origName
+			&& v.type == LatticeValueType::CONSTANT)
+		{
+			latest = k;
+			origVersion = vers;
+		}
+	}
+	return latest;
+}
 
 bool CFG::UpdateOperand(Operand& op)
 {
@@ -939,6 +962,7 @@ bool CFG::UpdateOperand(Operand& op)
 
 	auto name = op.IsTemp() ? op.GetTempName() : op.GetVariableVerName();
 	auto varKey = std::make_pair(op.depth, name);
+	varKey = GetLatest(value, op.depth, name);
 	auto it = value.find(varKey);
 	if (it != value.end() && it->second.type == LatticeValueType::CONSTANT)
 	{
@@ -1054,7 +1078,9 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 				}
 				else
 				{
+					if (instr.operLeft.GetVariableVerName() == varName)
 					leftUpdated = UpdateOperand(instr.operLeft);
+					if (instr.operRight.GetVariableVerName() == varName)
 					rightUpdated = UpdateOperand(instr.operRight);
 				}
 

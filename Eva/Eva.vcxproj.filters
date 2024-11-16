@@ -99,4 +99,7 @@
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="test\test.eva" />
+  </ItemGroup>
 </Project>
