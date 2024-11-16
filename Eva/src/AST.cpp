@@ -603,7 +603,7 @@ void Print(const Expression* tree, int level) {
 		 break;
 	 case TokenType::GREATER_EQUAL:
 	 {
-		 auto newValue = ValueContainer::Equal(left->value, right->value);
+		 auto newValue = ValueContainer::Less(left->value, right->value);
 		 node->value = !newValue.AsRef<bool>();
 		 break;
 	 }

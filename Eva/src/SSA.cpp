@@ -849,7 +849,33 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 		//}
 		resultValue = ValueContainer::Divide(left.value, right.value);
 		break;
-		// Add other operations as needed
+	case TokenType::GREATER:
+		resultValue = ValueContainer::Greater(left.value, right.value);
+		break;
+	case TokenType::GREATER_EQUAL:
+	{
+		resultValue = ValueContainer::Less(left.value, right.value);
+		resultValue = !resultValue.AsRef<bool>();
+	}
+		break;
+	case TokenType::LESS:
+		resultValue = ValueContainer::Less(left.value, right.value);
+		break;
+	case TokenType::LESS_EQUAL:
+	{
+		resultValue = ValueContainer::Greater(left.value, right.value);
+		resultValue = !resultValue.AsRef<bool>();
+	}
+	break;
+	case TokenType::EQUAL_EQUAL:
+		resultValue = ValueContainer::Equal(left.value, right.value);
+		break;
+	case TokenType::BANG_EQUAL:
+	{
+		resultValue = ValueContainer::Equal(left.value, right.value);
+		resultValue = !resultValue.AsRef<bool>();
+	}
+
 	default:
 		assert(false && "unknown binary operation on literals");
 		return;
