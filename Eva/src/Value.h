@@ -116,6 +116,7 @@ public:
 	static ValueContainer Greater(const ValueContainer& v1, const ValueContainer& v2);
 	static ValueContainer Less(const ValueContainer& v1, const ValueContainer& v2);
 	static ValueContainer Equal (const ValueContainer& v1, const ValueContainer& v2);
+	static ValueContainer Percent (const ValueContainer& v1, const ValueContainer& v2);
 
 
 	void Negate();

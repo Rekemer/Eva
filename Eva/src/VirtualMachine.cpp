@@ -1861,9 +1861,16 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			m_BreakIndexes.push(Jump(currentFunc->opCode));
 			break;
 		}
+		case TokenType::BRANCH_ELIF:
+		{
+			if (instr.operRight.isConstant)
+			{
+				GenerateConstant(instr.operRight.value);
+			}
+			break;
+		}
 		case TokenType::PHI:
 		case TokenType::JUMP_BACK:
-		case TokenType::BRANCH_ELIF:
 			break;
 		default:
 			assert(false);

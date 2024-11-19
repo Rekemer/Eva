@@ -840,6 +840,9 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 	case TokenType::STAR:
 		resultValue = ValueContainer::Multiply(left.value, right.value);
 		break;
+	case TokenType::PERCENT:
+		resultValue = ValueContainer::Percent(left.value, right.value);
+		break;
 	case TokenType::SLASH:
 		//// Handle division by zero
 		//if (right.value.IsZero()) {
@@ -874,6 +877,7 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 	{
 		resultValue = ValueContainer::Equal(left.value, right.value);
 		resultValue = !resultValue.AsRef<bool>();
+		break;
 	}
 
 	default:
@@ -1037,20 +1041,39 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 	{
 		auto& nextInstr = block->instructions[iterIndex];
 
-		if (nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
+		if (nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
 			break;
 
+		auto tempValue = value.at({ iterInstr.result.depth, iterInstr.result.GetTempName() }).value;
+		auto tempOper = iterInstr.result;
+		tempOper.value = tempValue;
+		// the iter instr oper right contains new updated value 
+		// that will be used to calcuate new values
 		if (nextInstr.operRight.originalName == iterInstr.result.originalName)
 		{
-			CalculateConstant(nextInstr.instrType, iterInstr.operLeft, iterInstr.result, nextInstr,value);
+			CalculateConstant(nextInstr.instrType, nextInstr.operLeft, iterInstr.operRight, nextInstr,value);
 		}
 		else if (nextInstr.operLeft.originalName == iterInstr.result.originalName)
 		{
-			CalculateConstant(nextInstr.instrType, iterInstr.result, nextInstr.operRight, nextInstr,value);
+			CalculateConstant(nextInstr.instrType, iterInstr.operRight, nextInstr.operRight, nextInstr,value);
 		}
 
 		iterInstr = nextInstr;
 		++iterIndex;
+	}
+
+	if (block->instructions[iterIndex].instrType 
+		== TokenType::BRANCH
+		|| block->instructions[iterIndex].instrType
+		== TokenType::BRANCH_ELIF)
+	{
+		auto& newCheck = block->instructions[iterIndex - 1].operRight;
+		block->instructions[iterIndex].operRight = block->instructions[iterIndex - 1].operRight;
+		// once we propagated constant 
+		// we don't need the calculation of condition
+		// it is just been calculated
+		block->markAll = false;
+		return;
 	}
 
 	// If the result is a variable, update the value mapping
@@ -1125,6 +1148,7 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 					if (instr.operRight.GetVariableVerName() == varName)
 					rightUpdated = UpdateOperand(instr.operRight);
 				}
+
 
 				// If both operands are constant, fold the instruction
 				if (instr.operLeft.isConstant && instr.operRight.isConstant)
@@ -1469,7 +1493,7 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	
 }
 
-void CFG::AddUse(int depth, const std::string& name, int index,Block* b)
+void CFG::AddUse(int depth, const std::string& name, int index, Block* b)
 {
 	//if (depth > 0)
 	//{
@@ -1481,8 +1505,12 @@ void CFG::AddUse(int depth, const std::string& name, int index,Block* b)
 	//	//globalUses[{currentBlock, name}].push_back(index);
 	//	localUses[ name].push_back(currentBlock);
 	//}
-	b->uses[{name}].push_back(index + b->offsetPhi);
-	AddLocalInfo(localUses, name, b);
+	auto newIndex = index + b->offsetPhi;
+	if (std::find(b->uses[{name}].begin(), b->uses[{name}].end(), newIndex)
+		== b->uses[{name}].end()) {
+		b->uses[{name}].push_back(newIndex);
+		AddLocalInfo(localUses, name, b);
+	}
 }
 
 void CFG::AddDef(int depth, const std::string& name, int index,Block* b)
@@ -1522,7 +1550,7 @@ Operand CFG::CreateTemp()
 {
 	Operand temp{ ValueContainer{ "t"} ,false,tempVersion++};
 	temp.isTemp = true;
-	
+	temp.originalName = std::format("t_{}", tempVersion);
 	if(currentScope == nullptr)
 	temp.depth = 0;
 	else 
@@ -1822,6 +1850,10 @@ void CFG::ConvertStatementAST(const Node* tree)
 					parentBlock->instructions.back().targets.push_back(conditionBlock);
 
 					///
+					// to always have it in final code
+					branchElif.isMarked = true;
+					// to have condition calculation in final code, 
+					// if there is no constant to propagate
 					conditionBlock->markAll = true;
 					///
 					currentBlock->blocks.push_back(conditionBlock);

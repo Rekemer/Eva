@@ -71,7 +71,7 @@ inline bool IsBinaryBoolOp(TokenType type)
 inline bool IsBinaryOp(TokenType type)
 {
 	return type == TokenType::PLUS || type == TokenType::STAR ||
-		type == TokenType::SLASH || type == TokenType::MINUS || IsBinaryBoolOp(type);
+		type == TokenType::SLASH || type == TokenType::PERCENT || type == TokenType::MINUS || IsBinaryBoolOp(type);
 }
 inline std::tuple<bool, TokenType> IsVariableType(TokenType type)
 {

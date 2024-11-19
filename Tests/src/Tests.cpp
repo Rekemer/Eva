@@ -9,9 +9,9 @@
 
 #define EXPR 0
 #define STRINGS 0
-#define WHILE 1
-#define FOR 1
-#define FUNC 1
+#define WHILE 0
+#define FOR 0
+#define FUNC 0
 #define IF 1
 #define VAR 1
 #define SCOPE 1

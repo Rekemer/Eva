@@ -156,6 +156,13 @@ ValueContainer ValueContainer::Divide(const ValueContainer& v1, const ValueConta
 {
 	OP(v1, v2, /);
 }
+ValueContainer ValueContainer::Percent(const ValueContainer& v1, const ValueContainer& v2)
+{
+	assert(v1.type == ValueType::INT);
+	assert(v2.type == ValueType::INT);
+	return v1.As<int>() % v2.As<int>();
+	//OP(v1, v2, %);
+}
 ValueContainer ValueContainer::Multiply(const ValueContainer& v1, const ValueContainer& v2)
 {
 	OP(v1, v2, *);

@@ -589,6 +589,9 @@ void Print(const Expression* tree, int level) {
 	 case TokenType::SLASH:
 		 node->value = ValueContainer::Divide(left->value, right->value);
 		 break;
+	 case TokenType::PERCENT:
+		 node->value = ValueContainer::Percent(left->value, right->value);
+		 break;
 	 case TokenType::EQUAL_EQUAL:
 		 node->value = ValueContainer::Equal(left->value, right->value);
 		 break;
