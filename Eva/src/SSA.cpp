@@ -492,12 +492,18 @@ void  CFG::MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*,
 			auto name = oper.IsTemp() ? oper.GetTempName() : oper.value.AsString();
 			std::queue<Block*> defsBlocks;
 			defsBlocks.push(block);
+			std::set<Block*> visited;
 			if (oper.depth > 0)
 			{
 				while (!defsBlocks.empty())
 				{
 					auto b = defsBlocks.front();
 					defsBlocks.pop();
+					if (visited.find(b) != visited.end())
+					{
+						continue;
+					}
+					visited.insert(b);
 					auto defs = findDef(b, oper.depth, name);
 					for (auto i : defs)
 					{
@@ -546,9 +552,13 @@ void  CFG::MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*,
 			}
 		}
 	}
-
 void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 	{
+		if (visitedBlocks.find(b) != visitedBlocks.end())
+		{
+			return;
+		}
+		visitedBlocks.insert(b);
 		for (auto& inst : b->instructions)
 		{
 			//inst.isMarked = false;
@@ -559,10 +569,16 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			}
 		}
 		std::vector<Instruction*> funcCalls;
+		//std::set<Block*> blocks;
 		while (!workList.empty())
 		{
 			auto info = workList.front();
 			workList.pop();
+			//if (blocks.find(info.first) != blocks.end())
+			//{
+			//	continue;
+			//}
+			//blocks.insert(info.first);
 			auto instr = info.second;
 			if (instr->instrType != TokenType::FUN)
 			{
@@ -967,6 +983,7 @@ void CFG::ConstPropagation()
 	{
 		ConstProp(func.start, workList);
 	}
+	visitedBlocks.clear();
 }
 
 std::string removeVersion(const std::string& input)
@@ -1036,12 +1053,12 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 {
 	auto iterInstr = initialInstr;
 	size_t iterIndex = startIndex + 1;
-
+	visitedBlocks.clear();
 	while (iterIndex < block->instructions.size())
 	{
 		auto& nextInstr = block->instructions[iterIndex];
 
-		if (nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
+		if (nextInstr.instrType == TokenType::PRINT || nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
 			break;
 
 		auto tempValue = value.at({ iterInstr.result.depth, iterInstr.result.GetTempName() }).value;
@@ -1061,14 +1078,20 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 		iterInstr = nextInstr;
 		++iterIndex;
 	}
-
+	if (block->instructions[iterIndex].instrType
+		== TokenType::PRINT)
+	{
+		auto& newValue = block->instructions[iterIndex - 1].operRight;
+		block->instructions[iterIndex].operRight = newValue;
+		return;
+	}
 	if (block->instructions[iterIndex].instrType 
 		== TokenType::BRANCH
 		|| block->instructions[iterIndex].instrType
 		== TokenType::BRANCH_ELIF)
 	{
 		auto& newCheck = block->instructions[iterIndex - 1].operRight;
-		block->instructions[iterIndex].operRight = block->instructions[iterIndex - 1].operRight;
+		block->instructions[iterIndex].operRight = newCheck;
 		// once we propagated constant 
 		// we don't need the calculation of condition
 		// it is just been calculated
@@ -1091,21 +1114,24 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 	}
 }
 
-
+//std::unordered_map<std::string, bool> isIterator;
 void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 {
 	// Check if the block has already been visited
 	if (visitedBlocks.find(b) != visitedBlocks.end())
 		return;
 	visitedBlocks.insert(b);
-
+	
 	// Process the worklist
 	while (!workList.empty())
 	{
 		auto varKey = workList.front();
 		workList.pop_front();
-
 		const std::string& varName = varKey.second;
+		//if (isIterator[varName])
+		//{
+		//	//continue;
+		//}
 		auto origName = removeVersion(varName);
 		auto usesIt = localUses.find(varName);
 		if (usesIt == localUses.end())
@@ -1117,7 +1143,12 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 			auto opIt = block->uses.find(varName);
 			if (opIt == block->uses.end())
 				continue;
-
+			//if (block->instructions.size() > 0 && block->instructions.back().instrType
+			//	== TokenType::BRANCH_WHILE)
+			//{
+			//	isIterator[varName] = true;
+			//	continue;
+			//}
 			auto& instrIndices = opIt->second;
 			for (auto idx : instrIndices)
 			{
@@ -1183,7 +1214,6 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 			}
 		}
 	}
-
 	// Recursively process child blocks
 	for (auto child : b->blocks)
 	{
@@ -1986,7 +2016,8 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto whileBodyName = std::format("[while_body_{}]", Block::counterWhileBody++);
 		auto body = CreateBlock(currentFunc,whileBodyName, {currentBlock});
 		currentBlock->blocks.push_back(body);
-
+		condition->parents.push_back(body);
+		body->blocks.push_back(condition);
 
 		auto branch = CreateBranchInstruction(TokenType::BRANCH_WHILE, cond, body, {});
 
