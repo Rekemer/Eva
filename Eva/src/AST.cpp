@@ -831,7 +831,17 @@ void Print(const Expression* tree, int level) {
 			 target = std::unique_ptr<Node>(newNode);
 		 }
 	 };
-	if (node->type == TokenType::FOR)
+
+	if (node->type == TokenType::BLOCK)
+	{
+		 FoldBlockConstants(node->AsMut<Scope>());
+	}
+	else if (node->type == TokenType::IF)
+	{
+
+		return;
+	}
+	else if (node->type == TokenType::FOR)
 	{
 		 auto forNode = node->AsMut<For>();
 		 StartFolding(forNode->init.get());
@@ -839,6 +849,13 @@ void Print(const Expression* tree, int level) {
 		 updateNode(forNode->condition, newNodeCond);
 		 auto newNodeAction= FoldConstants(forNode->action.get());
 		 updateNode(forNode->action, newNodeAction);
+	}
+	else if (node->type == TokenType::WHILE)
+	{
+		auto cond = node->AsMut<Expression>()->left.get();
+		auto scope = node->AsMut<Expression>()->right->AsMut<Scope>();
+		StartFolding(cond);
+		StartFolding(scope);
 	}
 	else
 	 {
@@ -886,6 +903,15 @@ void Print(const Expression* tree, int level) {
 	 {
 		 auto funNode = static_cast<FunctionNode*>(tree.get());
 		 FoldBlockConstants(static_cast<Scope*>(funNode->body.get()));
+	 }
+	 else if (tree->type == TokenType::WHILE)
+	 {
+		 auto cond = tree->AsMut<Expression>()->left.get();
+		 auto scope = tree->AsMut<Expression>()->right->AsMut<Scope>();
+
+		 StartFolding(cond);
+		 FoldBlockConstants(scope);
+
 	 }
 	 else
 	 {
