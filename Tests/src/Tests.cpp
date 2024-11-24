@@ -9,7 +9,7 @@
 
 #define EXPR 0
 #define STRINGS 0
-#define WHILE 0
+#define WHILE 1
 #define FOR 0
 #define FUNC 0
 #define IF 1

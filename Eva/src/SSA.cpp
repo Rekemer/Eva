@@ -228,13 +228,12 @@ void PrintBlock(Block* block)
 	//}
 	//std::cout << std::endl << "------------" << std::endl;
 }
-int CFG::NewName(const std::string& name)
+int CFG::NewName(const std::string& name, Block* b)
 {
 	auto version = variableCounterLocal[name]++;
-	variableStack[name].push(version);
+	variableStack[name].push({ version ,b });
 	return version;
 }
-
 void CFG::Rename(Block* b)
 {
 
@@ -242,7 +241,7 @@ void CFG::Rename(Block* b)
 	for (auto index : b->phiInstructionIndexes)
 	{
 		auto& phi = b->instructions[index];
-		phi.result.version = NewName(phi.result.value.AsString());
+		phi.result.version = NewName(phi.result.value.AsString(), b);
 		AddDef(phi.result.depth, phi.result.value.AsString(), index,b);
 	}
 
@@ -257,21 +256,21 @@ void CFG::Rename(Block* b)
 			|| instr.instrType == TokenType::LEFT_PAREN || instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN) continue;
 		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
-			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
+			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top().first;
 			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(),i,b);
 			continue;
 		}
 		
 		if (instr.operRight.IsVariable())
 		{
-			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top();
+			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top().first;
 			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(), i,b);
 		}
 		if (!instr.IsUnary())
 		{
 			if (instr.operLeft.IsVariable())
 			{
-				instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top();
+				instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top().first;
 				AddUse(instr.operLeft.depth, instr.operLeft.GetVariableVerName(), i,b);
 			}
 		}
@@ -279,7 +278,7 @@ void CFG::Rename(Block* b)
 		// versioning of temporary varoables is not handled by stack
 		if (!instr.result.IsTemp())
 		{
-			instr.result.version = NewName(instr.result.value.AsString());
+			instr.result.version = NewName(instr.result.value.AsString(),b);
 		}
 		if (instr.instrType != TokenType::PRINT)
 		{
@@ -294,7 +293,7 @@ void CFG::Rename(Block* b)
 
 
 	auto updatePhiParam = [](Block*b, Block* child,
-		std::unordered_map<std::string, std::stack<int>>& variableStack)
+		std::unordered_map<std::string, std::stack<std::pair<int, Block*>>>& variableStack)
 		{
 			for (auto index : child->phiInstructionIndexes)
 			{
@@ -313,7 +312,7 @@ void CFG::Rename(Block* b)
 					else
 					{
 						auto index = std::distance(child->parents.begin(), parent);
-						phi.variables[index].version = variableStack[varName.value.AsString()].top();
+						phi.variables[index].version = variableStack[varName.value.AsString()].top().first;
 						phi.variables[index].value = varName.value;
 						phi.targets.push_back(*parent);
 					}
@@ -338,6 +337,31 @@ void CFG::Rename(Block* b)
 	for (auto s : b->dominatorChildren)
 	{
 		Rename(s);
+	}
+
+	for (auto index : b->phiInstructionIndexes)
+	{
+		auto& phi = b->instructions[index];
+		for (auto& var : phi.variables)
+		{
+			if (var.version == -1)
+			{
+				auto name = phi.result.value.AsString();
+				var.version = variableStack[name].top().first;
+				var.value = name;
+				auto defBlock = variableStack[name].top().second;
+				auto parent = b == defBlock ? b : *std::find(b->parents.begin(), b->parents.end(), defBlock);
+				if (parent != b)
+				{
+					phi.targets.push_back(parent);
+				}
+				else
+				{
+					//resolvePhi2 = true;
+				}
+				//resolvePhi.top() = false;
+			}
+		}
 	}
 
 	// Pop variable versions for variables defined in this block
@@ -401,11 +425,11 @@ void CFG::InsertPhi()
 					int defsInPredecessors = 0;
 					for (auto pred : blockDf->parents)
 					{
-
 						auto iter = std::find(localAssigned[v.first].begin(), localAssigned[v.first].end(), pred);
-						if (iter != localAssigned[v.first].end())
+						if (iter != localAssigned[v.first].end() && blockDf->uses.find(v.first) != blockDf->uses.end())
 						{
-							defsInPredecessors++;
+							defsInPredecessors = 1;
+							break;
 						}
 						else
 						{
@@ -415,14 +439,39 @@ void CFG::InsertPhi()
 								defsInPredecessors--;
 								continue;
 							}
-							auto iter = std::find(localAssigned[v.first].begin(), localAssigned[v.first].end(),
-								pred->parents[0]);
-							if (iter == localAssigned[v.first].end())
+
+							//if (std::find(blockDf->parents))
+							auto tmp = pred->parents[0];
+							while (tmp != nullptr)
+							{
+								//if (tmp == blockDf)
+								//{
+								//    defsInPredecessors = -1;
+								//    break;
+								//}
+								auto iter = std::find(localAssigned[v.first].begin(), localAssigned[v.first].end(),
+									tmp);
+								if (iter != localAssigned[v.first].end())
+								{
+									defsInPredecessors = 1;
+									break;
+								}
+								else
+								{
+									defsInPredecessors =  -1;
+								}
+
+								if (tmp->parents.size() == 0)
+								{
+									tmp = nullptr;
+								}
+								else
+									tmp = tmp->parents[0];
+							}
+							if (tmp == startBlock)
 							{
 								defsInPredecessors--;
 							}
-							else 
-								defsInPredecessors++;
 						}
 					}
 					if (defsInPredecessors < 1) continue;
@@ -1058,7 +1107,7 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 	{
 		auto& nextInstr = block->instructions[iterIndex];
 
-		if (nextInstr.instrType == TokenType::PRINT || nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
+		if (nextInstr.instrType == TokenType::BRANCH_WHILE || nextInstr.instrType == TokenType::PRINT || nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
 			break;
 
 		auto tempValue = value.at({ iterInstr.result.depth, iterInstr.result.GetTempName() }).value;
@@ -1127,6 +1176,7 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 	{
 		auto varKey = workList.front();
 		workList.pop_front();
+
 		const std::string& varName = varKey.second;
 		//if (isIterator[varName])
 		//{
@@ -1143,6 +1193,17 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 			auto opIt = block->uses.find(varName);
 			if (opIt == block->uses.end())
 				continue;
+
+			// the variable will be changed
+			if (block->isLoop && block->defs.find(std::pair{ varKey .first, origName}) != block->defs.end())
+			{
+				continue;
+			}
+			// the variable will 
+			if (block->isLoop)
+			{
+
+			}
 			//if (block->instructions.size() > 0 && block->instructions.back().instrType
 			//	== TokenType::BRANCH_WHILE)
 			//{
@@ -1444,8 +1505,8 @@ void  CFG::InitLocal(Operand& op,const std::string& name)
 	}
 	else
 	{
-		//AddUse(0, name, currentBlock->instructions.size());
-		//localUses[name].push_back(currentBlock);
+		AddUse(0, name, currentBlock->instructions.size(),currentBlock);
+		localUses[name].push_back(currentBlock);
 	}
 	op.originalName = name;
 	op.index = index;
@@ -1462,8 +1523,8 @@ void CFG::InitGlobal(Operand& op,const std::string& name)
 	}
 	else
 	{
-		//AddUse(0,name,currentBlock->instructions.size());
-		//localUses[name].push_back(currentBlock);
+		AddUse(0,name,currentBlock->instructions.size(),currentBlock);
+		localUses[name].push_back(currentBlock);
 	}
 	op.originalName = name;
 	op.type = vm->GetGlobalType(name);
@@ -1947,12 +2008,19 @@ void CFG::ConvertStatementAST(const Node* tree)
 		//mergeParents.push_back(parentBlock);
 
 
-
-
-
-
-
 		auto merge = CreateBlock(currentFunc,mergeName, {});
+		if (!parseLoop.empty() && parseLoop.top())
+		{
+			merge->isLoop = true;
+			for (auto p : mergeParents)
+			{
+				p->isLoop = true;
+			}
+		}
+
+
+
+
 		for (auto parent : mergeParents)
 		{
 			auto& instr = parent->instructions.back();
@@ -2009,6 +2077,10 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto parentBlock = currentBlock;
 		auto whileConditionName = std::format("[while_condition_{}]", Block::counterWhileCondition++);
 		auto condition = CreateConditionBlock(whileConditionName, currentBlock);
+		if (!parseLoop.empty() && parseLoop.top())
+		{
+			condition->isLoop = true;
+		}
 		auto condJump = CreateJumpInstruction(TokenType::JUMP_WHILE, { condition }, currentBlock);
 
 		currentBlock = condition;
@@ -2020,12 +2092,13 @@ void CFG::ConvertStatementAST(const Node* tree)
 		body->blocks.push_back(condition);
 
 		auto branch = CreateBranchInstruction(TokenType::BRANCH_WHILE, cond, body, {});
-
+		parseLoop.push(true);
 		currentBlock = body;
 		forDepth.push(currentScope != nullptr ? (currentScope->depth+1) : 1);
 		ConvertStatementAST(expr->right.get());
 		currentBlock->instructions.
 			push_back(condJump);
+		parseLoop.pop();
 
 		auto mergeName = std::format("[merge_{}]", std::to_string(Block::counterMerge++));
 		auto parents = { parentBlock,currentBlock };

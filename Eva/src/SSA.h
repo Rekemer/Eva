@@ -176,6 +176,7 @@ struct Block
 	bool markAll = false;
 	bool updateIndex = false;
 	int offsetPhi = 0;
+	bool isLoop = false;
 };
 
 
@@ -221,7 +222,9 @@ private:
 	void AddDef(int depth, const std::string& name, int index, Block* b);
 	Block* CreateConditionBlock(const std::string& name,  Block* currentBlock);
 	Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
-	int NewName(const std::string& name);
+
+	int NewName(const std::string& name, Block* b);
+	
 	void Rename(Block* b);
 	void FindDoms();
 	void FindIDoms();
@@ -270,7 +273,8 @@ private:
 	int tempVersion = 0;
 	std::unordered_map<std::string, Block > graph;
 	// for renaming stage
-	std::unordered_map<std::string, std::stack<int>> variableStack;
+	std::unordered_map<std::string, std::stack<std::pair<int, Block*>>> variableStack;
+	//std::unordered_map<std::string, std::stack<int>> variableStack;
 	
 	// so we do not pop variables that are already taken care of by the end of loops
 	std::unordered_set<std::string> notPoped;
@@ -285,5 +289,7 @@ private:
 	LatticeMap value;
 
 	std::unordered_set<Block*> visitedBlocks;
+
+	std::stack<bool> parseLoop;
 
 };
