@@ -644,7 +644,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			//auto instr = &block->instructions[i];
 			if (instr->instrType == TokenType::PHI)
 			{
-				assert(instr->targets.size() == instr->variables.size());
+				//assert(instr->targets.size() == instr->variables.size());
 				for (int i = 0; i < instr->targets.size(); i++)
 				{
 					instr->variables[i].depth = 1;
@@ -766,7 +766,7 @@ void CFG::Sweep(Block* block)
 					it++;
 					continue;
 				}
-				if (isJump)
+				if (isJump && it->instrType != TokenType::JUMP_BACK)
 				{
 					Sweep(it->targets[0]);
 				}
@@ -972,6 +972,13 @@ void CFG::ConstPropagation()
 
 					auto& instr = block->instructions[idx];
 					auto ssaKey = std::pair{ instr.result.depth,instr.result.GetVariableVerName() };
+
+					if (block->isLoop)
+					{
+						auto& latticeVal = value[ssaKey];
+						latticeVal.type != LatticeValueType::BOTTOM;
+					}
+
 					bool isSimpleAssign = (instr.instrType == TokenType::EQUAL || instr.instrType == TokenType::DECLARE);
 					if (isSimpleAssign && instr.operRight.isConstant)
 					{
@@ -1107,7 +1114,7 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 	{
 		auto& nextInstr = block->instructions[iterIndex];
 
-		if (nextInstr.instrType == TokenType::BRANCH_WHILE || nextInstr.instrType == TokenType::PRINT || nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
+		if (nextInstr.instrType == TokenType::JUMP_BRANCH || nextInstr.instrType == TokenType::BRANCH_WHILE || nextInstr.instrType == TokenType::PRINT || nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
 			break;
 
 		auto tempValue = value.at({ iterInstr.result.depth, iterInstr.result.GetTempName() }).value;
@@ -1195,8 +1202,17 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 				continue;
 
 			// the variable will be changed
-			if (block->isLoop && block->defs.find(std::pair{ varKey .first, origName}) != block->defs.end())
+			if (block->isLoop)
 			{
+				bool isNotLoopDef = false;
+				for (auto b : localAssigned.at(origName))
+				{
+					if (!b->isLoop)
+					{
+						isNotLoopDef = true;
+					}
+				}
+				if (isNotLoopDef)
 				continue;
 			}
 			// the variable will 
@@ -1810,6 +1826,12 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto forActionName = std::format("[for_action_{}]", Block::counterForAction++);
 		auto action = CreateBlock(currentFunc,forActionName, { condition });
 		action->markAll = true;
+		if (!parseLoop.empty() && parseLoop.top())
+		{
+			condition->isLoop = true;
+			action->isLoop = true;
+		}
+
 		//currentBlock = action;
 		//currentBlock = condition;
 
@@ -1821,8 +1843,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 		condition->blocks.push_back(body);
 		condition->blocks.push_back(action);
 
-
-
+		condition->parents.push_back(action);
+		action->blocks.push_back(condition);
+		body->isLoop = true;
+		//action->parents.push_back(body);
+		//body->blocks.push_back(action);
 		
 		currentBlock = condition;
 		auto conditionOp = ConvertExpressionAST(forNode->condition.get());
@@ -1830,18 +1855,22 @@ void CFG::ConvertStatementAST(const Node* tree)
 		branch.targets.push_back(body);
 		condition->instructions.push_back(branch);
 
+
 		currentBlock = action;
+
 		ConvertStatementAST(forNode->action.get());
 		currentBlock = body;
 		auto prevprevScope = currentScope;
 		currentScope = forNode->body->AsMut<Scope>();
+		parseLoop.push(true);
  		ConvertStatementAST(forNode->body.get());
+		parseLoop.pop();
 
 		
 		assert(currentBlock->instructions.back().instrType == TokenType::BLOCK);
 
 		auto jumpBack = Instruction{ TokenType::JUMP_BACK,{},{},{} };
-
+		jumpBack.targets.push_back(body);
 		currentBlock->instructions.insert(currentBlock->instructions.end(), jumpBack);
 
 
@@ -2093,6 +2122,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 
 		auto branch = CreateBranchInstruction(TokenType::BRANCH_WHILE, cond, body, {});
 		parseLoop.push(true);
+		body->isLoop = true;
 		currentBlock = body;
 		forDepth.push(currentScope != nullptr ? (currentScope->depth+1) : 1);
 		ConvertStatementAST(expr->right.get());
