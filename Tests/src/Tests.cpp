@@ -12,11 +12,12 @@
 #define WHILE 1
 #define FOR 1
 #define FUNC 0
-#define IF 1
-#define VAR 1
-#define SCOPE 1
-#define DEDUCTION 1
-#define CONSTANT_FOLD 1
+#define IF 0
+#define VAR 0
+#define SCOPE 0
+#define DEDUCTION 0
+#define CONSTANT_FOLD 0
+#define CONSTANT_PROP 1
 
 struct Tables
 {
@@ -580,6 +581,26 @@ TEST_CASE("while statement")
 		auto isPass = CheckVariable<int>("a", (2 * 3 + 6), ValueType::INT, vm);
 		CHECK(isPass);
 	}
+
+#if CONSTANT_PROP
+	SUBCASE("while loop const prop")
+	{
+		auto a = R"(
+					g:= 0;
+					while g  < 25
+					{
+						a := 2 + 2;
+						c:= a + 2;
+						g+= c;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		constexpr auto declRes = 30;
+		auto isPass = CheckVariable<int>("g", declRes, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+#endif // CONST_PROP
+
 }
 #endif
 #if FOR
@@ -767,6 +788,51 @@ TEST_CASE("folded for loop test")
 		auto isPass = CheckVariable<int>("a", declRes, ValueType::INT, vm);
 		CHECK(isPass);
 	}
+#if CONSTANT_PROP
+	SUBCASE("for loop const prop")
+	{
+		auto a = R"(
+					x := 10;
+					y := 20;
+					z := 0;
+					
+					for i := 1..3 {
+					    a := x + y;
+					    b := a * 2;
+					    c:=0;
+					    if i % 2 == 0 {
+					        c = b + 5;
+					    } else {
+					        c = b - 5;
+					    }
+					    z += c;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		constexpr auto declRes = 120;
+
+		auto isPass = CheckVariable<int>("z", declRes, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+	SUBCASE("for loop const prop_2)")
+	{
+		auto a = R"(
+					g:= 0;
+					for  i:= 0; i < 5; i+=1;
+					{
+						a := 2 + 2;
+						c:= a + 2;
+						g+=c;
+					}
+					)";
+		auto [res, vm] = Compile(a);
+		constexpr auto declRes = 30;
+		auto isPass = CheckVariable<int>("g", declRes, ValueType::INT, vm);
+		CHECK(isPass);
+	}
+
+#endif // CONST_PROP
 }
 #endif
 

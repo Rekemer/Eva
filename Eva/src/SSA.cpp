@@ -46,8 +46,8 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 	}
 	if (v.instrType == TokenType::LEFT_PAREN)
 	{
-		os << "\n(arg block)\n";
-		PrintBlock(v.argBlock);
+		//os << "\n(arg block)\n";
+		//PrintBlock(v.argBlock);
 	}
 	if (rightValue.type != ValueType::NIL ) PrintValue(os, rightValue, v.operRight.version, v.operRight.isConstant);
 	if (v.targets.size() > 0)
@@ -888,6 +888,8 @@ std::set<std::pair<int, std::string>> workListSet;
 
 void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction& instr,LatticeMap& value)
 {
+	assert(right.isConstant);
+	assert(left.isConstant);
 	const std::string& varName =  instr.result.IsTemp() ? 
 		instr.result.GetTempName() :
 		instr.result.GetVariableVerName();
@@ -976,7 +978,7 @@ void CFG::ConstPropagation()
 					if (block->isLoop)
 					{
 						auto& latticeVal = value[ssaKey];
-						latticeVal.type != LatticeValueType::BOTTOM;
+						latticeVal.type = LatticeValueType::TOP;
 					}
 
 					bool isSimpleAssign = (instr.instrType == TokenType::EQUAL || instr.instrType == TokenType::DECLARE);
@@ -1124,10 +1126,12 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 		// that will be used to calcuate new values
 		if (nextInstr.operRight.originalName == iterInstr.result.originalName)
 		{
+			if(nextInstr.operLeft.isConstant)
 			CalculateConstant(nextInstr.instrType, nextInstr.operLeft, iterInstr.operRight, nextInstr,value);
 		}
 		else if (nextInstr.operLeft.originalName == iterInstr.result.originalName)
 		{
+			if(nextInstr.operRight.isConstant)
 			CalculateConstant(nextInstr.instrType, iterInstr.operRight, nextInstr.operRight, nextInstr,value);
 		}
 
@@ -1202,14 +1206,29 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 				continue;
 
 			// the variable will be changed
-			if (block->isLoop)
+			auto isDefInLoop = block->defs.find(std::pair{ varKey.first,origName }) != block->defs.end();
+			if (block->isLoop &&  isDefInLoop)
 			{
 				bool isNotLoopDef = false;
 				for (auto b : localAssigned.at(origName))
 				{
-					if (!b->isLoop)
+					if (!b->isLoop )
 					{
-						isNotLoopDef = true;
+						auto index = b->defs.find(std::pair{ varKey.first,origName });
+						if (index != b->defs.end())
+						for (auto i : index->second)
+						{
+							auto& instr= b->instructions[i];
+							if (/*value.at(varKey).type != LatticeValueType::CONSTANT &&*/
+								instr.operRight.value == value.at(varKey).value)
+							{
+								// defined somewhere else too
+								// should not use for const propagation
+								// since the value will be updated multiple times
+								// in a loop
+								isNotLoopDef = true;
+							}
+						}
 					}
 				}
 				if (isNotLoopDef)
@@ -1231,9 +1250,13 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 			{
 				if (value.at(varKey).type == LatticeValueType::BOTTOM)
 					continue;
-
 				auto& instr = block->instructions[idx];
 				bool leftUpdated = false, rightUpdated = false;
+				if (instr.instrType == TokenType::PHI)
+				{
+					value.at(varKey).type = LatticeValueType::TOP;
+					continue;
+				}
 
 				if (instr.instrType == TokenType::PLUS_PLUS || instr.instrType == TokenType::MINUS_MINUS)
 				{
@@ -1841,9 +1864,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto jumpFor = CreateJumpInstruction(TokenType::JUMP_FOR, {action,condition, body}, init);
 
 		condition->blocks.push_back(body);
-		condition->blocks.push_back(action);
+		//body->parents.push_back(condition);
 
+		condition->blocks.push_back(action);
 		condition->parents.push_back(action);
+
 		action->blocks.push_back(condition);
 		body->isLoop = true;
 		//action->parents.push_back(body);
@@ -2117,6 +2142,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto whileBodyName = std::format("[while_body_{}]", Block::counterWhileBody++);
 		auto body = CreateBlock(currentFunc,whileBodyName, {currentBlock});
 		currentBlock->blocks.push_back(body);
+
 		condition->parents.push_back(body);
 		body->blocks.push_back(condition);
 
