@@ -849,6 +849,8 @@ void Print(const Expression* tree, int level) {
 		 updateNode(forNode->condition, newNodeCond);
 		 auto newNodeAction= FoldConstants(forNode->action.get());
 		 updateNode(forNode->action, newNodeAction);
+		 auto newNodeBody = FoldConstants(forNode->body.get());
+		 updateNode(forNode->body, newNodeBody);
 	}
 	else if (node->type == TokenType::WHILE)
 	{
@@ -898,6 +900,7 @@ void Print(const Expression* tree, int level) {
 		 StartFolding(forNode->init.get());
 		 StartFolding(forNode->condition.get());
 		 StartFolding(forNode->action.get());
+		 StartFolding(forNode->body.get());
 	 }
 	 else if (tree->type == TokenType::FUN)
 	 {
