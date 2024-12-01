@@ -390,6 +390,8 @@ void CFG::Rename(Block* b)
 Instruction CFG::CreatePhi(const std::string& name)
 {	
 	auto instr = Instruction{ TokenType::PHI ,{},{},Operand{ValueContainer{name},false,NOT_INIT_VERSION} };
+	instr.result.originalName = name;
+	//instr.result.depth = depth;
 	return instr;
 }
 void MakeCritical(Instruction& instr)
@@ -958,7 +960,11 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 	value[{depth, varName}].value = resultValue;
 	value[{depth, varName}].type = LatticeValueType::CONSTANT;
 }
-
+bool IsValueExist(LatticeMap& value, Operand& op)
+{
+	return value.find({ op.depth, op.IsVariable() ? op.GetVariableVerName() : op.originalName })
+		!= value.end();
+}
 void CFG::ConstPropagation()
 {
 	std::deque<std::pair<int, std::string>> workList;
@@ -973,7 +979,11 @@ void CFG::ConstPropagation()
 				{
 
 					auto& instr = block->instructions[idx];
-					auto ssaKey = std::pair{ instr.result.depth,instr.result.GetVariableVerName() };
+					if (instr.result.depth == -1)
+					{
+						std::cout << "sd";
+					}
+					auto ssaKey = std::pair{ instr.result.depth,instr.result.IsTemp() ? instr.result.GetTempName() :  instr.result.GetVariableVerName() };
 
 					if (block->isLoop)
 					{
@@ -1105,39 +1115,41 @@ bool CFG::UpdateOperand(Operand& op)
 	}
 	return false;
 }
+std::queue<std::pair<int,Instruction>> updatedInstruction;
 
-
-void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& initialInstr, std::deque<std::pair<int, std::string>>& workList)
-{
-	auto iterInstr = initialInstr;
-	size_t iterIndex = startIndex + 1;
-	visitedBlocks.clear();
-	while (iterIndex < block->instructions.size())
-	{
-		auto& nextInstr = block->instructions[iterIndex];
-
-		if (nextInstr.instrType == TokenType::JUMP_BRANCH || nextInstr.instrType == TokenType::BRANCH_WHILE || nextInstr.instrType == TokenType::PRINT || nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
-			break;
-
-		auto tempValue = value.at({ iterInstr.result.depth, iterInstr.result.GetTempName() }).value;
-		auto tempOper = iterInstr.result;
-		tempOper.value = tempValue;
-		// the iter instr oper right contains new updated value 
-		// that will be used to calcuate new values
-		if (nextInstr.operRight.originalName == iterInstr.result.originalName)
+void UpdateOperandAndCalculate(Operand& targetOperand, Operand& otherOperand,
+	TokenType instrType, Operand& initialOperand, Instruction& nextInstr, LatticeMap& value, int index, bool reverseOperands = false) {
+	targetOperand.value = initialOperand.value;
+	targetOperand.SetConst();
+	if (otherOperand.isConstant) {
+		if (reverseOperands)
 		{
-			if(nextInstr.operLeft.isConstant)
-			CalculateConstant(nextInstr.instrType, nextInstr.operLeft, iterInstr.operRight, nextInstr,value);
+			CalculateConstant(instrType, otherOperand,targetOperand,  nextInstr, value);
 		}
-		else if (nextInstr.operLeft.originalName == iterInstr.result.originalName)
-		{
-			if(nextInstr.operRight.isConstant)
-			CalculateConstant(nextInstr.instrType, iterInstr.operRight, nextInstr.operRight, nextInstr,value);
-		}
-
-		iterInstr = nextInstr;
-		++iterIndex;
+		else
+		CalculateConstant(instrType, targetOperand, otherOperand, nextInstr, value);
+		updatedInstruction.push({ index,nextInstr});
 	}
+	else if (otherOperand.IsTemp())
+	{
+		auto iter = value.find({ otherOperand.depth,otherOperand.originalName });
+		auto isExist = iter != value.end();
+		if (isExist)
+		{
+			otherOperand.value = iter->second.value;
+			otherOperand.SetConst();
+			if (reverseOperands)
+			{
+				CalculateConstant(instrType, otherOperand, targetOperand, nextInstr, value);
+			}
+			else
+				CalculateConstant(instrType, targetOperand, otherOperand, nextInstr, value);
+			updatedInstruction.push({ index,nextInstr});
+		}
+	}
+}
+void UpdateDeclare(Block* block, size_t iterIndex, LatticeMap& value, std::deque<std::pair<int, std::string>>& workList) {
+	
 	if (block->instructions[iterIndex].instrType
 		== TokenType::PRINT)
 	{
@@ -1145,7 +1157,7 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 		block->instructions[iterIndex].operRight = newValue;
 		return;
 	}
-	if (block->instructions[iterIndex].instrType 
+	if (block->instructions[iterIndex].instrType
 		== TokenType::BRANCH
 		|| block->instructions[iterIndex].instrType
 		== TokenType::BRANCH_ELIF)
@@ -1158,20 +1170,141 @@ void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& init
 		block->markAll = false;
 		return;
 	}
-
-	// If the result is a variable, update the value mapping
-	if (iterIndex < block->instructions.size())
-	{
+	
+	if (iterIndex < block->instructions.size()) {
+		auto& prev = block->instructions[iterIndex - 1];
 		auto& nextInstr = block->instructions[iterIndex];
-		if (nextInstr.result.IsVariable())
-		{
+
+		// Check if the result is a variable and both operands in the previous instruction are constants
+		if (nextInstr.result.IsVariable() &&
+			prev.operRight.isConstant &&
+			prev.operLeft.isConstant) {
+
 			auto resultVarKey = std::make_pair(nextInstr.result.depth, nextInstr.result.GetVariableVerName());
-			nextInstr.operRight = block->instructions[iterIndex - 1].operRight;
-			value[resultVarKey].value = block->instructions[iterIndex - 1].operRight.value;
+			nextInstr.operRight = prev.operRight;
+			value[resultVarKey].value = prev.operRight.value;
 			value[resultVarKey].type = LatticeValueType::CONSTANT;
 			workList.push_back(resultVarKey);
 		}
 	}
+}
+
+int ProcessInstructions(Block* block, size_t iterIndex, Instruction& initialInstr,  LatticeMap& value,
+	std::deque<std::pair<int, std::string>>& workList)
+{
+	auto iterInstr = initialInstr;
+	while (iterIndex < block->instructions.size()) {
+		auto& nextInstr = block->instructions[iterIndex];
+
+		// Check for specific instruction types that terminate the loop
+		if (nextInstr.instrType == TokenType::JUMP_BRANCH ||
+			nextInstr.instrType == TokenType::BRANCH_WHILE ||
+			nextInstr.instrType == TokenType::PRINT ||
+			nextInstr.instrType == TokenType::BRANCH_ELIF ||
+			nextInstr.instrType == TokenType::BRANCH ||
+			nextInstr.instrType == TokenType::DECLARE ||
+			nextInstr.instrType == TokenType::EQUAL) {
+			break;
+		}
+
+		// Update operands and calculate as needed
+		if (nextInstr.operRight.originalName == initialInstr.result.originalName) {
+			UpdateOperandAndCalculate(nextInstr.operRight, nextInstr.operLeft, nextInstr.instrType, initialInstr.operRight, nextInstr, value,iterIndex,true);
+		}
+		else if (nextInstr.operLeft.originalName == initialInstr.result.originalName) {
+			UpdateOperandAndCalculate(nextInstr.operLeft, nextInstr.operRight, nextInstr.instrType, initialInstr.operRight, nextInstr, value,iterIndex);
+		}
+
+		// Update iterator instruction and increment index
+		iterInstr = nextInstr;
+		++iterIndex;
+	}
+	UpdateDeclare(block, iterIndex, value, workList);
+	return iterIndex;
+}
+
+void CFG::PropagateTempValues(Block* block, size_t startIndex, Instruction& initialInstr, std::deque<std::pair<int, std::string>>& workList)
+{
+	
+	size_t iterIndex = startIndex + 1;
+	visitedBlocks.clear();
+
+	auto isExist = IsValueExist(value,initialInstr.result);
+	if (!isExist)
+	{
+		auto key = std::pair{ initialInstr.result.depth, initialInstr.result.originalName };
+		value[key].value
+			= initialInstr.operRight.value;
+		value[key].type = LatticeValueType::CONSTANT;
+	}
+	
+
+	int declareIndex = ProcessInstructions(block, iterIndex,initialInstr,value,workList);
+
+	//while (iterIndex < block->instructions.size())
+	//{
+	//	auto& nextInstr = block->instructions[iterIndex];
+	//
+	//	if (nextInstr.instrType == TokenType::JUMP_BRANCH || nextInstr.instrType == TokenType::BRANCH_WHILE || nextInstr.instrType //== TokenType::PRINT || nextInstr.instrType == TokenType::BRANCH_ELIF || nextInstr.instrType == TokenType::BRANCH || //nextInstr.instrType == TokenType::DECLARE || nextInstr.instrType == TokenType::EQUAL)
+	//		break;
+	//
+	//	if (nextInstr.operRight.originalName == initialInstr.result.originalName)
+	//	{
+	//		UpdateOperandAndCalculate(nextInstr.operRight, nextInstr.operLeft, nextInstr.instrType, //initialInstr.operRight,nextInstr,value);
+	//
+	//	}
+	//	else if (nextInstr.operLeft.originalName == initialInstr.result.originalName)
+	//	{
+	//		UpdateOperandAndCalculate(nextInstr.operLeft, nextInstr.operRight, nextInstr.instrType, initialInstr.operRight, //nextInstr, value);
+	//	}
+	//
+	//	iterInstr = nextInstr;
+	//	++iterIndex;
+	//}
+
+	while (!updatedInstruction.empty())
+	{
+		auto[index,instr] = updatedInstruction.front();
+		updatedInstruction.pop();
+		ProcessInstructions(block, index, instr, value,workList);
+	}
+	//if (block->instructions[iterIndex].instrType
+	//	== TokenType::PRINT)
+	//{
+	//	auto& newValue = block->instructions[iterIndex - 1].operRight;
+	//	block->instructions[iterIndex].operRight = newValue;
+	//	return;
+	//}
+	//if (block->instructions[iterIndex].instrType
+	//	== TokenType::BRANCH
+	//	|| block->instructions[iterIndex].instrType
+	//	== TokenType::BRANCH_ELIF)
+	//{
+	//	auto& newCheck = block->instructions[iterIndex - 1].operRight;
+	//	block->instructions[iterIndex].operRight = newCheck;
+	//	// once we propagated constant 
+	//	// we don't need the calculation of condition
+	//	// it is just been calculated
+	//	block->markAll = false;
+	//	return;
+	//}
+
+	UpdateDeclare(block, declareIndex,value, workList);
+	//auto& prev = block->instructions[iterIndex - 1];
+	//// If the result is a variable, update the value mapping
+	//if (iterIndex < block->instructions.size())
+	//{
+	//	auto& nextInstr = block->instructions[iterIndex];
+	//	if (nextInstr.result.IsVariable() &&
+	//		prev.operRight.isConstant && prev.operLeft.isConstant)
+	//	{
+	//		auto resultVarKey = std::make_pair(nextInstr.result.depth, nextInstr.result.GetVariableVerName());
+	//		nextInstr.operRight = block->instructions[iterIndex - 1].operRight;
+	//		value[resultVarKey].value = block->instructions[iterIndex - 1].operRight.value;
+	//		value[resultVarKey].type = LatticeValueType::CONSTANT;
+	//		workList.push_back(resultVarKey);
+	//	}
+	//}
 }
 
 //std::unordered_map<std::string, bool> isIterator;
@@ -1234,17 +1367,6 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 				if (isNotLoopDef)
 				continue;
 			}
-			// the variable will 
-			if (block->isLoop)
-			{
-
-			}
-			//if (block->instructions.size() > 0 && block->instructions.back().instrType
-			//	== TokenType::BRANCH_WHILE)
-			//{
-			//	isIterator[varName] = true;
-			//	continue;
-			//}
 			auto& instrIndices = opIt->second;
 			for (auto idx : instrIndices)
 			{
@@ -1274,15 +1396,15 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 				}
 				else
 				{
-					if (instr.operLeft.GetVariableVerName() == varName)
+					if (instr.operLeft.GetVariableVerName() == varName && !instr.operLeft.isConstant)
 					leftUpdated = UpdateOperand(instr.operLeft);
-					if (instr.operRight.GetVariableVerName() == varName)
+					if (instr.operRight.GetVariableVerName() == varName && !instr.operRight.isConstant)
 					rightUpdated = UpdateOperand(instr.operRight);
 				}
 
 
 				// If both operands are constant, fold the instruction
-				if (instr.operLeft.isConstant && instr.operRight.isConstant)
+				if ( leftUpdated && rightUpdated  || rightUpdated && instr.operLeft.isConstant  || leftUpdated && instr.operRight.isConstant)
 				{
 					CalculateConstant(instr.instrType, instr.operLeft, instr.operRight, instr,value);
 
@@ -1296,6 +1418,15 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 						PropagateTempValues(block, idx, instr,workList);
 					}
 				}
+				else if (instr.IsUnary())
+				{
+					if (instr.result.IsTemp() && !IsValueExist(value,instr.result))
+					{
+						instr.operRight.value.Negate();
+						PropagateTempValues(block, idx, instr, workList);
+					}
+				}
+
 				else
 				{
 					// Update the value mapping if the result is a variable and the right operand is constant
@@ -1680,13 +1811,13 @@ Operand CFG::CreateTemp()
 {
 	Operand temp{ ValueContainer{ "t"} ,false,tempVersion++};
 	temp.isTemp = true;
-	temp.originalName = std::format("t_{}", tempVersion);
+	temp.originalName = std::format("t_{}", tempVersion-1);
 	if(currentScope == nullptr)
 	temp.depth = 0;
 	else 
 	temp.depth = currentScope->depth;
 
-	AddDef(temp.depth,std::format("t{}", tempVersion - 1) , currentBlock->instructions.size(),currentBlock);
+	AddDef(temp.depth,std::format("t_{}", tempVersion - 1) , currentBlock->instructions.size(),currentBlock);
 	return temp;
 }
 
@@ -1701,6 +1832,12 @@ void GiveType(Instruction& instr, Operand& resOp, ValueType type)
 Operand CFG::UnaryInstr(const Expression* expr, TokenType type)
 {
 	auto left = ConvertExpressionAST(expr->left.get());
+	if (left.isConstant)
+	{
+		left.value.Negate();
+		return left;
+	}
+
 	auto res = CreateTemp();
 	Instruction instr{ type,{},left,res };
 	GiveType(instr, res, expr->value.type);

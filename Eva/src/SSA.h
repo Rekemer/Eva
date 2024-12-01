@@ -38,9 +38,14 @@ struct Operand
 	{
 
 	}
+	void SetConst()
+	{
+		isConstant = true;
+		isTemp = false;
+	}
 	std::string GetTempName()
 	{
-		return std::format("t{}",version);
+		return std::format("t_{}",version);
 	}
 	std::string GetVariableVerName()
 	{

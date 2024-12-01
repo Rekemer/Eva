@@ -22,12 +22,12 @@
 //					}
 
 g:= 0;
-//for  i:= 0; i < 5; i+=1;
-//{
-//	a := 2 + 2;
-//	c:= a + 2;
-//	g+=c;
-//}
+for  i:= 0; i < 5; i+=1;
+{
+	a := 2 + 2;
+	c:= a + 2;
+	g+=c;
+}
 
 while g  < 5
 {
@@ -36,9 +36,14 @@ while g  < 5
 	g+= c;
 }
 
-//x := 10;
-//y := 20;
-//z := 0;
+x := 10;
+y := 20;
+z := 0;
+//a := x + y;
+//b := a * 2;
+//Print b;
+//c:=   2*b/(b -a + a);
+// Print c;
 //for i := 1..3 {
 //    a := x + y;
 //    b := a * 2;
@@ -47,12 +52,16 @@ while g  < 5
 //        c = b + 5;
 //        Print "Even";
 //    } else {
-//        c = b - 5;
+//        a := x + y;
+//        b := a * 2;
+//        Print b;
+//        c =  2*b -a;
+//        Print c;
 //        Print "Odd";
 //    }
 //    z += c;
+//    Print z;
 //}
-
 
 //fun foo(n : int) : int
 //{
