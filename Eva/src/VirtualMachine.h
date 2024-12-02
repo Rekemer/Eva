@@ -111,7 +111,7 @@ private:
 	std::stack<int> m_BreakIndexes;
 	std::stack<int> conditionIndex;
 	ValueType m_FuncReturnType = ValueType::NIL;
-	
+	std::stack<ValueType> lastReturnType;
 public:
 	Scope* currentScope= nullptr;
 };

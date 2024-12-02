@@ -1358,6 +1358,7 @@ size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t base
 
 void VirtualMachine::GenerateCFGOperand(const Operand& operand, ValueType instrType)
 {
+	lastReturnType.push(instrType);
 	auto type = operand.type;
 	if (operand.isConstant)
 	{
@@ -1479,6 +1480,12 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			// we could use swap instead ?
 			if (instr.operRight.IsTemp())
 			{
+				if(!lastReturnType.empty())
+				{
+					auto prevRetType = lastReturnType.top();
+					lastReturnType.pop();
+					CAST_INT_FLOAT(prevRetType, instr.returnType);
+				}
 				currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
 				EmitPop(currentFunc->opCode);
 				GenerateCFGOperand(instr.operLeft, instr.returnType);
@@ -1488,6 +1495,7 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 			{
 				GenerateCFGOperand(instr.operLeft, instr.returnType);
 				GenerateCFGOperand(instr.operRight, instr.returnType);
+				
 			}
 
 
