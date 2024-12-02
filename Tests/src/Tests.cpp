@@ -9,14 +9,14 @@
 
 #define EXPR 0
 #define STRINGS 0
-#define WHILE 1
-#define FOR 1
+#define WHILE 0
+#define FOR 0
 #define FUNC 0
 #define IF 0
 #define VAR 0
 #define SCOPE 0
 #define DEDUCTION 0
-#define CONSTANT_FOLD 0
+#define CONSTANT_FOLD 1
 #define CONSTANT_PROP 1
 
 struct Tables
@@ -1328,11 +1328,12 @@ TEST_CASE("functions")
 }
 
 #endif
-#if CONSTANT_FOLD && FUNC
+#if CONSTANT_FOLD 
 
 TEST_CASE("constant folding")
 {
-	SUBCASE("constant folding all cases")
+	#if FUNC
+	SUBCASE("constant folding all cases func call")
 	{
 		auto a = R"(
 
@@ -1345,6 +1346,31 @@ TEST_CASE("constant folding")
 					a := 2;
 
 					c0 := foo(2.0 + 3.5) + a + 3 + 3;
+
+					c := 3 + a + 3 ; 
+					c1 := 3 + 3 + a;
+					c2 := 2 *6  + a - 3 - 3/2;
+					c3 :=  a + 2 *6   - 3 - 3/2 - c+ c -c;
+					c4 := 2 *6  + a - c;
+					c5 := c * 2.0 * a / 4;
+					c6 := c * 2.0 * a / 4 * a/16;
+					d := 1 - 2 * 0;
+					b:= 0/2 + d + 2 ;
+
+					check : bool = c0 == 15 && d == 1 && b == 3&& c == 8 && c1 == 8  &&
+					 c2 == 10 && c3 == (c2 - c + c - c) && c4 == 6  && c5 == 8.0 
+					 && c6 == 1.0;   
+					)";
+		auto [res, vm] = Compile(a);
+		auto isPass = CheckVariable<bool>("check", true, ValueType::BOOL, vm);
+		CHECK(isPass);
+	}
+	#endif
+	SUBCASE("constant folding all cases")
+	{
+		auto a = R"(
+					a := 2;
+					c0 := 7 + a + 3 + 3;
 
 					c := 3 + a + 3 ; 
 					c1 := 3 + 3 + a;

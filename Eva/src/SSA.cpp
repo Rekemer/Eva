@@ -900,6 +900,12 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 
 	switch (op)
 	{
+	case TokenType::OR:
+		resultValue = ValueContainer::Or(left.value, right.value);
+		break;
+	case TokenType::AND:
+		resultValue = ValueContainer::And(left.value, right.value);
+		break;
 	case TokenType::PLUS:
 		resultValue = ValueContainer::Add(left.value, right.value);
 		break;
@@ -956,6 +962,7 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 
 	// Update the instruction and lattice value
 	instr.operRight.value = resultValue;
+	instr.operRight.type = resultValue.type;
 	instr.result.isConstant = true;
 	value[{depth, varName}].value = resultValue;
 	value[{depth, varName}].type = LatticeValueType::CONSTANT;
@@ -1102,6 +1109,7 @@ bool CFG::UpdateOperand(Operand& op)
 			auto prevValue = op.value;
 			if (prevValue == it->second.value) return false;
 			op.value = it->second.value;
+			op.type = it->second.value.type;
 			return true;
 		}
 		else
