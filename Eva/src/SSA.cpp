@@ -969,8 +969,12 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 }
 bool IsValueExist(LatticeMap& value, Operand& op)
 {
-	return value.find({ op.depth, op.IsVariable() ? op.GetVariableVerName() : op.originalName })
-		!= value.end();
+	auto iter = value.find({ op.depth, op.IsVariable() ? op.GetVariableVerName() : op.originalName });
+	if (iter != value.end())
+	{
+		return iter->second.type == LatticeValueType::CONSTANT;
+	}
+	return false;
 }
 void CFG::ConstPropagation()
 {
@@ -1141,7 +1145,8 @@ void UpdateOperandAndCalculate(Operand& targetOperand, Operand& otherOperand,
 	else if (otherOperand.IsTemp())
 	{
 		auto iter = value.find({ otherOperand.depth,otherOperand.originalName });
-		auto isExist = iter != value.end();
+		auto isExist = iter != value.end() && iter->second.type 
+			== LatticeValueType::CONSTANT;
 		if (isExist)
 		{
 			otherOperand.value = iter->second.value;

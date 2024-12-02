@@ -68,21 +68,113 @@
 //	return n + 2;
 //}
 
-a := 2;
 
-c0 := 7 + a + 3 + 3;
-c := 3 + a + 3 ; // 12
-c1 := 3 + 3 + a; // 8
-c2 := 2 *6  + a - 3 - 3/2; // 10
-c3 :=  a + 2 *6   - 3 - 3/2 - c+ c -c; // -2
-c4 := 2 *6  + a - c; // 2
-c5 := c * 2.0 * a / 4; // 12
-c6 := c * 2.0 * a / 4 * a/16; // 1.5
-d := 1 - 2 * 0;
-b:= 0/2 + d + 2 ;
 
-check : bool = c0 == 15 && d == 1 && b == 3&& 
-c == 8 && c1 == 8  &&
- c2 == 10 && c3 == (c2 - c + c - c) && c4 == 6  && c5 == 8.0 
- && c6 == 1.0; 
 
+//a := 2;
+//
+//c0 := 7 + a + 3 + 3;
+//c := 3 + a + 3 ; // 12
+//c1 := 3 + 3 + a; // 8
+//c2 := 2 *6  + a - 3 - 3/2; // 10
+//c3 :=  a + 2 *6   - 3 - 3/2 - c+ c -c; // -2
+//c4 := 2 *6  + a - c; // 2
+//c5 := c * 2.0 * a / 4; // 12
+//c6 := c * 2.0 * a / 4 * a/16; // 1.5
+//d := 1 - 2 * 0;
+//b:= 0/2 + d + 2 ;
+//
+//check : bool = c0 == 15 && d == 1 && b == 3&& 
+//c == 8 && c1 == 8  &&
+// c2 == 10 && c3 == (c2 - c + c - c) && c4 == 6  && c5 == 8.0 
+// && c6 == 1.0; 
+
+
+
+//fun foo(n : int) : int
+//{
+//	return n + 2 + 4;
+//}
+//
+//a := 2;
+//
+//c0 := foo(2.0 + 3.5) + a + 3 + 3;
+//
+//c := 3 + a + 3 ; 
+//c1 := 3 + 3 + a;
+//c2 := 2 *6  + a - 3 - 3/2;
+//c3 :=  a + 2 *6   - 3 - 3/2 - c+ c -c;
+//c4 := 2 *6  + a - c;
+//c5 := c * 2.0 * a / 4;
+//c6 := c * 2.0 * a / 4 * a/16;
+//d := 1 - 2 * 0;
+//b:= 0/2 + d + 2 ;
+//
+////check : bool = c0 == 15 && d == 1 && b == 3&& c == 8 && c1 == 8  &&
+//// c2 == 10 && c3 == (c2 - c + c - c) && c4 == 6  && c5 == 8.0 
+//// && c6 == 1.0;   
+// check : bool = c0 == 15 && d == 1 && b == 3&& c == 8 && c1 == 8  &&
+// c2 == 10 && c3 == (c2 - c + c - c) && c4 == 6  && c5 == 8.0 
+// && c6 == 1.0;  
+
+
+// Test: Basic Constant Folding with Integers and Floats
+//x := 3 + 2.5 * 4; // Should fold to 13.0
+//y := (5 + 3.5) * (2.0 - 1); // Should fold to 8.5
+//z := x * y + 10.0 / 2; // Should fold to 121.0
+//
+//// Test: Float Arithmetic
+//a := 10.0;
+//b := 5.5 + 2.2 * 3.0 - 1.1; // Should fold to 11.0
+//c := 2.0 * (a + b) / 4.0; // Should fold to 10.5
+//
+//// Test: Propagation with Mixed Integers and Floats
+//d := 10;
+//e := d + 5.5; // Should propagate d = 10, fold e = 15.5
+//
+//// Test: Control Flow with Floats
+//f := 5.5;
+//if (f > 5.0) {
+//    g := f + 1.0; // g = 6.5
+//} else {
+//    g := f - 1.0; // Dead code
+//}
+//
+//// Test: Loops with Float Arithmetic
+//h := 0.0;
+//for i := 0; i < 5; i++; {
+//    h := h + i * 0.5; // Should fold to 5.0
+//}
+//
+//// Test: Nested and Complex Float Expressions
+//j := (1.5 + 2.0 * 3.0 - 4.0 / 2.0) * (5.0 + 1.5); // Should fold to 28.5
+//
+//// Test: Reassignments and Shadowing with Floats
+//k := 20.0;
+//k := k + 10.0; // Should propagate k = 30.0
+//{
+//    k := 5.0; // Inner scope shadowing
+//    l := k * 2.0; // l = 10.0
+//}
+//m := k + 10.0; // Should fold to 40.0 in the outer scope
+//
+//// Test: Edge Cases with Floats
+//n := 0.0 / 1.0; // Valid, should fold to 0.0
+////o := 1.0 / 0.0; // Should produce a warning or error
+//p := 5.0 - 5.0; // Should fold to 0.0
+//
+//// Test: Redundant Float Expressions
+//q := 3.5 + 2.5; // q = 6.0
+//r := 3.5 + 2.5; // r should reuse the constant result of q
+//
+//// Test: Dead Code Elimination with Floats
+//if (true) {
+//    s := 100.5; // Should stay
+//} else {
+//    s := 200.5; // Should be removed
+//}
+
+h := 0.0;
+{
+	h := 2 + 2;
+}
