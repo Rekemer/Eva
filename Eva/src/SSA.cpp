@@ -234,6 +234,7 @@ int CFG::NewName(const std::string& name, Block* b)
 	variableStack[name].push({ version ,b });
 	return version;
 }
+// updates version, uses tables indicies
 void CFG::Rename(Block* b)
 {
 
@@ -252,26 +253,34 @@ void CFG::Rename(Block* b)
 	{
 		auto& instr = b->instructions[i];
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
-			instr.instrType == TokenType::BLOCK || instr.instrType == TokenType::JUMP_BACK || instr.instrType == TokenType::JUMP_FOR
+			instr.instrType == TokenType::JUMP_BACK || instr.instrType == TokenType::JUMP_FOR
 			|| instr.instrType == TokenType::LEFT_PAREN || instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN) continue;
+
+		if (instr.instrType == TokenType::BLOCK)
+		{
+			continue;
+		}
+		//auto offset = 0;
+		// we already account for offset in i
+		auto offset = b->offsetPhi;
 		if (instr.instrType == TokenType::BRANCH && instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top().first;
-			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(),i,b);
+			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(),i-offset,b);
 			continue;
 		}
 		
 		if (instr.operRight.IsVariable())
 		{
 			instr.operRight.version = variableStack[instr.operRight.value.AsString()].top().first;
-			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(), i,b);
+			AddUse(instr.operRight.depth, instr.operRight.GetVariableVerName(), i- offset,b);
 		}
 		if (!instr.IsUnary())
 		{
 			if (instr.operLeft.IsVariable())
 			{
 				instr.operLeft.version = variableStack[instr.operLeft.value.AsString()].top().first;
-				AddUse(instr.operLeft.depth, instr.operLeft.GetVariableVerName(), i,b);
+				AddUse(instr.operLeft.depth, instr.operLeft.GetVariableVerName(), i- offset,b);
 			}
 		}
 		
@@ -493,10 +502,10 @@ void CFG::InsertPhi()
 					{
 						for (auto& index : v)
 						{
-							index += (blockDf->offsetPhi );
+							index += 1;
 						}
 					}
-					blockDf->offsetPhi = 0;
+					//blockDf->offsetPhi = 0;
 					
 					if (blockDf->phiInstructionIndexes.empty())
 					{
@@ -1478,7 +1487,10 @@ void CFG::DeadCode()
 	{
 		for (auto& i : v)
 		{
-			i += b.first->offsetPhi;
+			if (b.first->instructions[i].instrType != TokenType::PHI)
+			{
+				i += b.first->offsetPhi;
+			}
 		}
 	}
 
