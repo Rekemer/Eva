@@ -130,6 +130,7 @@
     <ClInclude Include="src\Local.h" />
     <ClInclude Include="src\Nodes.h" />
     <ClInclude Include="src\Object.h" />
+    <ClInclude Include="src\Options.h" />
     <ClInclude Include="src\SSA.h" />
     <ClInclude Include="src\TokenConversion.h" />
     <ClInclude Include="src\Tokens.h" />

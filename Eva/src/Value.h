@@ -120,7 +120,7 @@ public:
 
 
 	void Negate();
-
+	void InverseBool();
 	explicit ValueContainer(ValueContainer&& v)
 	{
 		type = v.type;

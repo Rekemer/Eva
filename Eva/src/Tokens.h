@@ -60,6 +60,9 @@ enum class TokenType : uint8_t {
 	CALL,
 	PHI,
 	
+	// debugging
+	PUSH,
+	
 };
 inline bool IsBinaryBoolOp(TokenType type)
 {

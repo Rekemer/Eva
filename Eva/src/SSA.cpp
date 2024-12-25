@@ -259,7 +259,7 @@ void CFG::Rename(Block* b)
 		auto& instr = b->instructions[i];
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
 			instr.instrType == TokenType::JUMP_BACK || instr.instrType == TokenType::JUMP_FOR
-			|| instr.instrType == TokenType::LEFT_PAREN || instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN) continue;
+			|| instr.instrType == TokenType::LEFT_PAREN || instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN || instr.instrType == TokenType::PUSH) continue;
 
 		if (instr.instrType == TokenType::BLOCK)
 		{
@@ -1898,7 +1898,11 @@ Operand CFG::UnaryInstr(const Expression* expr, TokenType type)
 	auto left = ConvertExpressionAST(expr->left.get());
 	if (left.isConstant)
 	{
-		left.value.Negate();
+		if (left.type == ValueType::BOOL)
+		{
+			left.value.InverseBool();
+		}
+		else left.value.Negate();
 		return left;
 	}
 
@@ -2676,7 +2680,9 @@ void CFG::ConvertAST(const Node* tree)
 	}
 	else
 	{
-		ConvertExpressionAST(tree);
+		auto oper = ConvertExpressionAST(tree);
+		auto instr = Instruction{ TokenType::PUSH,{},{},oper };
+		currentBlock->instructions.push_back(instr);
 		//assert(false && "We are not supposed to have non statement at this level?");
 	}
 	

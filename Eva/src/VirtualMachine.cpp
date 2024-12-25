@@ -1400,6 +1400,11 @@ void VirtualMachine::GenerateBlockInstructions(Block* block)
 
 		switch (type)
 		{
+		case TokenType::PUSH:
+		{
+			GenerateCFGOperand(instr.result, instr.result.value.type);
+			break;
+		}
 		case TokenType::VAR:
 		{
 			auto exp = instr.operRight.value.type;

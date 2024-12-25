@@ -1,5 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "Doctest.h"
+#include "Options.h"
 #include "VirtualMachine.h"
 #include "Compile.h"
 #include "Value.h"
@@ -7,7 +8,7 @@
 #include <format>
 
 
-#define EXPR 0
+#define EXPR 1
 #define STRINGS 0
 #define WHILE 1
 #define FOR 1
@@ -47,7 +48,7 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 }
 
 
-#if EXPR
+#if EXPR && !DEC
 	TEST_CASE("testing bool expressions")
 	{
 		CHECK(CompileTest("1/2 == 1/2").As<bool>() == true);
@@ -86,11 +87,11 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 		CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
 		CHECK(CompileTest("(2/2 * 2 == 2 )").As<bool>() == true);
 		CHECK(CompileTest("(4* 6/3 == 8 )").As<bool>() == true);
-		CHECK(CompileTest("(4.0* 6/3 == 8.0 )").As<bool>() == true);
+		CHECK(CompileTest("(4.0* 6/3 == 8.0 )").As<bool>()==true);
 		CHECK(CompileTest("(4.0* 6/3 + 2 == 10.0 )").As<bool>() == true);
-		CHECK(CompileTest("(4.0* 6/(4/2.0) + 2 == 14.0 )").As<bool>() == true);
-		CHECK(CompileTest("( 6.0/(6/2.0) * 4.0 + 2 == 10.0 )").As<bool>() ==true);
-		CHECK(CompileTest("( 2.0 / 4 * 3  == 1.5)").As<bool>() == true);
+		CHECK(CompileTest("(4.0* 6/(4/2.0) + 2==14.0 )").As<bool>() == true);
+		CHECK(CompileTest("( 6.0/(6/2.0) * 4.0 + 2==10.0 )").As<bool>() ==true);
+		CHECK(CompileTest("( 2.0 / 4 * 3  == 1.5)").As<bool>()==true);
 		CHECK(CompileTest("( 3 * 2 / 4.0 == 6.0/4)").As<bool>() == true);
 	}
 

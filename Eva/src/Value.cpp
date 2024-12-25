@@ -129,7 +129,13 @@ ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContaine
 	return {};
 }
 
-
+void ValueContainer::InverseBool()
+{
+	auto isBool = type == ValueType::BOOL;
+	assert(isBool);
+	auto& v = std::get<bool>(as);
+	v = !v;
+}
 void ValueContainer::Negate()
 {
 	auto isInt = type == ValueType::INT;
