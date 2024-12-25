@@ -234,6 +234,11 @@ int CFG::NewName(const std::string& name, Block* b)
 	variableStack[name].push({ version ,b });
 	return version;
 }
+bool CompareDepth(const Operand&  lhs, const Operand& rhs) {
+	return lhs.depth < rhs.depth; 
+}
+//std::vector<Operand> var;
+std::vector<Operand > var{};
 // updates version, uses tables indicies
 void CFG::Rename(Block* b)
 {
@@ -258,6 +263,26 @@ void CFG::Rename(Block* b)
 
 		if (instr.instrType == TokenType::BLOCK)
 		{
+
+			if (i + 1 < b->instructions.size() && 
+				(b->instructions[i + 1].instrType == TokenType::CONTINUE ||
+				b->instructions[i + 1].instrType == TokenType::BREAK))
+			{
+				continue;
+			}
+
+			auto pops = instr.operRight.value.As<int>();
+			assert(pops <= var.size());
+			auto scopeDepth = instr.operRight.depth;
+			for (int j = 0; j < pops; j++)
+			{
+
+				while (var.size() > 0 && var.back().depth == scopeDepth)
+				{
+					variableStack[var.back().value.AsString()].pop();
+					var.pop_back();
+				}
+			}
 			continue;
 		}
 		//auto offset = 0;
@@ -284,10 +309,23 @@ void CFG::Rename(Block* b)
 			}
 		}
 		
-		// versioning of temporary varoables is not handled by stack
+		// versioning of temporary variables is not handled by stack
 		if (!instr.result.IsTemp())
 		{
 			instr.result.version = NewName(instr.result.value.AsString(),b);
+			if (instr.result.depth > 0)
+			{
+				auto insertIndex = var.size();
+				for (int j = 0;j < var.size(); j++)
+				{
+					if (instr.result.depth <= var[j].depth)
+					{
+						insertIndex = j;
+						break;
+					}
+				}
+				var.insert(var.begin() + insertIndex, instr.result);
+			}
 		}
 		if (instr.instrType != TokenType::PRINT)
 		{
@@ -359,10 +397,11 @@ void CFG::Rename(Block* b)
 				var.version = variableStack[name].top().first;
 				var.value = name;
 				auto defBlock = variableStack[name].top().second;
-				auto parent = b == defBlock ? b : *std::find(b->parents.begin(), b->parents.end(), defBlock);
-				if (parent != b)
+				//auto parent = b == defBlock ? b : *std::find(b->parents.begin(), b->parents.end(), defBlock);
+				if (b != defBlock)
 				{
-					phi.targets.push_back(parent);
+					//phi.targets.push_back(parent);
+					phi.targets.push_back(b);
 				}
 				else
 				{
@@ -382,7 +421,7 @@ void CFG::Rename(Block* b)
 		if (it->result.IsVariable())
 		{
 			auto varName = it->result.value.AsString();
-			variableStack[varName].pop();
+			//variableStack[varName].pop();
 		}
 	}
 
@@ -525,7 +564,7 @@ void CFG::InsertPhi()
 	}
 	// renaming stage
 	Rename(startBlock);
-
+	var.clear();
 }
 void MarkInstruction(Instruction& instr, Block* b)
 {

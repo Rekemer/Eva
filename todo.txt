@@ -74,3 +74,11 @@ check compiler errors on return from functions
 add init
 arg1, arg2, arg3  := 2 ,2, 2, 
 add support for 0..(2+2)
+
+fix wrong comment not being recognised as error
+
+
+Test: Reassignments and Shadowing with Floats
+k := 20.0;
+
+catch division by 0 or throw errors

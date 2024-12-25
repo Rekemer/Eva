@@ -1390,6 +1390,88 @@ TEST_CASE("constant folding")
 		auto isPass = CheckVariable<bool>("check", true, ValueType::BOOL, vm);
 		CHECK(isPass);
 	}
+#if CONSTANT_PROP
+	SUBCASE("constant propagation")
+	{
+		auto testCode = R"(
+				// Test: Basic Constant Folding with Integers and Floats
+				x := 3 + 2.5 * 4; // Should fold to 13.0
+				y := (5 + 3.5) * (2.0 - 1); // Should fold to 8.5
+				z := x * y + 10.0 / 2; // Should fold to 115.5
+				//
+				//// Test: Float Arithmetic
+				a := 10.0;
+				b := 5.5 + 2.2 * 3.0 - 1.1; // Should fold to 11.0
+				c := 2.0 * (a + b) / 4.0; // Should fold to 10.5
+				
+				// Test: Propagation with Mixed Integers and Floats
+				d := 10;
+				e := d + 5.5; // Should propagate d = 10, fold e = 15.5
+				
+				// Test: Control Flow with Floats
+				f := 5.5;
+				g := 0;
+				if (f > 5.0) {
+				    g = f + 1.0; // g = 6.5
+				} else {
+				    g = f - 1.0; // Dead code
+				}
+				
+				// Test: Loops with Float Arithmetic
+				ha := 0.0;
+				for i := 0; i < 5; i++; {
+				    h := ha + i * 0.5; // Should fold to 5.0
+				}
+				
+				////// Test: Nested and Complex Float Expressions
+				j := (1.5 + 2.0 * 3.0 - 4.0 / 2.0) * (5.0 + 1.5); // Should fold to 35.75
+				
+				//Test: Reassignments and Shadowing with Floats
+				k := 20.0;
+				k = k + 10.0; // Should propagate k = 30.0
+				{
+				    k := 5.0; // Inner scope shadowing
+				    l := k * 2.0; // l = 10.0
+				}
+				m := k + 10.0; // Should fold to 40.0 in the outer scope
+				
+				// Test: Edge Cases with Floats
+				n := 0.0 / 1.0; // Valid, should fold to 0.0
+				//o := 1.0 / 0.0; // Should produce a warning or error
+				p := 5.0 - 5.0; // Should fold to 0.0
+				
+				// Test: Redundant Float Expressions
+				q := 3.5 + 2.5; // q = 6.0
+				r := 3.5 + 2.5; // r should reuse the constant result of q
+)";
+
+		auto [res, vm] = Compile(testCode);
+
+		// Assertions
+		bool allPass = true;
+		allPass &= CheckVariable<float>("x", 13.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("y", 8.5, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("z", 115.5, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("a", 10.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("b", 11.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("c", 10.5, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<int>("d", 10, ValueType::INT, vm);
+		allPass &= CheckVariable<float>("e", 15.5, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("f", 5.5, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<int>("g", 6, ValueType::INT, vm);
+		//allPass &= CheckVariable<float>("ha", 5.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("j", 35.75, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("k", 30.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("m", 40.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("n", 0.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("p", 0.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("q", 6.0, ValueType::FLOAT, vm);
+		allPass &= CheckVariable<float>("r", 6.0, ValueType::FLOAT, vm);
+
+		CHECK(allPass);
+
+	}
+#endif
 }
 
 
