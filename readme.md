@@ -5,6 +5,7 @@ The main purpose of the language is to learn more about how to build them.
 
 ### Features
 - **Constant Folding**: If possible, calculate constant values at compile time
+- **Dead Variable Elmination**: Remove unused variables
 - **Constant Propagation**: If variable is deduced to be constant, replace all variable usage as constant
 - **SSA (Static Single Assignment)**: Represent variables with a single assignment each, using phi-nodes to handle merges at control flow joins
 - **Control Flow Graph (CFG)**: Represent program execution paths as a graph
