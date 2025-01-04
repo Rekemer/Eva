@@ -859,6 +859,19 @@ void Print(const Expression* tree, int level) {
 		StartFolding(cond);
 		StartFolding(scope);
 	}
+	else if (node->type == TokenType::LEFT_PAREN)
+	{
+		auto call = static_cast<Call*>(node);
+		for (auto& arg : call->args)
+		{
+			auto node = FoldConstants(arg.get());
+			if (node != arg.get())
+			{
+				arg = std::unique_ptr<Node>(node);
+			}
+		}
+		//return call;
+	}
 	else
 	 {
 		 auto expr = node->AsMut<Expression>();

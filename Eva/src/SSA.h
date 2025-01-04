@@ -262,6 +262,9 @@ public:
 	std::unordered_map<std::string, CFGFunction> functionCFG;
 	std::string currentFunc = "global";
 private:
+	std::unordered_map<std::string, bool> isFuncCritical;
+	std::stack<bool> parseFunc;
+	std::stack<bool> isReturn;
 	// int is a version
 	std::unordered_map<std::string, int> variableCounterGlobal;
 	std::unordered_map<std::string, int> variableCounterLocal;
@@ -273,7 +276,12 @@ private:
 	std::unordered_map < std::pair<Block*, std::string>, std::vector<int >, pair_hash_block>globalUses;
 
 	bool writeToVariable = false;
-
+	
+	// we can remove a variable 
+	// that stores return variable of a critical fucntion
+	// and yet the variable is not used anywhere, hence variable is removed
+	// a headache is that we don't know how to pop temp value from stack
+	bool isVariableCritical = false;
 	std::stack<int> forDepth;
 	int tempVersion = 0;
 	std::unordered_map<std::string, Block > graph;

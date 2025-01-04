@@ -272,6 +272,8 @@ void CFG::Rename(Block* b)
 			}
 
 			auto pops = instr.operRight.value.As<int>();
+			// we clear return variable that is not used by anyone
+			if (instr.operRight.version == IS_TEMP) continue;
 			assert(pops <= var.size());
 			auto scopeDepth = instr.operRight.depth;
 			for (int j = 0; j < pops; j++)
@@ -716,6 +718,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 		for (auto f : funcCalls)
 		{
 			Mark(f->argBlock, workList);
+			MarkInstruction(*f, b);
 		}
 		for (auto child : b->blocks)
 		{
@@ -1788,7 +1791,6 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	auto resName = left->value.AsString();
 	writeToVariable = true;
 	auto resOp = InitVariable(resName, left->depth);
-	writeToVariable = false;
 	Operand rightOp{};
 	if (expr->right != nullptr)
 	{
@@ -1805,10 +1807,12 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 			}
 		}
 	}
-
+	writeToVariable = false;
 	auto instruction = Instruction{ type,{},rightOp,resOp };
-	if (resOp.depth == 0)
+	
+	if (resOp.depth == 0 || isVariableCritical)
 	{
+		isVariableCritical = false;
 		MakeCritical(instruction);
 	}
 	instruction.returnType = rightOp.type;
@@ -2130,6 +2134,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		funcBlock->markAll = true;
 		auto bodyName = "[" + func->name + "_body" + "]";
 		auto bodyBlock = CreateBlock(currentFunc, bodyName,{ funcBlock });
+		
 		funcBlock->blocks.push_back(bodyBlock);
 		currentBlock->blocks.push_back(funcBlock);
 		currentBlock->blocks.push_back(bodyBlock);
@@ -2147,7 +2152,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 			ConvertStatementAST(arg.get());
 		}
 		currentBlock = bodyBlock;
+		parseFunc.push(true);
 		ConvertStatementAST(func->body.get());
+		parseFunc.pop();
 		//currentScope = prevScope;
 		currentFunc = prevFunc;
 		currentBlock = functionCFG.at(currentFunc).current;
@@ -2309,6 +2316,10 @@ void CFG::ConvertStatementAST(const Node* tree)
 		auto value = ConvertExpressionAST(expr->left.get());
 		Instruction instr{ type,{},value, CreateTemp()};
 		MakeCritical(instr);
+		if (parseFunc.size() > 0)
+		{
+			isFuncCritical[currentFunc] = true;
+		}
 		currentBlock->instructions.push_back(instr);
 		break;
 	}
@@ -2323,7 +2334,9 @@ void CFG::ConvertStatementAST(const Node* tree)
 			total += tmp->currentPopAmount;
 			tmp = tmp->prevScope;
 		}
+		isReturn.push(true);
 		auto value = ConvertExpressionAST(expr->left.get());
+		isReturn.pop();
 		Instruction instr{ type,Operand{ValueContainer{total},false,IS_TEMP},value, CreateTemp() };
 		MakeCritical(instr);
 		currentBlock->instructions.push_back(instr);
@@ -2423,8 +2436,18 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		std::vector<Operand> args;
 		args.reserve(call->args.size());
 		auto res = CreateTemp();
+		
 		Operand  funcNameOp{ {call->name},false,2 };
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
+		// funciton has critical operations we should not remove a call
+		if (isFuncCritical.find(call->name) != isFuncCritical.end())
+		{
+			funcCall.isCritical = true;
+			if (writeToVariable)
+			{
+				isVariableCritical = true;
+			}
+		}
 		static int counter = 0;
 		auto name = std::format("args_{}", counter++);
 		funcCall.argBlock = &graph[name];
@@ -2433,8 +2456,8 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		funcCall.argBlock->markAll = true;
 		GiveType(funcCall, res, vm->GetGlobalType(call->name));
 		currentBlock->instructions.push_back(funcCall);
-		auto funcCallIndex = currentBlock->instructions.size() - 1;
 		auto prevBlock = currentBlock;
+		auto funcCallIndex = prevBlock->instructions.size() - 1;
 		currentBlock = funcCall.argBlock;
 		
 		
@@ -2456,6 +2479,15 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		}
 		getAsParam = false;
 		prevBlock->instructions[funcCallIndex].operLeft = Operand{ ValueContainer{(int)call->args.size()},true,2 };
+		if (!writeToVariable && !(isReturn.size() > 0) && parseFunc.size() > 0)
+		{
+			Instruction instr{ TokenType::BLOCK,{}, Operand{1,true,IS_TEMP},{} };
+			MakeCritical(instr);
+			//prevBlock->instructions.begin() + funcCallIndex
+			prevBlock->instructions.push_back( instr);
+
+		}
+		
 		//auto callInstr = Instruction{ TokenType::CALL ,{},funcNameOp,{} };
 		//callInstr.variables = args;
 		//GiveType(callInstr, res, vm->GetGlobalType(call->name));

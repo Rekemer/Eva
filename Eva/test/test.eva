@@ -1,4 +1,4 @@
-1/2 == 1/2
+//1/2 == 1/2
 
 //a:=0;
 //					for i:= 0..5
@@ -231,3 +231,36 @@
 //	sd5:="sd";
 //}
 //Print a;
+
+//fun lol( a : int) : int
+//{
+//	Print "Lol";
+//	Print a;
+//	return 2;
+//}
+//lol(2+2);
+//
+//fun main() : int 
+//{
+//	Print "main";
+//	//a:= lol(2*3 - 1);
+//	lol(2*3 - 1);
+//	//Print a;
+//	return 0;
+//}
+
+fun mult (a : int, b: int) : int
+{
+	return a*b;
+}
+fun foo( a: int, b : int ) : int 
+{ 
+	return mult(a,b) + mult(a,b);
+}
+a := 0;
+fun main() : int
+{
+	a = foo(2,2);
+	Print a;
+	return 0;
+}
