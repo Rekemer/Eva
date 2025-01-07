@@ -82,3 +82,18 @@ Test: Reassignments and Shadowing with Floats
 k := 20.0;
 
 catch division by 0 or throw errors
+
+
+
+A compiler creates binary file with bytecode and constant pool, 
+in addition it creates cpp/h files that include all c functions that will be part of dll 
+c functions will be wrapped by functions with agreed signature, so that virtual machine
+knows what to cast to a pointer once pointer to function is loaded from dll/plugin
+
+A plugin will be dll that includes all c functions a compiled code uses
+
+We could include the found functions to virtual machine itself, but we will need to rebuild virtual machine every time
+
+A plugin will remove a need to rebuild virtual machine every time, once compiler has compiled we can use old virtual machine, since it will rely on new built DLL. 
+
+
