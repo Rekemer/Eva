@@ -1,5 +1,6 @@
 #pragma once
-enum class InCode 
+#include "Bytecode.h"
+enum class InCode  : Bytecode
 {
 	CONST_VALUE,
 	TRUE,

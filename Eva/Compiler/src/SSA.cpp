@@ -1,7 +1,8 @@
 #include "SSA.h"
 #include "AST.h"
 #include "Nodes.h"
-#include "VirtualMachine.h"
+#include "Compiler.h"
+#include "Function.h"
 #include "Tokens.h"
 #include <cassert>
 #include <unordered_set>
@@ -71,7 +72,7 @@ bool CFG::IsStatement(const Node* node)
 	{
 		// we need to check whether is returns any value
 		//auto call = node->As<Call>();
-		//auto type = vm->GetGlobalType(call->name);
+		//auto type = compiler->GetGlobalType(call->name);
 		//if (type == ValueType::NIL) 
 		//{
 			return false;
@@ -251,7 +252,7 @@ void CFG::Rename(Block* b)
 		AddDef(phi.result.depth, phi.result.value.AsString(), index,b);
 	}
 
-	auto& types = vm->GetGlobalsType();
+	auto& types = compiler->GetGlobalsType();
 	// update each operation
 	auto index = 0;
 	for (int i = 0; i <  b->instructions.size(); i++)
@@ -1764,7 +1765,7 @@ void CFG::InitGlobal(Operand& op,const std::string& name)
 		localUses[name].push_back(currentBlock);
 	}
 	op.originalName = name;
-	op.type = vm->GetGlobalType(name);
+	op.type = compiler->GetGlobalType(name);
 	op.depth = 0;
 }
 Operand CFG::InitVariable(const std::string& name, int depth)
@@ -2454,14 +2455,14 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		funcCall.argBlock->name = name;
 		funcCall.argBlock->parents = {currentBlock};
 		funcCall.argBlock->markAll = true;
-		GiveType(funcCall, res, vm->GetGlobalType(call->name));
+		GiveType(funcCall, res, compiler->GetGlobalType(call->name));
 		currentBlock->instructions.push_back(funcCall);
 		auto prevBlock = currentBlock;
 		auto funcCallIndex = prevBlock->instructions.size() - 1;
 		currentBlock = funcCall.argBlock;
 		
 		
-		auto funcEntry = vm->GetGlobals().Get(call->name);
+		auto funcEntry = compiler->GetGlobals().Get(call->name);
 		auto funcValue = funcEntry->value.AsFunc();
 		getAsParam = true;
 		for (auto i = 0; i < call->args.size(); i++)
@@ -2490,7 +2491,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		
 		//auto callInstr = Instruction{ TokenType::CALL ,{},funcNameOp,{} };
 		//callInstr.variables = args;
-		//GiveType(callInstr, res, vm->GetGlobalType(call->name));
+		//GiveType(callInstr, res, compiler->GetGlobalType(call->name));
 		//currentBlock->instructions.push_back(callInstr);
 		currentBlock = prevBlock;
 		return res;

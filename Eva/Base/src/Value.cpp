@@ -3,7 +3,7 @@
 #include "Object.h"
 #include <string>
 #include "Function.h"
-#include "VirtualMachine.h"
+
 
 const char* ValueToStr(ValueType valueType) {
 switch (valueType)

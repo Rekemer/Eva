@@ -31,9 +31,9 @@ public:
 	}
 	AST() = default;
 	void Build(Iterator& firstToken);
-	void TypeCheck(VirtualMachine& vm);
+	class Compiler* compiler;
+	void TypeCheck();
 	const Node* GetTree()const  { return tree.get(); }
-	class VirtualMachine* vm;
 	bool IsPanic() { return m_Panic; }
 	void Fold();
 private:
@@ -41,27 +41,28 @@ private:
 	// Helper functions for different node types
 	TokenType TypeCheckEqual(Node* expr, TokenType to, TokenType from);
 
-	TokenType TypeCheckIfStatement(Node* node, VirtualMachine& vm);
+	TokenType TypeCheckIfStatement(Node* node);
 
-	TokenType TypeCheckFunctionCall(Node* node, VirtualMachine& vm);
+	TokenType TypeCheckFunctionCall(Node* node);
 
-	TokenType TypeCheckReturnStatement(Node* node, VirtualMachine& vm);
+	TokenType TypeCheckReturnStatement(Node* node);
 
-	TokenType TypeCheckFunctionDefinition(Node* node, VirtualMachine& vm);
+	TokenType TypeCheckFunctionDefinition(Node* node);
 
-	TokenType TypeCheckBlock(Node* node, VirtualMachine& vm);
+	TokenType TypeCheckBlock(Node* node);
 
-	TokenType TypeCheckForLoop(Node* node, VirtualMachine& vm);
+	TokenType TypeCheckForLoop(Node* node);
 
-	TokenType TypeCheckExpression(Node* node, VirtualMachine& vm);
+	TokenType TypeCheckExpression(Node* node);
 
 	TokenType TypeCheckBinaryOperation(Expression* expr, TokenType leftType, TokenType rightType);
 
 	TokenType TypeCheckUnaryOperation(Expression* expr, TokenType operandType);
 
-	TokenType TypeCheckIdentifier(Expression* expr, VirtualMachine& vm);
-	
-	TokenType TypeCheckVariableDeclaration(Expression* expr, TokenType leftType, TokenType rightType, VirtualMachine& vm);
+	TokenType TypeCheckIdentifier(Expression* expr);
+
+	TokenType TypeCheckVariableDeclaration(Expression* expr, TokenType leftType, TokenType rightType);
+
 	
 	void UpdateScope(int stackOffset, Scope* prevScope, Scope* newScope);
 	void PartialFold(Node* leftOperandSibling, Node* rightOperandSibling,
@@ -93,7 +94,7 @@ private:
 
 	void ErrorTypeCheck(int line, const std::string& str);
 
-	TokenType TypeCheck(Node* expr, VirtualMachine& vm);
+	TokenType TypeCheck(Node* expr);
 	std::unique_ptr<Node> UnaryOpPrefix(Iterator& currentToken);
 	std::unique_ptr<Node> UnaryOpPostfix(Iterator& currentToken);
 	std::unique_ptr<Node> Value(Iterator& currentToken);
@@ -121,8 +122,7 @@ private:
 		HashTable& globalTypes,
 		Expression* node,
 		int offset);
-	void DeclareLocal(Iterator& currentToken,
-		VirtualMachine* vm, Expression* node,ValueType type,int offset);
+	void DeclareLocal(Iterator& currentToken, Expression* node,ValueType type,int offset);
 
 	void BindValue(Iterator& currentToken, Node* variable);
 

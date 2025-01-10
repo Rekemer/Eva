@@ -1,7 +1,6 @@
 #include"Lexer.h"
 #include <iostream>
 #include <string>
-#include"VirtualMachine.h"
 #include <cassert>
 
 
@@ -210,7 +209,7 @@ void Lexer::Eat()
 	currentSymbol++;
 }
 
-void Lexer::ParseString(VirtualMachine& vm)
+void Lexer::ParseString()
 {
 	EatWhiteSpace();
 	if (Peek() == '"')
@@ -527,7 +526,7 @@ void Lexer::ParseOperator()
 
 
 // a variable, a function and keywords like print and if
-void Lexer::ParseDeclaration(VirtualMachine& vm)
+void Lexer::ParseDeclaration()
 {
 	EatWhiteSpace();
 	startSymbol = currentSymbol;
@@ -578,7 +577,7 @@ void Lexer::ParseStatement()
 	
 	
 }
-bool Lexer::Parse(const char* source, VirtualMachine& vm)
+bool Lexer::Parse(const char* source)
 {
 	startSymbol = source;
 	panic = false;
@@ -590,10 +589,10 @@ bool Lexer::Parse(const char* source, VirtualMachine& vm)
 		
 		startSymbol = currentSymbol;
 
-		ParseDeclaration(vm);
+		ParseDeclaration();
 		
  		//ParseStatement();
-		ParseString(vm);
+		ParseString();
 		ParseBool();
 		ParseNumber();
 		ParseOperator();

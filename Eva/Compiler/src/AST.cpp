@@ -3,8 +3,9 @@
 #include <cassert>
 #include <format>
 #include <algorithm>
-#include "VirtualMachine.h"
 #include "Value.h"
+#include "Function.h"
+#include "Compiler.h"
 #include "Tokens.h"
 #include "TokenConversion.h"
 
@@ -79,8 +80,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 node->depth = 0;
 	 currentToken += offset;
  }
- void AST::DeclareLocal(Iterator& currentToken,
-	 VirtualMachine* vm, Expression* node,ValueType type, int offset)
+ void AST::DeclareLocal(Iterator& currentToken, Expression* node,ValueType type, int offset)
  {
 	 auto str = currentToken->value.AsString();
 	 scopeDeclarations.top()++;
@@ -165,7 +165,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	else if (currentToken->type == TokenType::IDENTIFIER)
 	{	
 		auto str = currentToken->value.AsString();
-		auto& globalTable = vm->GetGlobals();
+		auto& globalTable = compiler->GetGlobals();
 		auto entry = globalTable.Get(str);
 		auto isGlobal = entry->IsInit();
 
@@ -442,8 +442,8 @@ void Print(const Expression* tree, int level) {
 	 currentToken++;
 	 Error(TokenType::LEFT_PAREN,currentToken,"Function argument list must start with (");
 	 auto function = std::make_unique<FunctionNode>();
-	 auto& globalVariables = vm->GetGlobals();
-	 auto& globalTypes = vm->GetGlobalsType();
+	 auto& globalVariables = compiler->GetGlobals();
+	 auto& globalTypes = compiler->GetGlobalsType();
 	 auto funcValue = globalVariables.Add(name, LiteralToType(TokenType::FUN))
 		 ->value.AsFunc();
 	 function->name = name;
@@ -495,8 +495,8 @@ void Print(const Expression* tree, int level) {
  }
  std::unique_ptr<Node> AST::DeclareVariable(Iterator& currentToken)
  {
-	 auto& table = vm->GetGlobals();
-	 auto& globalsType = vm->GetGlobalsType(); 
+	 auto& table = compiler->GetGlobals();
+	 auto& globalsType = compiler->GetGlobalsType(); 
 
 	 auto str =currentToken->value.AsString();
 	 auto declaredType = (currentToken + 2)->type;
@@ -540,7 +540,7 @@ void Print(const Expression* tree, int level) {
 		 {
 			 if (isType)
 			 {
-				 DeclareLocal(currentToken, vm, node.get(), LiteralToType(type), 2);
+				 DeclareLocal(currentToken, node.get(), LiteralToType(type), 2);
 				 if (isEqualSign)
 				 {
 					 currentToken++;
@@ -549,7 +549,7 @@ void Print(const Expression* tree, int level) {
 			 }
 			 else
 			 {
-				 DeclareLocal(currentToken, vm, node.get(), ValueType::DEDUCE, 2);
+				 DeclareLocal(currentToken,  node.get(), ValueType::DEDUCE, 2);
 				 BindValue(currentToken,node.get());
 			 }
 			 return node;
@@ -946,7 +946,7 @@ void Print(const Expression* tree, int level) {
 	 
 	 auto isDeclarared = [&](auto name)
 	 {
-		auto isGlobalDeclared = vm->GetGlobals().IsExist(name);
+		auto isGlobalDeclared = compiler->GetGlobals().IsExist(name);
 		
 		bool isLocalDeclared = false;
 		if (currentScope != nullptr)
@@ -1332,12 +1332,12 @@ void AST::Build(Iterator& firstToken)
 	tree = ParseExpression(firstToken);
 }
 
-void AST::TypeCheck(VirtualMachine& vm)
+void AST::TypeCheck()
 {
-	TypeCheck(tree.get(), vm);
+	TypeCheck(tree.get());
 }
 
-TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheck(Node* node)
 {
 	if (!node) {
 		// Handle null node if necessary
@@ -1347,58 +1347,58 @@ TokenType AST::TypeCheck(Node* node, VirtualMachine& vm)
 	switch (node->type)
 	{
 	case TokenType::IF:
-		return TypeCheckIfStatement(node, vm);
+		return TypeCheckIfStatement(node);
 
 	case TokenType::LEFT_PAREN:
-		return TypeCheckFunctionCall(node, vm);
+		return TypeCheckFunctionCall(node);
 
 	case TokenType::RETURN:
-		return TypeCheckReturnStatement(node, vm);
+		return TypeCheckReturnStatement(node);
 
 	case TokenType::FUN:
-		return TypeCheckFunctionDefinition(node, vm);
+		return TypeCheckFunctionDefinition(node);
 
 	case TokenType::CONTINUE:
 	case TokenType::BREAK:
 		return node->type;
 
 	case TokenType::BLOCK:
-		return TypeCheckBlock(node, vm);
+		return TypeCheckBlock(node);
 
 	case TokenType::FOR:
-		return TypeCheckForLoop(node, vm);
+		return TypeCheckForLoop(node);
 
 	default:
-		return TypeCheckExpression(node, vm);
+		return TypeCheckExpression(node);
 	}
 }
 
 // Helper functions for different node types
 
-TokenType AST::TypeCheckIfStatement(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheckIfStatement(Node* node)
 {
 	auto expr = static_cast<Expression*>(node);
 	// Check condition
-	TypeCheck(expr->left.get(), vm);
+	TypeCheck(expr->left.get());
 
 	// Check 'then' branch
 	auto thenExpr = expr->right->As<Expression>()->right.get();
-	TypeCheck(thenExpr, vm);
+	TypeCheck(thenExpr);
 
 	// Check 'else' branch if it exists
 	auto elseExpr = expr->right->As<Expression>()->left.get();
 	if (elseExpr)
 	{
-		TypeCheck(elseExpr, vm);
+		TypeCheck(elseExpr);
 	}
 
 	return TokenType::END;
 }
 
-TokenType AST::TypeCheckFunctionCall(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheckFunctionCall(Node* node)
 {
 	auto call = static_cast<Call*>(node);
-	auto& globals = vm.GetGlobals();
+	auto& globals = compiler->GetGlobals();
 	auto funcEntry = globals.Get(call->name);
 	if (!funcEntry)
 	{
@@ -1416,7 +1416,7 @@ TokenType AST::TypeCheckFunctionCall(Node* node, VirtualMachine& vm)
 	for (size_t i = 0; i < call->args.size(); ++i)
 	{
 		auto& arg = call->args[i];
-		auto argType = LiteralToType(TypeCheck(arg.get(), vm));
+		auto argType = LiteralToType(TypeCheck(arg.get()));
 		auto paramType = funcValue->argTypes[i];
 
 		if (!IsCastable(paramType, argType))
@@ -1430,7 +1430,7 @@ TokenType AST::TypeCheckFunctionCall(Node* node, VirtualMachine& vm)
 	}
 
 	// Return the function's return type
-	auto funcTypeEntry = vm.GetGlobalsType().Get(call->name);
+	auto funcTypeEntry = compiler->GetGlobalsType().Get(call->name);
 	if (!funcTypeEntry || !funcTypeEntry->IsInit())
 	{
 		ErrorTypeCheck(call->line, "Function type information missing for '" + call->name + "'");
@@ -1440,10 +1440,10 @@ TokenType AST::TypeCheckFunctionCall(Node* node, VirtualMachine& vm)
 	return TypeToLiteral(funcTypeEntry->value.type);
 }
 
-TokenType AST::TypeCheckReturnStatement(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheckReturnStatement(Node* node)
 {
 	auto expr = static_cast<Expression*>(node);
-	auto retType = TypeCheck(expr->left.get(), vm);
+	auto retType = TypeCheck(expr->left.get());
 
 	if (retType == TokenType::NIL)
 	{
@@ -1453,10 +1453,10 @@ TokenType AST::TypeCheckReturnStatement(Node* node, VirtualMachine& vm)
 	return retType;
 }
 
-TokenType AST::TypeCheckFunctionDefinition(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheckFunctionDefinition(Node* node)
 {
 	auto funcNode = static_cast<FunctionNode*>(node);
-	auto funcTypeEntry = vm.GetGlobalsType().Get(funcNode->name);
+	auto funcTypeEntry = compiler->GetGlobalsType().Get(funcNode->name);
 
 	if (!funcTypeEntry || !funcTypeEntry->IsInit())
 	{
@@ -1464,7 +1464,7 @@ TokenType AST::TypeCheckFunctionDefinition(Node* node, VirtualMachine& vm)
 		return TokenType::NIL;
 	}
 
-	auto actualReturnType = TypeCheck(funcNode->body.get(), vm);
+	auto actualReturnType = TypeCheck(funcNode->body.get());
 	auto declaredReturnType = funcTypeEntry->value.type;
 
 	if (declaredReturnType != ValueType::NIL)
@@ -1490,7 +1490,7 @@ TokenType AST::TypeCheckFunctionDefinition(Node* node, VirtualMachine& vm)
 	return TokenType::NIL;
 }
 
-TokenType AST::TypeCheckBlock(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheckBlock(Node* node)
 {
 	auto block = static_cast<Scope*>(node);
 
@@ -1502,7 +1502,7 @@ TokenType AST::TypeCheckBlock(Node* node, VirtualMachine& vm)
 
 	for (auto& expr : block->expressions)
 	{
-		auto type = TypeCheck(expr.get(), vm);
+		auto type = TypeCheck(expr.get());
 		if (expr->type == TokenType::RETURN)
 		{
 			returnType = type;
@@ -1515,17 +1515,17 @@ TokenType AST::TypeCheckBlock(Node* node, VirtualMachine& vm)
 	return returnType;
 }
 
-TokenType AST::TypeCheckForLoop(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheckForLoop(Node* node)
 {
 	auto forNode = static_cast<For*>(node);
 
 	currentScopes.push_back(&forNode->initScope);
 	BeginBlock();
 
-	TypeCheck(forNode->init.get(), vm);
-	TypeCheck(forNode->condition.get(), vm);
-	TypeCheck(forNode->action.get(), vm);
-	TypeCheck(forNode->body.get(), vm);
+	TypeCheck(forNode->init.get());
+	TypeCheck(forNode->condition.get());
+	TypeCheck(forNode->action.get());
+	TypeCheck(forNode->body.get());
 
 	EndBlock();
 	currentScopes.pop_back();
@@ -1541,7 +1541,7 @@ TokenType AST::TypeCheckEqual(Node* expr, TokenType to, TokenType from)
 	}
 	return to;
 }
-TokenType AST::TypeCheckExpression(Node* node, VirtualMachine& vm)
+TokenType AST::TypeCheckExpression(Node* node)
 {
 	auto expr = static_cast<Expression*>(node);
 	TokenType leftType = TokenType::END;
@@ -1549,12 +1549,12 @@ TokenType AST::TypeCheckExpression(Node* node, VirtualMachine& vm)
 
 	if (expr->left)
 	{
-		leftType = TypeCheck(expr->left.get(), vm);
+		leftType = TypeCheck(expr->left.get());
 	}
 
 	if (expr->right)
 	{
-		rightType = TypeCheck(expr->right.get(), vm);
+		rightType = TypeCheck(expr->right.get());
 	}
 
 	switch (expr->type)
@@ -1587,10 +1587,10 @@ TokenType AST::TypeCheckExpression(Node* node, VirtualMachine& vm)
 	}
 
 	case TokenType::IDENTIFIER:
-		return TypeCheckIdentifier(expr, vm);
+		return TypeCheckIdentifier(expr);
 
 	case TokenType::DECLARE:
-		return TypeCheckVariableDeclaration(expr, leftType, rightType, vm);
+		return TypeCheckVariableDeclaration(expr, leftType, rightType);
 
 	case TokenType::BANG:
 	case TokenType::MINUS_MINUS:
@@ -1658,7 +1658,7 @@ TokenType AST::TypeCheckUnaryOperation(Expression* expr, TokenType operandType)
 	return operandType;
 }
 
-TokenType AST::TypeCheckIdentifier(Expression* expr, VirtualMachine& vm)
+TokenType AST::TypeCheckIdentifier(Expression* expr)
 {
 	Entry* entry = nullptr;
 
@@ -1685,7 +1685,7 @@ TokenType AST::TypeCheckIdentifier(Expression* expr, VirtualMachine& vm)
 	{
 		// Look up in global scope
 		auto name = expr->value.AsString();
-		entry = vm.GetGlobalsType().Get(name);
+		entry = compiler->GetGlobalsType().Get(name);
 		if (!entry || !entry->IsInit())
 		{
 			ErrorTypeCheck(expr->line, "Undefined global variable '" + name + "'");
@@ -1696,7 +1696,7 @@ TokenType AST::TypeCheckIdentifier(Expression* expr, VirtualMachine& vm)
 	return TypeToLiteral(entry->value.type);
 }
 
-TokenType AST::TypeCheckVariableDeclaration(Expression* expr, TokenType leftType, TokenType rightType, VirtualMachine& vm)
+TokenType AST::TypeCheckVariableDeclaration(Expression* expr, TokenType leftType, TokenType rightType)
 {
 	if (leftType != TokenType::DEDUCE && !IsCastable(LiteralToType(leftType), LiteralToType(rightType)))
 	{
@@ -1732,7 +1732,7 @@ TokenType AST::TypeCheckVariableDeclaration(Expression* expr, TokenType leftType
 		else
 		{
 			// Update type in global scope
-			auto entry = vm.GetGlobalsType().Get(varName);
+			auto entry = compiler->GetGlobalsType().Get(varName);
 			if (entry)
 			{
 				entry->value.UpdateType(inferredType);

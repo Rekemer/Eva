@@ -196,7 +196,7 @@ struct Node;
 struct Scope;
 struct Expression;
 class Tree;
-class VirtualMachine;
+class Compiler;
 // control flow graph
 class CFG
 {
@@ -205,7 +205,7 @@ public:
 	{
 		startBlock = currentBlock = CreateBlock(currentFunc, "[global_start]", {});
 	}
-	VirtualMachine* vm;
+	Compiler* compiler;
 	void BuildDominatorTree();
 	void ConvertAST(const Node* tree);
 	void TopSort();

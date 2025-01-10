@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Compiler">
+      <UniqueIdentifier>{40CAD6B7-2C97-31C3-55B0-1F6B41DC6651}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Compiler\src">
+      <UniqueIdentifier>{57A8CDFE-430B-5DA3-EC90-9559D8D22826}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{2DAB880B-99B4-887C-2230-9F7C8E38947C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\VirtualMachine.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Debug.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\VirtualMachine.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Debug.cpp" />
+    <ClCompile Include="src\Main.cpp" />
+  </ItemGroup>
+</Project>

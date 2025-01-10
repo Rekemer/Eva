@@ -91,8 +91,8 @@ private:
 	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
 	
 	std::vector<ValueContainer> vmStack;
-	std::vector<std::string> functionNames;
 	HashTable internalStrings;
+	std::vector<std::string> functionNames;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
 
@@ -101,7 +101,6 @@ private:
 	std::array<CallFrame, 64> callFrames;
 	int nextToCurrentCallFrame = 0;
 	bool m_Panic = false;
-	bool m_IsSameOrder = false;
 	// if we hit break or continue we should know where to jump
 	// we need stack because there can be loops in loops
 	std::stack<int> m_StartLoopIndexes;

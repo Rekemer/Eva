@@ -1,17 +1,12 @@
 ﻿#include "iostream"
-#include "vector"
-#include "Tokens.h"
-#include "AST.h"
-#include "VirtualMachine.h"
-#include "Lexer.h"
-#include "Compile.h"
-#include <stack>
+#include "Compiler.h"
 #include <fstream>
 #include <sstream>
 
 #define SCRIPT_PATH "test/"
 int main(int argc, const char* argv[])
 {
+	Compiler compiler;
 	if (argc == 1)
 	{
 		// repl mode
@@ -24,7 +19,7 @@ int main(int argc, const char* argv[])
 			{
 				break;
 			}
-			auto [res,vm]= Compile(line);
+			auto res =  compiler.Compile(line);
 			std::cout << "result: " << res << std::endl;
 		}
 	}
@@ -41,7 +36,8 @@ int main(int argc, const char* argv[])
 			sstream << scriptFile.rdbuf();
 			std::string contents = sstream.str();
 			
-			Compile(contents.data());
+			auto ret = compiler.Compile(contents.data());
+			return ret;
 		}
 		scriptFile.close();
 	}

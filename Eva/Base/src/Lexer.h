@@ -11,15 +11,15 @@ public:
 	{
 		tokens.reserve(100);
 	}
-	bool Parse(const char* source, VirtualMachine& vm);
+	bool Parse(const char* source);
 	 std::vector<Token>& GetTokens() { return tokens; };
 private:
 	void ParseOperator();
 	void ParseNumber();
 	void ParseAlpha();
-	void ParseString(VirtualMachine& vm);
+	void ParseString();
 	void ParseBool();
-	void ParseDeclaration(VirtualMachine& vm);
+	void ParseDeclaration();
 	void ParseStatement();
 	void Eat();
 	void EatWhiteSpace();
