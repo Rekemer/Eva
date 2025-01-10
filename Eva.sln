@@ -1,6 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{53E47842-3FC8-3998-A828-34EB942B241A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cereal", "Dependencies\Cereal\Cereal.vcxproj", "{918F8CAB-7D31-B781-66EC-CAD5522D3ED2}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Eva-Base", "Eva\Base\Eva-Base.vcxproj", "{293C628A-1509-BD95-3E22-AB3D2A4EF223}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Eva-Compiler", "Eva\Compiler\Eva-Compiler.vcxproj", "{89D6FA40-7539-8AE5-1EBF-C29B0A015668}"
@@ -16,6 +20,12 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{918F8CAB-7D31-B781-66EC-CAD5522D3ED2}.Debug|x64.ActiveCfg = Debug|x64
+		{918F8CAB-7D31-B781-66EC-CAD5522D3ED2}.Debug|x64.Build.0 = Debug|x64
+		{918F8CAB-7D31-B781-66EC-CAD5522D3ED2}.Dist|x64.ActiveCfg = Dist|x64
+		{918F8CAB-7D31-B781-66EC-CAD5522D3ED2}.Dist|x64.Build.0 = Dist|x64
+		{918F8CAB-7D31-B781-66EC-CAD5522D3ED2}.Release|x64.ActiveCfg = Release|x64
+		{918F8CAB-7D31-B781-66EC-CAD5522D3ED2}.Release|x64.Build.0 = Release|x64
 		{293C628A-1509-BD95-3E22-AB3D2A4EF223}.Debug|x64.ActiveCfg = Debug|x64
 		{293C628A-1509-BD95-3E22-AB3D2A4EF223}.Debug|x64.Build.0 = Debug|x64
 		{293C628A-1509-BD95-3E22-AB3D2A4EF223}.Dist|x64.ActiveCfg = Dist|x64
@@ -43,5 +53,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{918F8CAB-7D31-B781-66EC-CAD5522D3ED2} = {53E47842-3FC8-3998-A828-34EB942B241A}
 	EndGlobalSection
 EndGlobal

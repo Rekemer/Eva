@@ -1,0 +1,3 @@
+[submodule "Dependencies/Cereal"]
+	path = Dependencies/Cereal
+	url = https://github.com/Rekemer/cereal-premake
