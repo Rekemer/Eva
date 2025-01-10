@@ -6,8 +6,7 @@ project "Eva-Compiler"
     
     includedirs
     {
-       BASE_HEADER,
-       INTER_HEADER
+       BASE_HEADER
     }
 
     files
