@@ -144,9 +144,41 @@ void Lexer::EatType(TokenType type)
 	}
 	
 }
-void Lexer::EatComments()
+bool Lexer::IsNewLine(const char* symbol) 
 {
-	while ((*currentSymbol) != '\n' && (*currentSymbol) != '\0')
+	if (Peek() == '\0') return false;
+	if (Peek(1) == '\0') return false;
+	return Peek() == '/' && Peek(1) == 'n';
+}
+void Lexer::EatDoubleComments()
+{
+	auto isCommentEatable = [&]()
+		{
+			auto isStar = Peek() != '\0' && Peek() != '*';
+			auto isStar1 = Peek(1) != '\0' && Peek(1) != '/';
+			if (Peek() == '\0') return false;
+			if (Peek(1) == '\0') return false;
+			auto isComment = Peek() == '*' && Peek(1) == '/';
+
+			return (!isComment || IsNewLine(currentSymbol+1));
+		};
+	while (isCommentEatable())
+	{
+		if (IsNewLine(currentSymbol))
+		{
+			currentLine++;
+		}
+		currentSymbol++;
+	}
+	assert(Peek() != '\0' && Peek() == '*'
+		&& Peek(1) != '\0' && Peek(1) == '/');
+	if ((*currentSymbol) != '\0')
+		currentSymbol+=2;
+}
+
+void Lexer::EatOdinaryComments()
+{
+	while (Peek() != '\n' && Peek() != '\0')
 	{
 		currentSymbol++;
 	}
@@ -160,11 +192,17 @@ void Lexer::EatWhiteSpace()
 	while (isRunning)
 	{
 		bool isComment = (*currentSymbol) == '/' && (*(currentSymbol+1)) == '/';
+		bool isCommentDouble = (*currentSymbol) == '/' && (*(currentSymbol + 1)) == '*';
 		//std::cout << "--------------------------------------" << std::endl;
 		//std::cout << currentSymbol << std::endl;
 		if (isComment)
 		{
-			EatComments();
+			EatOdinaryComments();
+		}
+		else if (isCommentDouble)
+		{
+			currentSymbol += 2;
+			EatDoubleComments();
 		}
 		switch (*currentSymbol) {
 		case ' ':
@@ -181,10 +219,16 @@ void Lexer::EatWhiteSpace()
 		default:
 		{
 
-			bool isComment = (*currentSymbol) == '/' && (*(currentSymbol + 1)) == '/';
-			if (isComment)
+			bool isCommentOdinary = (*currentSymbol) == '/' && (*(currentSymbol + 1)) == '/';
+			bool isCommentDouble = (*currentSymbol) == '/' && (*(currentSymbol + 1)) == '*';
+			if (isCommentOdinary)
 			{
-				EatComments();
+				EatOdinaryComments();
+			}
+			else if (isCommentDouble)
+			{
+				currentSymbol += 2;
+				EatDoubleComments();
 			}
 			else
 			{

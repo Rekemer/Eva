@@ -993,7 +993,7 @@ int Compiler::Compile(const char* line)
 		std::ofstream os("./../../Intermediates/test.evc", std::ios::binary);
 		cereal::BinaryOutputArchive archive(os);
 #else
-		std::ofstream os("./../../Intermediates/test.json");
+		std::ofstream os("./../../Intermediates/test.json", std::ios::trunc);
 		cereal::JSONOutputArchive archive(os);
 #endif
 		archive(*globalFunc);

@@ -12,38 +12,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Eva\src\AST.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\Compile.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\Debug.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\HashTable.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\Lexer.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\Object.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\SSA.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\Tokens.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\Value.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\Eva\src\VirtualMachine.cpp">
-      <Filter>Eva\src</Filter>
-    </ClCompile>
     <ClCompile Include="src\Tests.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="src\Main.cpp" />
   </ItemGroup>
 </Project>

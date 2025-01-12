@@ -1,6 +1,41 @@
-Print "Hello";
+//Print "Hello";
 
-//1/2 == 1/2
+/* 
+ *sd**sd**
+*/
+a: int = 102;
+					if a == 101
+					{
+						a++;
+						/* 
+a
+*/
+					}
+					elif a == 102 
+					{
+					/* 
+Lalala
+*/
+						a+=5;
+					}
+					/* 
+Lala
+*/
+					elif a == 103 {
+						a +=10;		
+					} 
+					/* 
+					Print "Hello";Print "Hello";
+*/
+					else
+					{
+						a +=20;		
+					} 
+					/* 
+					Print "Hello"
+*/
+
+Print a;
 
 //a:=0;
 //					for i:= 0..5

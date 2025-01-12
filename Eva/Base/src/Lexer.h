@@ -1,6 +1,7 @@
 #pragma once
 #include"Tokens.h"
 #include <vector>
+#include <iterator>
 class VirtualMachine;
 class String;
 // lexer - produces tokens
@@ -9,11 +10,13 @@ class Lexer
 public:
 	Lexer()
 	{
+
 		tokens.reserve(100);
 	}
 	bool Parse(const char* source);
 	 std::vector<Token>& GetTokens() { return tokens; };
 private:
+	bool IsNewLine(const char* symbol);
 	void ParseOperator();
 	void ParseNumber();
 	void ParseAlpha();
@@ -23,7 +26,8 @@ private:
 	void ParseStatement();
 	void Eat();
 	void EatWhiteSpace();
-	void EatComments();
+	void EatOdinaryComments();
+	void EatDoubleComments();
 	// eats statement and declaration tokens
 	void EatType(TokenType type);
 
@@ -37,6 +41,7 @@ private:
 	bool panic;
 	Token* currentToken;
 	const char* startSymbol = nullptr;
+	const char* endFile = nullptr;
 	const char* currentSymbol = nullptr;
 	size_t currentLine = 1;
 };

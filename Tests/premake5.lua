@@ -4,16 +4,15 @@ project "Tests"
     targetdir ("%{wks.location}/bin/%{prj.name}/"..outputdir)
     objdir ("%{wks.location}/bin-int/%{prj.name}/"..outputdir)
     
+    includedirs
+    {   
+        BASE_HEADER,
+    }
 
     files
     {
-        "../Eva/src/**.cpp",
         "%{prj.location}/src/**.cpp"
     }
-    includedirs
-    {   
-        "../Eva/src",
-    }
-    removefiles { "../Eva/src/String.cpp", "../Eva/src/Main.cpp" }
+    
 
     

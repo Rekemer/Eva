@@ -20,6 +20,10 @@ public:
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	ValueType GetGlobalType(const std::string& str);
+
+
+	std::unordered_map<std::string, ValueContainer> Preprocess(const char* source);
+
 private:
 
 

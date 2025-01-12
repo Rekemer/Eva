@@ -17,7 +17,7 @@ int main(int argc, const char* argv[])
 {
 	//auto binPath= std::string{ argv[1] };
 #if BIN
-	std::ifstream os("./../../Intermediates/test.evc");
+	std::ifstream os("./../../Intermediates/test.evc", std::ios::binary);
 	cereal::BinaryInputArchive iarchive{os};
 #else
 	std::ifstream os("./../../Intermediates/test.json");

@@ -2,16 +2,60 @@
     "value0": {
         "constPool": [
             {
+                "v.type": 1,
+                "v.as": {
+                    "index": 2,
+                    "data": 100
+                }
+            },
+            {
                 "v.type": 3,
                 "v.as": {
                     "index": 3,
-                    "data": "Hello"
+                    "data": "a"
+                }
+            },
+            {
+                "v.type": 3,
+                "v.as": {
+                    "index": 3,
+                    "data": "a"
+                }
+            },
+            {
+                "v.type": 3,
+                "v.as": {
+                    "index": 3,
+                    "data": "a"
+                }
+            },
+            {
+                "v.type": 3,
+                "v.as": {
+                    "index": 3,
+                    "data": "a"
                 }
             }
         ],
         "bytecode": [
             0,
             0,
+            36,
+            1,
+            1,
+            43,
+            9,
+            44,
+            37,
+            2,
+            26,
+            36,
+            3,
+            40,
+            2,
+            44,
+            37,
+            4,
             35
         ]
     }

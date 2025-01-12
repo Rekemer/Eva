@@ -119,7 +119,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Serialize.h" />
     <ClInclude Include="src\Bytecode.h" />
     <ClInclude Include="src\Function.h" />
     <ClInclude Include="src\HashTable.h" />
@@ -129,6 +128,7 @@
     <ClInclude Include="src\Nodes.h" />
     <ClInclude Include="src\Object.h" />
     <ClInclude Include="src\Options.h" />
+    <ClInclude Include="src\Serialize.h" />
     <ClInclude Include="src\TokenConversion.h" />
     <ClInclude Include="src\Tokens.h" />
     <ClInclude Include="src\Value.h" />

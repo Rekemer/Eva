@@ -13,3 +13,5 @@
 //		// }
 //	}
 //}
+
+we need to rewrite lexer so it uses iterators, not cringe c raw pointers
