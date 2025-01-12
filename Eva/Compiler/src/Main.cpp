@@ -2,8 +2,6 @@
 #include "Compiler.h"
 #include <fstream>
 #include <sstream>
-
-#define SCRIPT_PATH "test/"
 int main(int argc, const char* argv[])
 {
 	Compiler compiler;
@@ -27,7 +25,7 @@ int main(int argc, const char* argv[])
 	{
 		
 		// parse file
-		auto scirptPath = std::string{ SCRIPT_PATH } + std::string{ argv[1] };
+		auto scirptPath = std::string{ argv[1] };
 		std::ifstream scriptFile(scirptPath.data());
 
 		if (scriptFile.is_open())
@@ -38,6 +36,10 @@ int main(int argc, const char* argv[])
 			
 			auto ret = compiler.Compile(contents.data());
 			return ret;
+		}
+		else
+		{
+			std::cout << "test.eva is not opened\n";
 		}
 		scriptFile.close();
 	}

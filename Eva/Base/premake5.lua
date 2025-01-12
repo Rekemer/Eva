@@ -3,6 +3,10 @@ project "Eva-Base"
     language "C++"
     targetdir ("%{wks.location}/bin/%{prj.name}/"..outputdir)
     objdir ("%{wks.location}/bin-int/%{prj.name}/"..outputdir)
+    includedirs
+    {
+       CEREAL_HEADER
+    }
     files
     {
         "%{prj.location}/src/**.cpp",

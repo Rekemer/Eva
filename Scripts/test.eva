@@ -1,3 +1,5 @@
+Print "Hello";
+
 //1/2 == 1/2
 
 //a:=0;
@@ -249,18 +251,18 @@
 //	return 0;
 //}
 
-fun mult (a : int, b: int) : int
-{
-	return a*b;
-}
-fun foo( a: int, b : int ) : int 
-{ 
-	return mult(a,b) + mult(a,b);
-}
-a := 0;
-fun main() : int
-{
-	a = foo(2,2);
-	Print a;
-	return 0;
-}
+//fun mult (a : int, b: int) : int
+//{
+//	return a*b;
+//}
+//fun foo( a: int, b : int ) : int 
+//{ 
+//	return mult(a,b) + mult(a,b);
+//}
+//a := 0;
+//fun main() : int
+//{
+//	a = foo(2,2);
+//	Print a;
+//	return 0;
+//}

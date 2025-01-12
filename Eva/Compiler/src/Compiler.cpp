@@ -6,6 +6,11 @@
 #include "InCode.h"
 #include "SSA.h"
 #include "Options.h"
+#include "Serialize.h"
+
+
+
+#include <fstream>
 
 #define CAST_INT_FLOAT(type1,type2)\
 if (type1== ValueType::INT && type2== ValueType::FLOAT)\
@@ -897,6 +902,7 @@ void Compiler::GenerateBytecodeCFG(const CFG& cfg)
 	GenerateCFG(cfg.functionCFG.at(cfg.currentFunc).start);
 }
 
+
 int Compiler::Compile(const char* line)
 {
 	Lexer parser;
@@ -974,6 +980,25 @@ int Compiler::Compile(const char* line)
 		vm.GenerateBytecodeAST(tree.GetTree());
 	}
 #endif
+
+
+	/*
+	Archives are only guaranteed to have finished flushing their contents when they are destroyed,
+	so some archives (e.g. XML) will not output anything until their destruction
+	*/
+
+	{
+#if BIN
+
+		std::ofstream os("./../../Intermediates/test.evc", std::ios::binary);
+		cereal::BinaryOutputArchive archive(os);
+#else
+		std::ofstream os("./../../Intermediates/test.json");
+		cereal::JSONOutputArchive archive(os);
+#endif
+		archive(*globalFunc);
+	}
+
 	return 0;
 //	vm.Execute();
 //#if DEBUG_STACK

@@ -82,13 +82,15 @@ private:
 	// returns index to be patchd for a jump if loop is finished
 	int GenerateLoopCondition(const Node* node);
 	bool AreEqual(const ValueContainer& a, const ValueContainer& b);
+
+public:
+	// to execute global code
+	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
 private:
 	// function we build or execute
 	Func* currentFunc = nullptr;
 	// entry point
 	Func* mainFunc = nullptr;
-	// to execute global code
-	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
 	
 	std::vector<ValueContainer> vmStack;
 	HashTable internalStrings;

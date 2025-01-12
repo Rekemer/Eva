@@ -6,7 +6,8 @@ project "Eva-Compiler"
     
     includedirs
     {
-       BASE_HEADER
+       BASE_HEADER,
+       CEREAL_HEADER
     }
 
     files
@@ -15,7 +16,6 @@ project "Eva-Compiler"
     }
     
     links {"Eva-Base"}
-
     filter "configurations:Debug"
         defines { "DEBUG" }
         symbols "On"

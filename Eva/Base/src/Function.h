@@ -14,4 +14,12 @@ struct Func final: public Object
 	std::string name;
 	std::vector<Bytecode> opCode;
 	std::vector<ValueContainer> constants;
+	//template<class Archive>
+	//void serialize(Archive& archive)
+	//{
+	//	// when we serialize an edge, we'll defer serializing the associated node
+	//	// to avoid extensive recursive serialization
+	//	auto& constPool = constants;
+	//	auto& bytecode = opCode;
+	//}
 };

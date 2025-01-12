@@ -18,6 +18,7 @@ workspace "Eva"
 	}
 
 	BASE_HEADER = "%{wks.location}/Eva/Base/src"
+	CEREAL_HEADER = "%{wks.location}/Dependencies/Cereal/include"
 
 	outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 

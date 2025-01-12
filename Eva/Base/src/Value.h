@@ -1,4 +1,5 @@
 #pragma once
+#include <cereal/access.hpp>
 #include<memory>
 #include <variant>
 #include <cassert>
@@ -7,6 +8,12 @@
 //#include"Object.h"
 //#include <string>
 //#include"Function.h"
+
+class ValueContainer;
+namespace cereal {
+	template <class Archive>
+	void serialize(Archive& archive, ::ValueContainer& func);
+}
 
 // could be a template?
 enum class ValueType
@@ -64,8 +71,8 @@ class Object;
 class String;
 struct Func;
 class VirtualMachine;
-using AsType = std::variant<bool, float, int, std::string, std::shared_ptr<Func>>;
 const char* ValueToStr(ValueType valueType);
+using AsType = std::variant<bool, float, int, std::string, std::shared_ptr<Func>>;
 class ValueContainer
 {
 public:
@@ -162,7 +169,10 @@ public:
 		return std::get<std::shared_ptr<Func>>(as);
 	}
 private:
+	friend class cereal::access;
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);
-	friend class VirtualMachine;
+	friend class  VirtualMachine;
+	 template <class Archive>
+    friend void cereal::serialize(Archive& archive, ValueContainer& v);
 	AsType  as;
 };

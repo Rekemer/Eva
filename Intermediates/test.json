@@ -1,0 +1,18 @@
+{
+    "value0": {
+        "constPool": [
+            {
+                "v.type": 3,
+                "v.as": {
+                    "index": 3,
+                    "data": "Hello"
+                }
+            }
+        ],
+        "bytecode": [
+            0,
+            0,
+            35
+        ]
+    }
+}

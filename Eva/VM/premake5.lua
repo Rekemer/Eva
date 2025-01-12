@@ -6,7 +6,8 @@ project "Eva-VM"
 
     includedirs
     {
-        BASE_HEADER
+        BASE_HEADER,
+        CEREAL_HEADER
     }
 
     files
