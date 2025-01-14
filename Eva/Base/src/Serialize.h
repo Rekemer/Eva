@@ -9,6 +9,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/string.hpp>
 #include "Function.h"
+#include "HashTable.h"
 namespace cereal
 {
 #define BIN 1 
@@ -40,5 +41,14 @@ namespace cereal
 		archive(CEREAL_NVP(v.type));
 		archive(CEREAL_NVP(v.as));
 #endif
+	}
+
+	// entry of  hashTable
+	template<class Archive>
+	void serialize(Archive& archive,
+		Entry& v)
+	{
+		archive(CEREAL_NVP(v.key));
+		archive(CEREAL_NVP(v.value));
 	}
 }

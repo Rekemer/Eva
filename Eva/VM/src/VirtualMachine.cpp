@@ -8,6 +8,10 @@
 #include <format>
 #include "TokenConversion.h"
 #include "Local.h"
+
+
+#include <fstream>
+#include "Serialize.h"
 #define BINARY_OP(type,operation)\
 {\
 auto v = vmStack.back().As<type>();\
@@ -288,6 +292,15 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 	return false;
 }
 
+void VirtualMachine::DumpGlobalToFile(std::string_view filepath)
+{
+	std::ofstream os(filepath.data());
+	cereal::JSONOutputArchive archive(os);
+	for (auto& e : globalVariables)
+	{
+		archive(e);
+	}
+}
 
 void VirtualMachine::Execute()
 {

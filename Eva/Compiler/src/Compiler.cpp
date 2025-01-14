@@ -988,15 +988,33 @@ int Compiler::Compile(const char* line)
 	*/
 
 	{
-#if BIN
 
-		std::ofstream os("./../../Intermediates/test.evc", std::ios::binary);
-		cereal::BinaryOutputArchive archive(os);
-#else
-		std::ofstream os("./../../Intermediates/test.json", std::ios::trunc);
-		cereal::JSONOutputArchive archive(os);
-#endif
-		archive(*globalFunc);
+		const char* visualStudioEnvVar = std::getenv("VSLANG");
+		if (visualStudioEnvVar != nullptr)
+		{
+		#if BIN
+
+				std::ofstream os("./../../Intermediates/test.evc", std::ios::binary);
+				cereal::BinaryOutputArchive archive(os);
+		#else
+				std::ofstream os("./../../Intermediates/test.json", std::ios::trunc);
+				cereal::JSONOutputArchive archive(os);
+		#endif
+				archive(*globalFunc);
+		}
+		else
+		{
+			// we suppose we run from bin folder of Eva-Compiler
+		#if BIN
+
+				std::ofstream os("./test.evc", std::ios::binary);
+				cereal::BinaryOutputArchive archive(os);
+		#else
+				std::ofstream os("./../../../Intermediates/test.json", std::ios::trunc);
+				cereal::JSONOutputArchive archive(os);
+		#endif
+				archive(*globalFunc);
+		}
 	}
 
 	return 0;

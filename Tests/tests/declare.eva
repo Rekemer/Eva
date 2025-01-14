@@ -1,4 +1,9 @@
 /*
-    #test a = 2, 
+    #test
+    a = 2, 
+    str = "sd",
+    af = 2.3
 */
+
+
 a : int = 2;

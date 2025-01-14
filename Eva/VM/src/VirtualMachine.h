@@ -51,6 +51,7 @@ public:
 	//std::shared_ptr<String> AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1);
 
 	void ClearLocal();
+	void DumpGlobalToFile(std::string_view filepath);
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
 	ValueType GetGlobalType(const std::string& str );

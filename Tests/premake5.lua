@@ -7,6 +7,7 @@ project "Tests"
     includedirs
     {   
         BASE_HEADER,
+        CEREAL_HEADER
     }
 
     files
@@ -14,5 +15,6 @@ project "Tests"
         "%{prj.location}/src/**.cpp"
     }
     
-
+    removefiles { "%{prj.location}/src/Tests.cpp"}
     
+    links {"Eva-Base"}
