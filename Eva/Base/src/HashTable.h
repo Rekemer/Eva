@@ -12,7 +12,11 @@ static uint32_t HashString(const char* key, int length) {
 	}
 	return hash;
 }
-
+class HashTable;
+namespace cereal {
+	template <class Archive>
+	void serialize(Archive& archive, ::HashTable& func);
+}
 struct Entry
 {
 	std::string key = "";
@@ -193,7 +197,8 @@ private:
 	Entry* FindEntry(Entry* data,std::string_view key, int amountOfData) const;
 
 	void MakeTombstone(Entry* entry);
-
+	template <class Archive>
+	friend void cereal::serialize(Archive& archive, HashTable& v);
 	// entries + tombstones
 	int m_EntriesAmount = 0;
 	int m_Size = 8;

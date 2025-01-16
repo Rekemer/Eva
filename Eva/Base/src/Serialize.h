@@ -43,6 +43,22 @@ namespace cereal
 #endif
 	}
 
+
+	// entry of  hashTable
+	template<class Archive>
+	void serialize(Archive& archive,
+		HashTable& v)
+	{
+
+		archive(v.m_EntriesAmount);
+		archive(v.m_Size);
+
+		for (auto& e : v)
+		{
+			archive(CEREAL_NVP(e));
+		}
+	}
+
 	// entry of  hashTable
 	template<class Archive>
 	void serialize(Archive& archive,

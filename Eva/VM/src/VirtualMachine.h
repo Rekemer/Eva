@@ -87,6 +87,7 @@ private:
 public:
 	// to execute global code
 	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
+	bool isTest = false;
 private:
 	// function we build or execute
 	Func* currentFunc = nullptr;

@@ -4,7 +4,7 @@
     <ShowAllFiles>true</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>$(SolutionDir)Scripts/test.eva</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-spath=$(SolutionDir)Scripts/test.eva -bpath="./../../Intermediates/test.evc"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

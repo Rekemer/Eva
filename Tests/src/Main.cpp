@@ -10,10 +10,14 @@ struct TestCase {
     std::unordered_map<std::string, ValueContainer> expected;
 };
 
+/*
+    \\ is \ in " " for cpp
 
-const std::string_view COMPILER_PATH = "./../bin/Eva-Compiler/Debug-windows-x86_64/Eva-Compiler.exe";
-const std::string_view VM_PATH = "./../bin/Eva-VM/Debug-windows-x86_64/Eva-VM.exe";
-const std::string_view TEST_CASES_DIR = "./tests/";
+    cmd doesn't recognise / slashes at all, need to use \ 
+*/ 
+const std::string_view COMPILER_PATH = ".\\..\\bin\\Eva-Compiler\\Debug-windows-x86_64\\Eva-Compiler.exe";
+const std::string_view VM_PATH = ".\\..\\bin\\Eva-VM\\Debug-windows-x86_64\\Eva-VM.exe";
+const std::string_view TEST_CASES_DIR = ".\\tests\\";
 // Function to discover all test cases
 std::vector<TestCase> DiscoverTestCases(const std::string_view testDirectory) {
     std::vector<TestCase> testCases;
@@ -128,13 +132,14 @@ int main()
         
         // compile
         {
-            std::string command = std::format("{} ./../../../Tests/{}", COMPILER_PATH, caseTest.filePath);
+            auto currentPath = std::filesystem::current_path();
+            std::string command = std::format("{} -spath=\"{}\" -bpath=\"{}\" > error_log_cmp.txt 2>&1", COMPILER_PATH, caseTest.filePath,"./test.evc");
             int result = system(command.c_str());
             assert(result == 0);
         }
         // run 
         {
-            std::string command = std::string{ VM_PATH} + std::format("-test {}" , caseTest.filePath);
+            std::string command = std::format("{} -test {} > error_log_vm.txt 2>&1", VM_PATH, "./test.evc");
             int result = system(command.c_str());
             assert(result == 0);
         }

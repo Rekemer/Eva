@@ -128,6 +128,7 @@
     <ClInclude Include="src\Nodes.h" />
     <ClInclude Include="src\Object.h" />
     <ClInclude Include="src\Options.h" />
+    <ClInclude Include="src\ParseArg.h" />
     <ClInclude Include="src\Serialize.h" />
     <ClInclude Include="src\TokenConversion.h" />
     <ClInclude Include="src\Tokens.h" />

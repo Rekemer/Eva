@@ -989,32 +989,18 @@ int Compiler::Compile(const char* line)
 
 	{
 
-		const char* visualStudioEnvVar = std::getenv("VSLANG");
-		if (visualStudioEnvVar != nullptr)
-		{
-		#if BIN
-
-				std::ofstream os("./../../Intermediates/test.evc", std::ios::binary);
-				cereal::BinaryOutputArchive archive(os);
-		#else
-				std::ofstream os("./../../Intermediates/test.json", std::ios::trunc);
-				cereal::JSONOutputArchive archive(os);
-		#endif
-				archive(*globalFunc);
-		}
-		else
-		{
-			// we suppose we run from bin folder of Eva-Compiler
-		#if BIN
-
-				std::ofstream os("./test.evc", std::ios::binary);
-				cereal::BinaryOutputArchive archive(os);
-		#else
-				std::ofstream os("./../../../Intermediates/test.json", std::ios::trunc);
-				cereal::JSONOutputArchive archive(os);
-		#endif
-				archive(*globalFunc);
-		}
+				std::ofstream os(bytecodePath.data(), std::ios::binary);
+				if (os.is_open())
+				{
+					
+					cereal::BinaryOutputArchive archive(os);
+					archive(*globalFunc);
+					archive(globalVariables);
+				}
+				else
+				{
+					std::cerr << "bytecode path was not specified correctly\n";
+				}
 	}
 
 	return 0;

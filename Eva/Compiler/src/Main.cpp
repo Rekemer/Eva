@@ -1,31 +1,24 @@
 ﻿#include "iostream"
 #include "Compiler.h"
+#include "ParseArg.h"
 #include <fstream>
 #include <sstream>
 int main(int argc, const char* argv[])
 {
-	Compiler compiler;
-	//if (argc == 1)
-	//{
-	//	// repl mode
-	//	while (true)
-	//	{
-	//		std::cout << "> ";
-	//		char line[1024];
-	//		std::cin.getline(line, 1024);
-	//		if (strcmp(line, "exit") == 0)
-	//		{
-	//			break;
-	//		}
-	//		auto res =  compiler.Compile(line);
-	//		std::cout << "result: " << res << std::endl;
-	//	}
-	//}
-		
-	// parse file
-	auto scirptPath = std::string{ argv[1] };
-	assert(false && "add parsing of command arguments");
-	auto binaryPath = std::string{ argv[2] };
+	auto args = ParseArgsCmp(argc,argv);
+	auto script = std::find_if(args.begin(), args.end(),
+		[](const Arg& arg) { return arg.type == ArgType::EVA_PATH; });
+	auto bytecodePath= std::find_if(args.begin(), args.end(),
+		[](const Arg& arg) { return arg.type == ArgType::EVC_PATH; });
+	
+	assert(script != args.end());
+	assert(bytecodePath != args.end());
+
+	auto& scirptPath = script->value ;
+	auto& binaryPath = bytecodePath->value;
+
+	Compiler compiler{ scirptPath ,binaryPath };
+
 	std::ifstream scriptFile(scirptPath.data());
 
 	if (scriptFile.is_open())
@@ -39,7 +32,7 @@ int main(int argc, const char* argv[])
 	}
 	else
 	{
-		std::cout << "test.eva is not opened\n";
+		std::cerr << "sciprt path is not opened\n";
 	}
 	scriptFile.close();
 	

@@ -16,6 +16,13 @@ struct CFGFunction;
 class Compiler
 {
 public:
+	Compiler(std::string_view scriptPath, std::string_view bytecodePath)
+		:scriptPath{scriptPath},
+		bytecodePath{ bytecodePath }
+	{
+
+	}
+
 	int Compile(const char* source);
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
@@ -25,8 +32,8 @@ public:
 	std::unordered_map<std::string, ValueContainer> Preprocess(const char* source);
 
 private:
-
-
+	const std::string_view scriptPath;
+	const std::string_view bytecodePath;
 
 	Block* HandleBranch(std::vector<Block*> branches, const Instruction& instr);
 

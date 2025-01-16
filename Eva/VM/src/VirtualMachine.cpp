@@ -649,6 +649,8 @@ void VirtualMachine::Execute()
 			break;
 		}
 	}
+
+	
 }
 
 size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount,size_t baseIndex)

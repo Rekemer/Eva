@@ -1,0 +1,9 @@
+isTest: trueFUNCTION: global
+-------------Debug-----------
+[0] CONST_VALUE
+[1] 2
+[2] SET_GLOBAL_VAR
+[3] a
+[4] NIL
+[5] RETURN
+-------------Debug-----------

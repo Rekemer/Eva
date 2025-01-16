@@ -1,0 +1,6 @@
+arg[1]: -spath=.\tests\declare.eva
+arg[2]: -bpath=./test.evc
+
+[global_start]
+a_0 =  DECLARE 2
+
