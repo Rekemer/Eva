@@ -1,6 +1,74 @@
-arg[1]: -spath=.\tests\declare.eva
+arg[1]: -spath=.\tests\loops\while\while_continue_in_multiple_if.eva
 arg[2]: -bpath=./test.evc
 
 [global_start]
-a_0 =  DECLARE 2
+g_0 =  DECLARE 0
+a_0 =  DECLARE 0
+unused1_0 =  DECLARE 100
+null_0 =  JUMP_WHILE [while_condition_0] 
+
+
+[while_condition_0]
+a_1 =  PHI ( a_0, a_2, ) [global_start] [while_body_0] 
+t_0 = a_1 LESS 5
+null_1 =  BRANCH_WHILE t_0[while_body_0] [merge_3] 
+
+
+[merge_3]
+sd_3 =  PHI ( sd_3, sd_0, ) [merge_0] 
+sd1_2 =  PHI ( sd1_2, sd1_2, ) 
+a_5 =  PHI ( a_0, a_4, ) [global_start] [merge_0] 
+null_10 =  JUMP_BRANCH [global_start] 
+
+
+[while_body_0]
+a_2 =  PLUS_PLUS 
+sd1_0 =  DECLARE even
+sd_0 =  DECLARE sd
+t_1 = a_2 PERCENT 2
+t_2 = t_1 EQUAL_EQUAL 1
+t_3 = t_2 EQUAL_EQUAL 1
+null_2 =  BRANCH ( ) t_3[then_0] [else_1] 
+
+
+[then_0]
+sd_1 =  DECLARE odd
+unused2_0 =  DECLARE test
+t_4 = a_2 GREATER 3
+null_3 =  BRANCH ( ) t_4[then_1] [else_0] 
+
+
+[else_1]
+null_8 =  JUMP_BRANCH [merge_0] 
+
+
+[then_1]
+t_5 = a_2 STAR 10
+unused3_0 =  DECLARE t_5
+_-1 =  BLOCK 5_-2
+null_4 =  CONTINUE 1
+_-1 =  BLOCK 1_-2
+null_5 =  JUMP_BRANCH [merge_1] 
+
+
+[else_0]
+null_6 =  JUMP_BRANCH [merge_1] 
+
+
+[merge_0]
+sd_2 =  PHI ( sd_0, sd_0, ) [merge_1] [else_1] 
+a_4 =  PHI ( a_3, a_2, ) [merge_1] [else_1] 
+sd1_1 =  EQUAL even
+t_6 = g_0 PLUS a_4
+g_1 =  EQUAL t_6
+t_7 = g_1 STAR 2
+unused4_0 =  DECLARE t_7
+_-1 =  BLOCK 3_-2
+null_9 =  JUMP_WHILE [while_condition_0] 
+
+
+[merge_1]
+a_3 =  PHI ( a_2, a_2, ) [then_1] [else_0] 
+_-1 =  BLOCK 2_-2
+null_7 =  JUMP_BRANCH [merge_0] 
 

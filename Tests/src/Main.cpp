@@ -3,6 +3,8 @@
 #include <fstream>
 #include <unordered_map>
 #include "Value.h"
+#include "Serialize.h"
+#include "Log.h"
 
 struct TestCase {
     std::string name;
@@ -21,11 +23,8 @@ const std::string_view TEST_CASES_DIR = ".\\tests\\";
 // Function to discover all test cases
 std::vector<TestCase> DiscoverTestCases(const std::string_view testDirectory) {
     std::vector<TestCase> testCases;
-    for (const auto& entry : std::filesystem::directory_iterator(testDirectory)) {
-        if (entry.is_directory()) {
-        }
-        else
-        {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(testDirectory)) {
+        if (!entry.is_directory()) {
             std::string testName = entry.path().filename().string();
             std::string filePath = entry.path().string();
             testCases.push_back(TestCase{ testName, filePath });
@@ -129,11 +128,11 @@ int main()
     {
         // preproccess test data
         GetExpectedData(caseTest);
-        
+
         // compile
         {
             auto currentPath = std::filesystem::current_path();
-            std::string command = std::format("{} -spath=\"{}\" -bpath=\"{}\" > error_log_cmp.txt 2>&1", COMPILER_PATH, caseTest.filePath,"./test.evc");
+            std::string command = std::format("{} -spath=\"{}\" -bpath=\"{}\" > error_log_cmp.txt 2>&1", COMPILER_PATH, caseTest.filePath, "./test.evc");
             int result = system(command.c_str());
             assert(result == 0);
         }
@@ -143,8 +142,55 @@ int main()
             int result = system(command.c_str());
             assert(result == 0);
         }
-
         // check
+        std::ifstream dumpFile(".\\dumpGlobal.json");
+        if (!dumpFile.is_open())
+        {
+            Log::GetLog()->error("VM didn't produce dump file\n");
+            return -1;
+        }
+        HashTable real;
+        {
+            cereal::JSONInputArchive iarchive{ dumpFile };
+            iarchive(real);
+        }
+        //for (auto e : real)
+        //{
+        //    std::cout << e.key;
+        //}
+
+        auto& expected = caseTest.expected;
+        bool isFailed = false;
+        std::vector<std::string> msgs;
+        for (auto e : expected)
+        {
+            auto& eKey = e.first;
+            auto& eValue = e.second;
+            if (!real.IsExist(eKey))
+            {
+                Log::GetLog()->error("the test {} is not specifed correctly", caseTest.filePath);
+                break;
+            }
+            auto realEntry = real.Get(eKey);
+            if (realEntry->value != eValue)
+            {
+                isFailed = true;
+                msgs.push_back(std::format("{} ({}) is not equal to {}", eKey, realEntry->value.ToString(), eValue.ToString()));
+            }
+        }
+        if (isFailed)
+        {
+            Log::GetLog()->error("the test {} failed ", caseTest.filePath);
+            for (auto& msg : msgs)
+            {
+                Log::GetLog()->error(msg);
+            }
+        }
+        else
+        {
+            Log::GetLog()->info("the test {} succeeded!", caseTest.filePath);
+        }
+
     }
 
 	return 0;

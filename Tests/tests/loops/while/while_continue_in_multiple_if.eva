@@ -1,0 +1,27 @@
+/*
+#test
+ g = 10 
+*/
+
+g := 0;
+a := 0;
+unused1 := 100; // Unused variable
+while a < 5
+{
+    a++;
+    sd1 := "even";
+    sd := "sd"; // Potentially unused depending on the branches
+    if (a % 2 == 1) == true
+    {
+        sd := "odd";
+        unused2 := "test"; // Another unused variable inside a conditional
+        if (a > 3)
+        {
+            unused3 := a * 10; // Unused variable in nested if
+            continue;
+        }
+    }
+    sd1 = "even";
+    g += a;
+    unused4 := g * 2; // Unused variable after update
+}

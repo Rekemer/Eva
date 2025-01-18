@@ -296,10 +296,7 @@ void VirtualMachine::DumpGlobalToFile(std::string_view filepath)
 {
 	std::ofstream os(filepath.data());
 	cereal::JSONOutputArchive archive(os);
-	for (auto& e : globalVariables)
-	{
-		archive(e);
-	}
+	archive(globalVariables);
 }
 
 void VirtualMachine::Execute()

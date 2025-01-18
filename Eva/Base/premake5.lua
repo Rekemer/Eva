@@ -5,7 +5,8 @@ project "Eva-Base"
     objdir ("%{wks.location}/bin-int/%{prj.name}/"..outputdir)
     includedirs
     {
-       CEREAL_HEADER
+       CEREAL_HEADER,
+       SPDLOG_HEADER
     }
     files
     {

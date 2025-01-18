@@ -128,6 +128,7 @@ public:
 
 	void Negate();
 	void InverseBool();
+	std::string ToString();
 	explicit ValueContainer(ValueContainer&& v)
 	{
 		type = v.type;

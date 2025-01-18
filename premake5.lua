@@ -19,6 +19,7 @@ workspace "Eva"
 
 	BASE_HEADER = "%{wks.location}/Eva/Base/src"
 	CEREAL_HEADER = "%{wks.location}/Dependencies/Cereal/include"
+	SPDLOG_HEADER = "%{wks.location}/Dependencies/spdlog/include"
 
 	outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 

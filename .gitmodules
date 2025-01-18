@@ -1,3 +1,6 @@
 [submodule "Dependencies/Cereal"]
 	path = Dependencies/Cereal
 	url = https://github.com/Rekemer/cereal-premake
+[submodule "Dependencies/spdlog"]
+	path = Dependencies/spdlog
+	url = https://github.com/gabime/spdlog.git

@@ -7,7 +7,8 @@ project "Eva-Compiler"
     includedirs
     {
        BASE_HEADER,
-       CEREAL_HEADER
+       CEREAL_HEADER,
+       SPDLOG_HEADER
     }
 
     files

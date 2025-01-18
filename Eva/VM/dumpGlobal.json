@@ -1,0 +1,18 @@
+{
+    "value0": {
+        "v.m_EntriesAmount": 2,
+        "v.m_Size": 8,
+        "entries": [
+            {
+                "v.key": "a",
+                "v.value": {
+                    "v.type": 1,
+                    "v.as": {
+                        "index": 2,
+                        "data": 101
+                    }
+                }
+            }
+        ]
+    }
+}

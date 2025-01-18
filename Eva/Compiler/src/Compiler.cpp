@@ -903,6 +903,20 @@ void Compiler::GenerateBytecodeCFG(const CFG& cfg)
 }
 
 
+template <typename T, typename... Args>
+void DumpToFile(std::ofstream& os, T& archive, Args&... args)
+{
+	if (os.is_open())
+	{
+		T archive(os);
+		(archive(std::forward<Args>(args)), ...);
+	}
+	else
+	{
+		std::cerr << "bytecode path was not specified correctly\n";
+	}
+}
+
 int Compiler::Compile(const char* line)
 {
 	Lexer parser;
@@ -986,21 +1000,26 @@ int Compiler::Compile(const char* line)
 	Archives are only guaranteed to have finished flushing their contents when they are destroyed,
 	so some archives (e.g. XML) will not output anything until their destruction
 	*/
-
 	{
+		
 
-				std::ofstream os(bytecodePath.data(), std::ios::binary);
-				if (os.is_open())
-				{
-					
-					cereal::BinaryOutputArchive archive(os);
-					archive(*globalFunc);
-					archive(globalVariables);
-				}
-				else
-				{
-					std::cerr << "bytecode path was not specified correctly\n";
-				}
+		bool isJson = HasJsonExtension(bytecodePath);
+		if (isJson)
+		{
+			std::ofstream os(bytecodePath.data());
+			cereal::JSONOutputArchive archive(os);
+			DumpToFile(os,archive, *globalFunc,globalVariables);
+		}
+		else
+		{
+			std::ofstream os(bytecodePath.data(),std::ios::binary);
+			cereal::BinaryOutputArchive archive(os);
+			DumpToFile(os,archive, *globalFunc, globalVariables);
+
+		}
+		
+		
+	
 	}
 
 	return 0;

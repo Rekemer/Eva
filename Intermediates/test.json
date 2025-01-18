@@ -1,6 +1,28 @@
 {
     "value0": {
-        "constPool": [
+        "name": "",
+        "constants": [
+            {
+                "v.type": 1,
+                "v.as": {
+                    "index": 2,
+                    "data": 100
+                }
+            },
+            {
+                "v.type": 3,
+                "v.as": {
+                    "index": 3,
+                    "data": "a"
+                }
+            },
+            {
+                "v.type": 3,
+                "v.as": {
+                    "index": 3,
+                    "data": "a"
+                }
+            },
             {
                 "v.type": 1,
                 "v.as": {
@@ -28,35 +50,48 @@
                     "index": 3,
                     "data": "a"
                 }
-            },
-            {
-                "v.type": 3,
-                "v.as": {
-                    "index": 3,
-                    "data": "a"
-                }
             }
         ],
-        "bytecode": [
+        "opCode": [
             0,
             0,
             36,
             1,
-            1,
+            37,
+            2,
+            0,
+            3,
+            31,
             43,
             9,
             44,
             37,
-            2,
+            4,
             26,
             36,
-            3,
+            5,
             40,
             2,
             44,
             37,
-            4,
+            6,
             35
+        ]
+    },
+    "value1": {
+        "v.m_EntriesAmount": 1,
+        "v.m_Size": 8,
+        "entries": [
+            {
+                "v.key": "a",
+                "v.value": {
+                    "v.type": 6,
+                    "v.as": {
+                        "index": 0,
+                        "data": false
+                    }
+                }
+            }
         ]
     }
 }

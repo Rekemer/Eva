@@ -91,6 +91,31 @@ do {                                                           \
     return {};                                                 \
 } while (0)
 
+
+
+std::string ValueContainer::ToString()
+{
+	switch (type)
+	{
+	case ValueType::BOOL:
+		return std::get<bool>(as) ? "true" : "false";
+
+	case ValueType::INT:
+		return std::to_string(std::get<int>(as));
+
+	case ValueType::FLOAT:
+		return std::to_string(std::get<float>(as));
+
+	case ValueType::STRING:
+		return std::get<std::string>(as);
+	case ValueType::FUNCTION:
+	case ValueType::DEDUCE:
+	case ValueType::NIL:
+		assert(false);
+	default:
+		break;
+	}
+}
 ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContainer& v2)
 {
 	bool isNumber = AreBothNumeric(v1.type, v2.type);

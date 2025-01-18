@@ -1,5 +1,6 @@
 #pragma once
 #include "Value.h"
+#include "Entry.h"
 #include <vector>
 #include <utility>
 #include <string>
@@ -15,17 +16,11 @@ static uint32_t HashString(const char* key, int length) {
 class HashTable;
 namespace cereal {
 	template <class Archive>
-	void serialize(Archive& archive, ::HashTable& func);
+	void save(Archive& archive, const ::HashTable& func);
+	template <class Archive>
+	void load(Archive& archive, ::HashTable& func);
 }
-struct Entry
-{
-	std::string key = "";
-	ValueContainer value;
-	bool IsInit()
-	{
-		return key != "";
-	}
-};
+
 
 inline bool IsTombstone(Entry* entry)
 {
@@ -152,7 +147,10 @@ public:
 		m_EntriesAmount = table.m_EntriesAmount;
 		std::copy(table.m_Data.get(), table.m_Data.get() + table.m_Size, m_Data.get()); 
 	}
-	void Add(const Entry& entry);
+	inline void Add(const Entry& entry)
+	{
+		Add(entry.key, entry.value);
+	}
 	bool IsExist(std::string_view key) const;
 	template<class... Arg>
 	Entry* Add(const std::string& key, Arg... value)
@@ -192,13 +190,18 @@ public:
 		return retrievedEntry;
 	}
 	void Delete(std::string_view key);
-	Entry* Get(std::string_view key)const;
+	Entry* Get(std::string_view key) const;
+
+	
+
 private:
 	Entry* FindEntry(Entry* data,std::string_view key, int amountOfData) const;
 
 	void MakeTombstone(Entry* entry);
 	template <class Archive>
-	friend void cereal::serialize(Archive& archive, HashTable& v);
+	friend void cereal::load(Archive& archive, HashTable& v);
+	template <class Archive>
+	friend void cereal::save(Archive& archive, const  HashTable& v);
 	// entries + tombstones
 	int m_EntriesAmount = 0;
 	int m_Size = 8;

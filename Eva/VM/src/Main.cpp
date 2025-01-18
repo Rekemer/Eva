@@ -1,60 +1,61 @@
 #include "Serialize.h"
-
 #include <fstream>
 #include <memory>
-
 #include "Function.h"
 #include "VirtualMachine.h"
 #include "ParseArg.h"
 
 
 
+template <typename T>
+void Execute(T& iarchive, bool isTest)
+{
+	VirtualMachine vm;
+	iarchive(*vm.globalFunc);
+	iarchive(vm.GetGlobals());
+	vm.isTest = isTest;
+	vm.Execute();
+	if (vm.isTest)
+	{
+		//vm.GetGlobals().Print();
+		vm.DumpGlobalToFile(".\\dumpGlobal.json");
+	}
+	
+}
 
-//std::string replaceExtension(const std::string& binPath, const std::string& /newExtension) /{
-//	size_t pos = binPath.rfind('.');
-//	if (pos == std::string::npos) {
-//		// No extension found, append the new extension
-//		return binPath + "." + newExtension;
-//	}
-//	return binPath.substr(0, pos) + "." + newExtension;
-//}
 int main(int argc, const char* argv[])
 {
 	auto args = ParseArgsVM(argc, argv);
-	auto binaryPath = args[args.size()- 1].value;
-#if BIN
-	std::ifstream os(binaryPath, std::ios::binary);
-	if (!os.is_open())
-	{
-		std::cerr << "evc file is not found: " << binaryPath << std::endl;
-		return -1;
-	}
-	cereal::BinaryInputArchive iarchive{os};
-#else
-	std::ifstream os("./../../Intermediates/test.json");
-	cereal::JSONInputArchive iarchive{os};
-#endif
-	std::unique_ptr<Func>func = std::make_unique<Func>();
-	if (os.is_open())
-	{
+	auto binaryPath = args[args.size() - 1].value;
+	auto isJson = HasJsonExtension(binaryPath);
+	bool isTest = args[0].type == ArgType::TEST;
 
-		iarchive(*func);
-		VirtualMachine vm;
-		iarchive(vm.GetGlobals());
-		vm.isTest = args[0].type == ArgType::TEST;
-		std::cerr << std::format("isTest: {}", vm.isTest);
-		vm.globalFunc = std::move(func);
-		vm.Execute();
-		if (vm.isTest)
+	std::cerr << "binary path" << binaryPath << std::endl;
+	std::cerr << "isJson " << isJson << std::endl;
+	std::cerr << "isTest " << isTest << std::endl;
+	if (isJson)
+	{
+		std::ifstream os(binaryPath);
+		if (!os.is_open())
 		{
-			vm.DumpGlobalToFile(".\\dumpGlobal.json");
+			std::cerr << "evc file is not found: " << binaryPath << std::endl;
+			return -1;
 		}
+		cereal::JSONInputArchive iarchive{ os };
+		Execute(iarchive, isTest);
 		os.close();
 	}
 	else
 	{
-		std::cout << "test.evc is not opened\n";
-		return -1;
+		std::ifstream os(binaryPath, std::ios::binary);
+		if (!os.is_open())
+		{
+			std::cerr << "json file is not found: " << binaryPath << std::endl;
+			return -1;
+		}
+		cereal::BinaryInputArchive iarchive{ os };
+		Execute(iarchive, isTest);
+		os.close();
 	}
 	return 0;
 }
