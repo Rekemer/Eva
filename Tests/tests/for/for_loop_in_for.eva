@@ -1,0 +1,28 @@
+
+/*
+    #test
+    a = 24
+*/
+
+a := 0;
+for i := 0..5
+{
+    sd6 := "sd";
+    if i % 2 == 1
+    {
+        sd5 := "sd";
+        continue;
+    }
+    a += i;
+    for j := 0; j < 5; j += 1;
+    {
+        sd3 := "sd";
+        if j == 4
+        {
+            sd3 := "sd";
+            break;
+        }
+        sd4 := "sd";
+        a += j;
+    }
+}

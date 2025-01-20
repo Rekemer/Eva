@@ -1,0 +1,17 @@
+/*
+    #test
+    g = 2
+*/
+
+
+fun num() : int
+{
+   return 2;
+}
+g: int = 0;
+fun main() : int
+{
+    a := num();
+    g = a;
+    return 0;
+}

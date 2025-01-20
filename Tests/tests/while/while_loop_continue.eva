@@ -1,0 +1,20 @@
+
+/*
+    #test
+    g = 6
+*/
+
+g := 0;
+a := 0;
+while a < 5
+{
+    a++;
+    sd := "sd";
+    if (a % 2 == 1)
+    {
+        sd := "sd";
+        continue;
+    }
+    sd1 := "sd";
+    g += a;
+}

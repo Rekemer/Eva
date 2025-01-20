@@ -33,6 +33,27 @@ std::vector<TestCase> DiscoverTestCases(const std::string_view testDirectory) {
     return testCases;
 }
 
+bool IsStringTrue(const std::string_view str)
+{
+    return str == "true" && str.size() == 4;
+}
+
+bool IsStringFalse(const std::string_view str)
+{
+    return str == "false" && str.size() == 5;
+}
+
+bool IsBool(const std::string_view str)
+{
+    return IsStringTrue(str) || IsStringFalse(str);
+}
+
+bool StringToBool(const std::string_view str)
+{
+    if (str == "true") return true;
+    if (str == "false") return false;
+}
+
 bool IsFloat(const std::string_view number)
 {
     return (number.find('.') != std::string::npos);
@@ -40,37 +61,55 @@ bool IsFloat(const std::string_view number)
 
 // stops iterator on value and , if there is no whitespace
 // a = 2,
-void FillTest(TestCase& test, std::istream_iterator<std::string>& it)
+void FillTest(TestCase& test,std::string_view variableName, std::string_view line)
 {
     
-    std::string name{ *it };
-    // skip name
-    it++;
-    // skip =
-    it++;
-    std::string_view vString = (*it);
-    if ((*it)[it->size() - 1] == ',')
+    auto name = std::string{ variableName };
+    auto index = 0l;
+    while (line[index] != '=' || line[index] == ' ')
     {
-        vString  = vString.substr(0, it->size() - 1);
+        index++;
+    }
+    index++;
+    while (line[index] == ' ')
+    {
+        index++;
     }
 
-    if (vString[0] == '\"')
+    if (line[index] == '"')
     {
+        index++;
+        auto startIndex = index;
         // parse string
-
-        std::string_view str = vString.substr(1, vString.size() - 2);
-        test.expected[name] = ValueContainer{ std::string{str}};
+        bool stringParsed = false;
+        while (line[index] != '"')
+        {
+            index++;
+        }
+        //index++;
+        auto valueString = std::string{ line.substr(startIndex,index - startIndex ) };
+        test.expected[name] = ValueContainer{ valueString };
     }
     else
-    {
-        ValueContainer v = IsFloat(vString)
-            ? ValueContainer{ std::stof(std::string{vString}) }
-        : ValueContainer{ std::stoi(std::string{vString}) };
+    {   
+        ValueContainer v;
+        auto valueString = line.substr(index, line.size());
+        auto isTrue = IsStringTrue(valueString.substr(0, 4));
+        auto isFalse= IsStringFalse(valueString.substr(0, 5));
+        if (isFalse)
+        {
+            v = ValueContainer{ false };
+        }
+        else if (isTrue)
+        {
+            v = ValueContainer{ true};
+        }
+        else  v = IsFloat(valueString)
+            ? ValueContainer{ std::stof(std::string{valueString}) }
+        : ValueContainer{ std::stoi(std::string{valueString}) };
 
         test.expected[name] = v;
     }
-    
-
 }
 
 int GetExpectedData(TestCase& test)
@@ -80,6 +119,9 @@ int GetExpectedData(TestCase& test)
     if (scriptFile.is_open())
     {
         std::istream_iterator<std::string> start(scriptFile), end;
+
+        
+
         auto it = start;
         while (*it != "/*")
         {
@@ -94,7 +136,9 @@ int GetExpectedData(TestCase& test)
             }
             if (parseTest)
             {
-                FillTest(test, it);
+                std::string lineValue;
+                std::getline(scriptFile,lineValue);
+                FillTest(test, *it, lineValue);
                 //if (*it == "," || (*it)[it->size() - 1] == ',')
                 //{
                 //    it++;
@@ -124,6 +168,9 @@ int main()
 {
     auto cases = DiscoverTestCases(TEST_CASES_DIR);
     auto str = std::filesystem::current_path();
+    TestCase t;
+    t.filePath = "./tests/expressions/expression_2.eva";
+    cases = { t };
     for (auto& caseTest : cases)
     {
         // preproccess test data

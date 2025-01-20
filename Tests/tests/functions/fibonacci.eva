@@ -1,0 +1,21 @@
+/*
+    #test
+    g = 55
+*/
+
+
+fun fib(n : int) : int
+{
+    if n < 2 
+    {
+        return n;
+    }
+    return fib(n - 2) + fib(n - 1);
+}
+g: int = 0;
+fun main() : int
+{
+    a := fib(10);
+    g = a;
+    return 0;
+}

@@ -88,15 +88,15 @@ public:
 	// to execute global code
 	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
 	bool isTest = false;
+	Func* mainFunc = nullptr;
+	std::vector<std::string> functionNames;
 private:
 	// function we build or execute
 	Func* currentFunc = nullptr;
 	// entry point
-	Func* mainFunc = nullptr;
 	
 	std::vector<ValueContainer> vmStack;
 	HashTable internalStrings;
-	std::vector<std::string> functionNames;
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
 

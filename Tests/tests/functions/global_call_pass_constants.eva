@@ -1,0 +1,11 @@
+/*
+    #test
+    a = 17
+*/
+
+
+fun sum(a : int, b : int, c : int) : int 
+{
+    return a+b+c;
+}
+a := sum(10,3,4);

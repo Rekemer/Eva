@@ -1,0 +1,11 @@
+/*
+    #test
+    check = false
+*/
+check := (1 == (1+2)) || 
+             ((1-2) == (1+2)) || 
+             (false == true) || 
+             (false && true == true && true) || 
+             (false && true || true && false) || 
+             (false && true) || 
+             (2.0 != 2);

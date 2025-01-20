@@ -1008,13 +1008,13 @@ int Compiler::Compile(const char* line)
 		{
 			std::ofstream os(bytecodePath.data());
 			cereal::JSONOutputArchive archive(os);
-			DumpToFile(os,archive, *globalFunc,globalVariables);
+			DumpToFile(os,archive, *globalFunc,globalVariables, functionNames);
 		}
 		else
 		{
 			std::ofstream os(bytecodePath.data(),std::ios::binary);
 			cereal::BinaryOutputArchive archive(os);
-			DumpToFile(os,archive, *globalFunc, globalVariables);
+			DumpToFile(os,archive, *globalFunc, globalVariables, functionNames);
 
 		}
 		

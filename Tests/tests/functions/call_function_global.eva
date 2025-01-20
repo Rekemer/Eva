@@ -1,0 +1,10 @@
+/*
+    #test
+    g = 6
+*/
+
+fun sum(n : int, n1 : int, n2: int) : int
+{
+    return n + n1 + n2;
+}
+g: int = sum(1,2,3);

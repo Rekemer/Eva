@@ -1,0 +1,7 @@
+
+/*
+    #test
+    a = "Hello, New Year!"
+*/
+
+a : String = "Hello, New Year!";

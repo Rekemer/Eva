@@ -11,8 +11,12 @@ template <typename T>
 void Execute(T& iarchive, bool isTest)
 {
 	VirtualMachine vm;
-	iarchive(*vm.globalFunc);
-	iarchive(vm.GetGlobals());
+	iarchive(*vm.globalFunc, vm.GetGlobals(), vm.functionNames);
+	auto e = vm.GetGlobals().Get("main");
+	if (e->IsInit())
+	{
+		vm.mainFunc = e->value.AsFunc().get();
+	}
 	vm.isTest = isTest;
 	vm.Execute();
 	if (vm.isTest)

@@ -1,0 +1,10 @@
+
+/*
+    #test
+    intValue = 2,
+    floatValue = 2.0,
+*/
+
+
+intValue : int = 2.0;
+floatValue : float = 2;

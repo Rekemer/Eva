@@ -1,0 +1,11 @@
+/*
+    #test
+    a = 1,
+    b = 4.2
+*/
+
+
+// Test: Global Deduction Scopes
+a := 3;
+a -= 2;
+b := 2.2 + 2;

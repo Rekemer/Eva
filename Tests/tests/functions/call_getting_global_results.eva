@@ -1,0 +1,12 @@
+/*
+    #test
+    a = 8
+*/
+
+
+a := 5+2;
+fun main() : int
+{
+    a++;
+    return 0;
+}

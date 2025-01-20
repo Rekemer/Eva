@@ -4,12 +4,12 @@
         "v.m_Size": 8,
         "entries": [
             {
-                "v.key": "a",
+                "v.key": "check",
                 "v.value": {
-                    "v.type": 1,
+                    "v.type": 0,
                     "v.as": {
-                        "index": 2,
-                        "data": 101
+                        "index": 0,
+                        "data": false
                     }
                 }
             }

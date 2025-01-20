@@ -1,0 +1,39 @@
+
+/*
+    #test
+    a = -29
+*/
+
+a: float = 3;
+{
+    a: float = 2;
+    a += 2;
+}
+{
+    b : int = 15;
+    sd := "sd";
+    sd1 := "sd";
+    sd2 := "sd";
+    b += 2;
+    {
+        sd1 := "sd";
+        c : float = -1;
+        b *= c;
+        sd2 := "sd";
+        a -= c;
+    }
+    sd3 := "sd";
+    a += b;
+}
+{
+    b : int = 15;
+    sd := "sd";
+    b += 2;
+    {
+        c : float = -1;
+        b *= c;
+        a -= c;
+    }
+    a += b;
+    sd5 := "sd";
+}

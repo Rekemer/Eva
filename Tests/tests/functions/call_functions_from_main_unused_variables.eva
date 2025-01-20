@@ -1,0 +1,39 @@
+/*
+    #test
+    g = 68
+*/
+
+fun sum(n : int, n1 : int, n2 : int, n3 : int) : int
+{
+    unusedParam := n + n1;
+    return n + n1 + n2 + n3;
+}
+
+fun multiply(x : int, y : int) : int
+{
+    result := x * y;
+    unusedFuncVar := result + 100;
+    return result;
+}
+
+g : int = 2;
+fun main() : int
+{
+    c := 10;
+    a := sum(c, 10, g + 10, g);
+
+    if (a > 20)
+    {
+         b := multiply(a, g);
+        if (b > 100)
+        {
+            unusedInnerVar := b + 1;
+        }
+        g = b;
+    }
+    else
+    {
+        g = a;
+    }
+    return 0;
+}

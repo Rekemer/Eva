@@ -1,0 +1,14 @@
+/*
+    #test
+    a = 17
+*/
+
+
+fun sum(a : int, b : int, c : int) : int 
+{
+    return a+b+c;
+}
+arg1 := 10;
+arg2 := 3;
+arg3 := 4;
+a := sum(arg1,arg2,arg3);

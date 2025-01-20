@@ -62,7 +62,7 @@ namespace cereal
 			archive(CEREAL_NVP(v.as));
 		}
 	}
-
+	
 	
 	inline void saveEntry ( Entry* entry, int i, std::vector<Entry>& existingEntries)
 		{

@@ -1,35 +1,15 @@
 {
     "value0": {
-        "v.m_EntriesAmount": 6,
+        "v.m_EntriesAmount": 2,
         "v.m_Size": 8,
         "entries": [
             {
-                "v.key": "a",
+                "v.key": "check",
                 "v.value": {
-                    "v.type": 1,
+                    "v.type": 0,
                     "v.as": {
-                        "index": 2,
-                        "data": 5
-                    }
-                }
-            },
-            {
-                "v.key": "g",
-                "v.value": {
-                    "v.type": 1,
-                    "v.as": {
-                        "index": 2,
-                        "data": 10
-                    }
-                }
-            },
-            {
-                "v.key": "unused1",
-                "v.value": {
-                    "v.type": 1,
-                    "v.as": {
-                        "index": 2,
-                        "data": 100
+                        "index": 0,
+                        "data": true
                     }
                 }
             }

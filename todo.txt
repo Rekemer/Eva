@@ -97,3 +97,8 @@ We could include the found functions to virtual machine itself, but we will need
 A plugin will remove a need to rebuild virtual machine every time, once compiler has compiled we can use old virtual machine, since it will rely on new built DLL. 
 
 
+catch errors with 
+
+* 
+*/
+

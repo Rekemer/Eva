@@ -1,0 +1,18 @@
+
+/*
+    #test
+    g = 6
+*/
+
+g := 0;
+for i := 1; i < 5; i += 1;
+{
+    sd2 := "sd";
+    if i % 2 == 1
+    {
+        sd2 := "sd";
+        continue;
+    }
+    sd3 := "sd";
+    g += i;
+}

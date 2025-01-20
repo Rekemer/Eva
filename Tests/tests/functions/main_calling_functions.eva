@@ -1,0 +1,20 @@
+/*
+    #test
+    a = 8
+*/
+
+
+fun mult (a : int, b: int) : int
+{
+    return a*b;
+}
+fun foo( a: int, b : int ) : int 
+{ 
+    return mult(a,b) + mult(a,b);
+}
+a := 0;
+fun main() : int
+{
+    a = foo(2,2);
+    return 0;
+}
