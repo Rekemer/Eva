@@ -3,3 +3,10 @@ Eva/x64/
 x64/
 bin/
 bin-int/
+Intermediates/
+Tests/error_log_cmp.txt
+Tests/error_log_vm.txt
+Tests/dump_global.json
+Eva/VM/dump_global.json
+Tests/dumpGlobal.json
+Tests/test.evc

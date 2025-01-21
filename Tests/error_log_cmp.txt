@@ -1,9 +1,0 @@
-arg[1]: -spath=./tests/expressions/expression_2.eva
-arg[2]: -bpath=./test.evc
-
-[global_start]
-t_0 = 0 AND 1
-t_1 = 1 AND 1
-t_2 = t_0 OR t_1
-check_0 =  DECLARE t_2
-

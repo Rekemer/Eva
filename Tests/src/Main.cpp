@@ -170,7 +170,7 @@ int main()
     auto str = std::filesystem::current_path();
     TestCase t;
     t.filePath = "./tests/expressions/expression_2.eva";
-    cases = { t };
+    //cases = { t };
     for (auto& caseTest : cases)
     {
         // preproccess test data

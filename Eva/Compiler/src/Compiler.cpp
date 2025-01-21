@@ -7,6 +7,7 @@
 #include "SSA.h"
 #include "Options.h"
 #include "Serialize.h"
+#include "Debug.h"
 
 
 
@@ -615,41 +616,67 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::AND:
 		{
+			// short circuit optimization from AST
+			//if (instr.operRight.IsTemp())
+			//{
+			//	currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
+			//	EmitPop(currentFunc->opCode);
+			//	GenerateCFGOperand(instr.operLeft, instr.returnType);
+			//	auto indexFalse = JumpIfFalse(currentFunc->opCode);
+			//	EmitPop(currentFunc->opCode);
+			//	currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
+			//	currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+			//}
+			//else
+			//{
+			//	GenerateCFGOperand(instr.operLeft, instr.returnType);
+			//	auto indexFalse = JumpIfFalse(currentFunc->opCode);
+			//	EmitPop(currentFunc->opCode);
+			//	GenerateCFGOperand(instr.operRight, instr.returnType);
+			//	currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+			//}
 			if (instr.operRight.IsTemp())
 			{
 				currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
 				EmitPop(currentFunc->opCode);
 				GenerateCFGOperand(instr.operLeft, instr.returnType);
-				auto indexFalse = JumpIfFalse(currentFunc->opCode);
-				EmitPop(currentFunc->opCode);
+				//auto indexFalse = JumpIfFalse(currentFunc->opCode);
+				//EmitPop(currentFunc->opCode);
 				currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
-				currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+				currentFunc->opCode.push_back((Bytecode)InCode::AND);
+
+				//currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
 			}
 			else
 			{
 				GenerateCFGOperand(instr.operLeft, instr.returnType);
-				auto indexFalse = JumpIfFalse(currentFunc->opCode);
-				EmitPop(currentFunc->opCode);
+				//auto indexFalse = JumpIfFalse(currentFunc->opCode);
+				//EmitPop(currentFunc->opCode);
 				GenerateCFGOperand(instr.operRight, instr.returnType);
-				currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+				currentFunc->opCode.push_back((Bytecode)InCode::AND);
+				//currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
 			}
-
 			break;
 		}
 		case TokenType::OR:
 		{
+			// short circuit optimization from AST
+			//GenerateCFGOperand(instr.operLeft, instr.returnType);
+			//auto indexFalse = JumpIfFalse(currentFunc->opCode);
+			//// if it is true we get to jump
+			//auto jump = Jump(currentFunc->opCode);
+			//
+			//currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
+			//
+			//GenerateCFGOperand(instr.operRight, instr.returnType);
+			//// the first is true- just skip second operand
+			//currentFunc->opCode.push_back((uint8_t)InCode::OR);
+			//currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, jump) + 1;
 
 			GenerateCFGOperand(instr.operLeft, instr.returnType);
-			auto indexFalse = JumpIfFalse(currentFunc->opCode);
-			// if it is true we get to jump
-			auto jump = Jump(currentFunc->opCode);
-
-			currentFunc->opCode[indexFalse] = CalculateJumpIndex(currentFunc->opCode, indexFalse) + 1;
-
 			GenerateCFGOperand(instr.operRight, instr.returnType);
 			// the first is true- just skip second operand
 			currentFunc->opCode.push_back((uint8_t)InCode::OR);
-			currentFunc->opCode[jump] = CalculateJumpIndex(currentFunc->opCode, jump) + 1;
 			break;
 		}
 		case TokenType::CLASS:
@@ -995,7 +1022,22 @@ int Compiler::Compile(const char* line)
 	}
 #endif
 
+#if DEBUG
+	std::cout << "FUNCTION: global" << std::endl;
+	Debug(globalFunc->opCode, globalFunc->constants, globalVariables);
+	for (auto& name : functionNames)
+	{
+		std::cout << "FUNCTION: " << name << std::endl;
+		auto func = globalVariables.Get(name)->value.AsFunc();
+		Debug(func->opCode, func->constants, globalVariables);
+	}
+#endif
+	//return;
 
+	if (mainFunc)
+	{
+		mainFunc->opCode.insert(mainFunc->opCode.begin(), (uint8_t)InCode::POP);
+	}
 	/*
 	Archives are only guaranteed to have finished flushing their contents when they are destroyed,
 	so some archives (e.g. XML) will not output anything until their destruction

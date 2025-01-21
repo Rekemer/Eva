@@ -1,9 +1,6 @@
-check : bool = (1 / 2 == 1 / 2) &&
-             (1 == 1) &&
-             (true == true) &&
-             ((2 * 10 - 1 / 5) == (2 * 10 - 1 / 5)) &&
-             (2 * 10 == 2 * 10) &&
-             (2 + 2 == 4) &&
-             (3 % 2 == 1) &&
-             (false && true || true && true);
+check :=   true &&
+           //(3 % 2 == 1)  &&
+             (  false && true || true && true);
              Print check;
+
+

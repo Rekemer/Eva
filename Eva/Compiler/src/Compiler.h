@@ -34,7 +34,6 @@ public:
 private:
 	const std::string_view scriptPath;
 	const std::string_view bytecodePath;
-
 	Block* HandleBranch(std::vector<Block*> branches, const Instruction& instr);
 
 	void BeginContinue(int startLoopIndex);

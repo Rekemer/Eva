@@ -2581,8 +2581,48 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::BANG_EQUAL:
 	case TokenType::LESS_EQUAL:
 	case TokenType::LESS:
-	case TokenType::AND:
+	{
+		return BinaryInstr(tree->As<Expression>(), type);
+		break;
+	}
+	// short-circuit optimization for SSA
+	// 
+	//case TokenType::AND:
+	//{
+		//auto left = ConvertExpressionAST(expr->left.get());
+		//// if it is false we can skip
+		//auto trueBlock = CreateBlock(currentFunc, "AND_TRUE", {currentBlock});
+		//auto falseBlock = CreateBlock(currentFunc, "AND_FALSE", {currentBlock});
+		//auto joinBlock = CreateBlock(currentFunc, "AND_JOIN", {currentBlock});
+		//
+		//Instruction branchParent = Instruction{ TokenType::BRANCH,{},left,NullOperand() };
+		//branchParent.targets.push_back(trueBlock);
+		//branchParent.targets.push_back(joinBlock);
+		//
+		//currentBlock->instructions.push_back(branchParent);
+		//
+		//currentBlock = trueBlock;
+		//auto right = ConvertExpressionAST(expr->right.get());
+		//Instruction branchChild = Instruction{ TokenType::JUMP,{},right,NullOperand() };
+		//currentBlock->instructions.push_back(branchChild);
+		//
+		//currentBlock = joinBlock;
+		//
+		//auto res = CreateTemp();
+		//Instruction instr{ type,left,right,res };
+		//auto resType = HighestType(left.type, right.type);
+		//if (IsBinaryBoolOp(type))
+		//{
+		//	resType = ValueType::BOOL;
+		//}
+		//GiveType(instr, res, resType);
+		//currentBlock->instructions.push_back(instr);
+		//return res;
+		//
+		//break;
+	//}
 	case TokenType::OR:
+	case TokenType::AND:
 	{
 		return BinaryInstr(tree->As<Expression>(), type);
 		break;

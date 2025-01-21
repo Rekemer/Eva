@@ -304,21 +304,8 @@ void VirtualMachine::Execute()
 	if (m_Panic)return;
 	globalFunc->opCode.push_back((uint8_t)InCode::NIL);
 	globalFunc->opCode.push_back((uint8_t)InCode::RETURN);
-	#if DEBUG
-	std::cout << "FUNCTION: global" << std::endl;
-	Debug(globalFunc->opCode, globalFunc->constants,globalVariables);
-	for (auto& name : functionNames)
-	{
-		std::cout << "FUNCTION: " << name << std::endl;
-		auto func= globalVariables.Get(name)->value.AsFunc();
-		Debug(func->opCode, func->constants,globalVariables);
-	}
-	#endif
-	//return;
-
 	if (mainFunc)
 	{
-		mainFunc->opCode.insert(mainFunc->opCode.begin(), (uint8_t)InCode::POP);
 		callFrames[nextToCurrentCallFrame++].function = mainFunc;
 	}
 	callFrames[nextToCurrentCallFrame].function = globalFunc.get();

@@ -15,13 +15,11 @@
     <ClInclude Include="src\VirtualMachine.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\Debug.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\VirtualMachine.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\Main.cpp" />
   </ItemGroup>
 </Project>
