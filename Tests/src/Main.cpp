@@ -181,13 +181,21 @@ int main()
             auto currentPath = std::filesystem::current_path();
             std::string command = std::format("{} -spath=\"{}\" -bpath=\"{}\" > error_log_cmp.txt 2>&1", COMPILER_PATH, caseTest.filePath, "./test.evc");
             int result = system(command.c_str());
-            assert(result == 0);
+            if (result != 0)
+            {
+                Log::GetLog()->error("Compiler error:{}\n", caseTest.filePath);
+                continue;
+            }
         }
         // run 
         {
             std::string command = std::format("{} -test {} > error_log_vm.txt 2>&1", VM_PATH, "./test.evc");
             int result = system(command.c_str());
-            assert(result == 0);
+            if (result != 0)
+            {
+                Log::GetLog()->error("VM error:{}\n", caseTest.filePath);
+                continue;
+            }
         }
         // check
         std::ifstream dumpFile(".\\dumpGlobal.json");

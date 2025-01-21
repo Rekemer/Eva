@@ -6,7 +6,6 @@
 #include "ParseArg.h"
 
 
-
 template <typename T>
 void Execute(T& iarchive, bool isTest)
 {

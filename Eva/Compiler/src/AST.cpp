@@ -695,24 +695,42 @@ void Print(const Expression* tree, int level) {
 	 {
 		 return expr;
 	 }
-	 if (expr->type == TokenType::MINUS && expr->left->type != TokenType::IDENTIFIER && !expr->right)
-	 {
-		auto left = expr->left->AsMut<Expression>();
 
-		Node* node = new Expression();
-		auto exprInverted= static_cast<Expression*>(node);
+	 auto isBang = expr->type == TokenType::BANG;
+	 auto isMinus = expr->type == TokenType::MINUS;
+	 if ((isBang || isMinus) && expr->left->type != TokenType::IDENTIFIER && !expr->right)
+	 {
+		 auto left = expr->left->AsMut<Expression>();
+
+		 Node* node = new Expression();
+		 auto exprInverted = static_cast<Expression*>(node);
 
 		 if (isLiteral(expr->left->type))
 		 {
-			// could we perhaps do it without allocation?
-			exprInverted->type = left->type;
-			exprInverted->value = left->value;
-			exprInverted->value.Negate();
-			return exprInverted;
+			 // could we perhaps do it without allocation?
+			 exprInverted->type = left->type;
+			 exprInverted->value = left->value;
+			 if (isMinus)
+			 {
+				 exprInverted->value.Negate();
+			 }
+			 else if (isBang)
+			 {
+				 exprInverted->value.InverseBool();
+			 }
+			 return exprInverted;
 		 }
-		// in case -(1-2)
-		node = static_cast<Node*>(FoldConstants(static_cast<Expression*>(expr->left.get())));
-		exprInverted->value.Negate();
+		 // in case -(1-2)
+		 node = static_cast<Node*>(FoldConstants(static_cast<Expression*>(expr->left.get())));
+		 exprInverted = static_cast<Expression*>(node);
+		 if (isMinus)
+		 {
+			 exprInverted->value.Negate();
+		 }
+		 else if (isBang)
+		 {
+			 exprInverted->value.InverseBool();
+		 }
 		return node;
 	 }
 	 // check if both constant
