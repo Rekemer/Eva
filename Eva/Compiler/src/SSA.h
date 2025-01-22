@@ -262,6 +262,9 @@ public:
 	std::unordered_map<std::string, CFGFunction> functionCFG;
 	std::string currentFunc = "global";
 private:
+
+	std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
+	std::unordered_map<int, int> removedLocalTotal;
 	std::unordered_map<std::string, bool> isFuncCritical;
 	std::stack<bool> parseFunc;
 	std::stack<bool> isReturn;

@@ -249,7 +249,8 @@ void CFG::Rename(Block* b)
 	{
 		auto& phi = b->instructions[index];
 		phi.result.version = NewName(phi.result.value.AsString(), b);
-		AddDef(phi.result.depth, phi.result.value.AsString(), index,b);
+		// index - b->offsetPhi because we already know index of offset phi
+		AddDef(phi.result.depth, phi.result.value.AsString(), index - b->offsetPhi,b);
 	}
 
 	auto& types = compiler->GetGlobalsType();
@@ -732,13 +733,8 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 		return;
 }
 
-std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
-std::unordered_map<int, int> removedLocalTotal;
-std::unordered_map<int, int> declaredLocal;
 
 
-
-std::unordered_map<std::string , bool> updateDefsUses;
 void AdjustOperandIndex(Operand& operand, 
 	const std::unordered_map<std::pair<int, std::string>, int, pair_hash>& removedLocal,
 	Block* b)
@@ -746,25 +742,8 @@ void AdjustOperandIndex(Operand& operand,
 	auto varName = operand.value.AsString();
 	// Retrieve the total removed count based on depth and value
 	auto key = std::pair{ operand.depth,varName };
+	if (removedLocal.find(key) == removedLocal.end()) return;
 	int total = removedLocal.at(key);
-	//if (!updateDefsUses[varName] && b->updateIndex)
-	//{
-	//	auto isDef = b->defs.find(key) != b->defs.end();
-	//	if (isDef)
-	//	{
-	//		for (auto& i : b->defs.at(key))
-	//		{
-	//			i -= total;
-	//			assert(i >= 0);
-	//		}
-	//	}
-	//	for (auto& i : b->uses.at(varName))
-	//	{
-	//		i -= total;
-	//		assert(i >= 0);
-	//	}
-	//	updateDefsUses[varName] = true;
-	//}
 	
 	// Adjust the index by subtracting the total removed count
 	operand.index -= total;
@@ -1038,14 +1017,11 @@ void CFG::ConstPropagation()
 		{
 			for (auto& [defVarKey, indices] : block->defs)
 			{
+
 				for (auto idx : indices)
 				{
 
 					auto& instr = block->instructions[idx];
-					if (instr.result.depth == -1)
-					{
-						std::cout << "sd";
-					}
 					auto ssaKey = std::pair{ instr.result.depth,instr.result.IsTemp() ? instr.result.GetTempName() :  instr.result.GetVariableVerName() };
 
 					if (block->isLoop)
@@ -1847,12 +1823,15 @@ void CFG::AddDef(int depth, const std::string& name, int index,Block* b)
 {
 	if (depth > 0)
 	{
-		b->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
+		b->defs[{depth,name}].push_back(index + b->offsetPhi);
 	}
 	else
 	{
-		b->defs[{depth,name}].push_back(index + currentBlock->offsetPhi);
-		globalDefs[{b, name}].push_back(index);
+		b->defs[{depth,name}].push_back(index + b->offsetPhi);
+		// we remember block which changes global variable
+		// block might have phi instructions and hence 
+		// we need adjust our indicies
+		globalDefs[{b, name}].push_back(index + b->offsetPhi);
 	}
 
 }

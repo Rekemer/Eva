@@ -125,12 +125,10 @@
     <ClInclude Include="src\Function.h" />
     <ClInclude Include="src\HashTable.h" />
     <ClInclude Include="src\Incode.h" />
-    <ClInclude Include="src\Lexer.h" />
     <ClInclude Include="src\Local.h" />
     <ClInclude Include="src\Log.h" />
     <ClInclude Include="src\Nodes.h" />
     <ClInclude Include="src\Object.h" />
-    <ClInclude Include="src\Options.h" />
     <ClInclude Include="src\ParseArg.h" />
     <ClInclude Include="src\Serialize.h" />
     <ClInclude Include="src\TokenConversion.h" />
@@ -140,7 +138,6 @@
   <ItemGroup>
     <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\HashTable.cpp" />
-    <ClCompile Include="src\Lexer.cpp" />
     <ClCompile Include="src\Object.cpp" />
     <ClCompile Include="src\Tokens.cpp" />
     <ClCompile Include="src\Value.cpp" />

@@ -124,6 +124,7 @@
   <ItemGroup>
     <ClCompile Include="src\AST.cpp" />
     <ClCompile Include="src\Compiler.cpp" />
+    <ClCompile Include="src\Lexer.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\SSA.cpp" />
   </ItemGroup>
