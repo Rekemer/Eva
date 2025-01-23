@@ -2,7 +2,7 @@
 
 workspace "Eva"
 	architecture "x86_64"
-	startproject "Eva"
+	startproject "Eva-Compiler"
     language "C++"
     cppdialect "C++20"
 	configurations

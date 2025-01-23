@@ -171,12 +171,14 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 
 		if ((currentToken + 1)->type == TokenType::LEFT_PAREN)
 		{
+			// function call
 			if (!isGlobal)
 			{
-				std::stringstream ss;
-				ss << "There is no function " << str << " to call";
-				Error(currentToken,ss);
-				return{};
+				compiler->unresolvedFuncNames.push_back({ str,(currentToken+1)->line });
+				//std::stringstream ss;
+				//ss << "There is no function " << str << " to call";
+				//Error(currentToken,ss);
+				//return{};
 			}
 
 			// call a function

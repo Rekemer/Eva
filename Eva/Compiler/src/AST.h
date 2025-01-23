@@ -24,11 +24,11 @@ class AST
 {
 public:
 	AST(const AST&) = delete;
-	AST(AST&& e )
-	{
-		tree = std::move(e.tree);
-		e.tree = nullptr;
-	}
+	AST(AST&& e) = default;
+	//{
+	//	tree = std::move(e.tree);
+	//	e.tree = nullptr;
+	//}
 	AST() = default;
 	void Build(Iterator& firstToken);
 	class Compiler* compiler;

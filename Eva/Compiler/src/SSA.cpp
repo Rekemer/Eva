@@ -2105,6 +2105,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::FUN:
 	{
 		auto func = tree->As<FunctionNode>();
+		isFuncCritical[func->name] = false;
 		Instruction funcInstr{ TokenType::FUN,{},Operand{func->name,false,2},{} };
 		MakeCritical(funcInstr);
 		currentBlock->instructions.push_back(funcInstr);
@@ -2403,6 +2404,20 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 }
 
+void CFG::MarkFuncIfCritical(Instruction& funcCall)
+{
+	auto name = funcCall.operRight.value.AsString();
+	// funciton has critical operations we should not remove a call
+	if (isFuncCritical.at(name))
+	{
+		funcCall.isCritical = true;
+		if (writeToVariable)
+		{
+			isVariableCritical = true;
+		}
+	}
+}
+
 Operand CFG::ConvertExpressionAST(const Node* tree)
 {
 	auto type = tree->type;
@@ -2419,15 +2434,18 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		
 		Operand  funcNameOp{ {call->name},false,2 };
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
-		// funciton has critical operations we should not remove a call
+
 		if (isFuncCritical.find(call->name) != isFuncCritical.end())
 		{
-			funcCall.isCritical = true;
-			if (writeToVariable)
-			{
-				isVariableCritical = true;
-			}
+			// we have parsed function definition 
+			MarkFuncIfCritical(funcCall);
 		}
+		else
+		{
+			checkCritical.push_back({ currentBlock, currentBlock->instructions.size() });
+		}
+
+		
 		static int counter = 0;
 		auto name = std::format("args_{}", counter++);
 		funcCall.argBlock = &graph[name];
@@ -2716,6 +2734,18 @@ void CFG::BuildDominatorTree()
 	}
 
 
+}
+
+void CFG::ResolveFunctions()
+{
+	for (auto [b, index] : checkCritical)
+	{
+		auto& instr = b->instructions[index];
+		if (isFuncCritical.at(instr.operRight.value.AsString()))
+		{
+			MarkFuncIfCritical(instr);
+		}
+	}
 }
 
 void CFG::ConvertAST(const Node* tree)

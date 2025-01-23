@@ -208,6 +208,7 @@ public:
 	Compiler* compiler;
 	void BuildDominatorTree();
 	void ConvertAST(const Node* tree);
+	void ResolveFunctions();
 	void TopSort();
 	void BuildDF();
 	void InsertPhi();
@@ -215,6 +216,7 @@ public:
 	void ConstPropagation();
 	void Debug();
 private:
+	void MarkFuncIfCritical(Instruction& funcCall);
 	bool UpdateOperand(Operand& op);
 	void PropagateTempValues(Block* block, size_t startIndex, Instruction& initialInstr, std::deque<std::pair<int, std::string>>& workList);
 	void ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList);
@@ -262,10 +264,19 @@ public:
 	std::unordered_map<std::string, CFGFunction> functionCFG;
 	std::string currentFunc = "global";
 private:
-
 	std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
 	std::unordered_map<int, int> removedLocalTotal;
+
+
 	std::unordered_map<std::string, bool> isFuncCritical;
+	
+	// to mark functons calls as critical if not func not defined yet
+	// we can define functions after we use them
+	// we might want to mark them as critical 
+	// 1 int is func call
+	// 2 int is potential variable storing return result
+	std::vector<std::tuple<Block*, int>> checkCritical;
+	
 	std::stack<bool> parseFunc;
 	std::stack<bool> isReturn;
 	// int is a version

@@ -102,3 +102,17 @@ catch errors with
 * 
 */
 
+
+add better support of void functions
+
+fun func_name()
+{
+	
+}
+
+add spdlog to compiler and vm
+
+
+
+
+

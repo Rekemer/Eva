@@ -9,9 +9,8 @@
 #include "Serialize.h"
 #include "Debug.h"
 
-
-
 #include <fstream>
+
 
 #define CAST_INT_FLOAT(type1,type2)\
 if (type1== ValueType::INT && type2== ValueType::FLOAT)\
@@ -970,6 +969,25 @@ int Compiler::Compile(const char* line)
 			panic = true;
 			continue;
 		}
+		trees.push_back(std::move( tree));
+	}
+
+	for (auto& [name, numberLine]: unresolvedFuncNames)
+	{
+		auto isDeclared = globalVariables.Get(name)->IsInit();
+		if (!isDeclared)
+		{
+			panic = true;
+			std::cout << std::format("undefined function {} is called at {}\n", name, numberLine);
+		}
+	}
+	if (panic)
+	{
+		return -1;
+	}
+
+	for (auto& tree : trees)
+	{
 		tree.TypeCheck();
 		if (tree.IsPanic())
 		{
@@ -979,8 +997,6 @@ int Compiler::Compile(const char* line)
 #if CONSTANT_FOLD
 		tree.Fold();
 #endif
-		trees.push_back(std::move( tree));
-
 	}
 
 	if (panic)
@@ -995,6 +1011,7 @@ int Compiler::Compile(const char* line)
 		auto node = tree.GetTree();
 		cfg.ConvertAST(node);
 	}
+	cfg.ResolveFunctions();
 	cfg.TopSort();
 	cfg.BuildDominatorTree();
 	cfg.BuildDF();

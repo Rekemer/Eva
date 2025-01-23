@@ -29,7 +29,9 @@ public:
 	ValueType GetGlobalType(const std::string& str);
 
 
-	std::unordered_map<std::string, ValueContainer> Preprocess(const char* source);
+	// so we can keep track of calls of functions
+	// that defined after call is parsed
+	std::vector<std::pair<std::string,int>> unresolvedFuncNames;
 
 private:
 	const std::string_view scriptPath;
@@ -54,6 +56,7 @@ private:
 	HashTable globalVariables;
 	HashTable globalVariablesTypes;
 
+
 	const std::unordered_map<std::string, CFGFunction>* functionCFG;
 	// function we build or execute
 	Func* currentFunc = nullptr;
@@ -74,5 +77,7 @@ private:
 	std::stack<int> conditionIndex;
 	ValueType m_FuncReturnType = ValueType::NIL;
 	std::stack<ValueType> lastReturnType;
+
+
 
 };
