@@ -1,6 +1,8 @@
-//Print 2;
-//Print ("{} \n {} \n Hello \n {} \n ", "Ilia", "Says", "Cate");
+/*
+    #test
+    a = 10
 
+*/
 
 fun lol3 () : int 
 {
@@ -13,7 +15,6 @@ fun main() : int
 {
     // 6 + 2 + 2 = 10
 	a += lol() + lol2();
-	Print a ;
 	return 0;
 }
 

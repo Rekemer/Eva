@@ -4,7 +4,7 @@ project "Eva-Compiler"
     targetdir ("%{wks.location}/bin/%{prj.name}/"..outputdir)
     objdir ("%{wks.location}/bin-int/%{prj.name}/"..outputdir)
     -- turns out it works only if you generate the vcxproj from scratch (it doesn't exist)
-    debugargs{"-spath=./test -bpath=$(SolutionDir)Intermediates/test.json"}
+    debugargs{"-spath=./test.eva -bpath=$(SolutionDir)Intermediates/test.json"}
 
     includedirs
     {

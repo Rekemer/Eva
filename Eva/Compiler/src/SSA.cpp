@@ -1842,9 +1842,7 @@ void CFG::CreateVariableFrom(const Node* tree, const Operand& rightOp)
 	// left is variable
 	auto left = expr->left->As<Expression>();
 	auto name = left->value.AsString();
-	writeToVariable = true;
 	auto resOp = InitVariable(name,left->depth);
-	writeToVariable = false;
 	auto instruction = Instruction{ TokenType::EQUAL,{},rightOp,resOp };
 	if (resOp.depth == 0)
 	{
@@ -1989,8 +1987,10 @@ void CFG::ConvertStatementAST(const Node* tree)
 	case TokenType::SLASH_EQUAL:
 	case TokenType::STAR_EQUAL:
 	{
+		writeToVariable = true;
 		auto rightOperand = BinaryInstr(tree->As<Expression>(), GetOpFromComplexAssignment(type));
 		CreateVariableFrom(tree, rightOperand);
+		writeToVariable = false;
 		break;
 	}
 	case TokenType::CONTINUE:

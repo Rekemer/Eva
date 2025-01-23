@@ -1,3 +1,10 @@
+/*
+    This test framework's lexer sucks - not robust,
+    it barely works
+    just to start testing ASAP
+*/
+
+
 #include <filesystem>
 #include <string>
 #include <fstream>

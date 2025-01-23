@@ -9,4 +9,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
     <LocalDebuggerCommandArguments>lox</LocalDebuggerCommandArguments>
   </PropertyGroup>
+  <PropertyGroup>
+    <ShowAllFiles>true</ShowAllFiles>
+  </PropertyGroup>
 </Project>
