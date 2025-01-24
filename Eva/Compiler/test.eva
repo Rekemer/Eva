@@ -1,31 +1,38 @@
 //Print 2;
 //Print ("{} \n {} \n Hello \n {} \n ", "Ilia", "Says", "Cate");
 
+Print("Hello", "Ilia","Says", "Hello");
 
-fun lol3 () : int 
-{
-    return 3;
-}
+//a:= foo();
+//fun foo () : int
+//{
+//	return 32;
+//}
 
-// 6
-a:=lol() * lol3();
-fun main() : int 
-{
-    // 6 + 2 + 2 = 10
-	a += lol() + lol2();
-	Print a ;
-	return 0;
-}
+//fun lol3 () : int 
+//{
+//    return 3;
+//}
+//
+//// 6
+//a:=lol() * lol3();
+//fun main() : int 
+//{
+//    // 6 + 2 + 2 = 10
+//	a += lol() + lol2();
+//	return 0;
+//}
+//
+//
+//
+//
+//fun lol () : int
+//{
+//	Print("lol"); 
+//	return 2;
+//}
+//fun lol2 () : int
+//{	
+//	return 2;
+//}
 
-
-
-
-fun lol () : int
-{
-	Print "lol";
-	return 2;
-}
-fun lol2 () : int
-{	
-	return 2;
-}

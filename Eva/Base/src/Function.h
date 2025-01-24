@@ -2,24 +2,26 @@
 #include <vector>
 #include <bitset>
 #include <memory>
-#include"Object.h"
+#include "ICallable.h"
 #include <string>
 #include "Bytecode.h"
 #include "Value.h"
 
-struct Func final: public Object
+class Func final: public ICallable
 {
-	int argCount;
-	std::vector<ValueType> argTypes;
-	std::string name;
+public:
+	size_t Call(VirtualMachine& vm, size_t argumentCount, size_t baseIndex) override;
+
 	std::vector<Bytecode> opCode;
 	std::vector<ValueContainer> constants;
-	//template<class Archive>
-	//void serialize(Archive& archive)
-	//{
-	//	// when we serialize an edge, we'll defer serializing the associated node
-	//	// to avoid extensive recursive serialization
-	//	auto& constPool = constants;
-	//	auto& bytecode = opCode;
-	//}
+};
+class NativeFunc final : public ICallable
+{
+public:
+	NativeFunc(std::vector<ValueType> args, int argAmount, std::string_view name) :
+		ICallable{args,argAmount,name}
+	{
+
+	};
+	size_t Call(VirtualMachine& vm, size_t argumentCount, size_t baseIndex) override;
 };

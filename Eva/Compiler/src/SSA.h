@@ -216,7 +216,7 @@ public:
 	void ConstPropagation();
 	void Debug();
 private:
-	void MarkFuncIfCritical(Instruction& funcCall);
+	void MarkFuncIfCritical(Instruction& funcCall, bool isNative);
 	bool UpdateOperand(Operand& op);
 	void PropagateTempValues(Block* block, size_t startIndex, Instruction& initialInstr, std::deque<std::pair<int, std::string>>& workList);
 	void ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList);

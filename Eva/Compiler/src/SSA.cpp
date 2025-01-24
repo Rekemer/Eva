@@ -88,7 +88,6 @@ bool CFG::IsStatement(const Node* node)
 	case TokenType::FUN:
 	case TokenType::IF:
 	case TokenType::ELIF:
-	case TokenType::PRINT:
 	case TokenType::RETURN:
 	case TokenType::WHILE:
 	case TokenType::BLOCK:
@@ -330,15 +329,6 @@ void CFG::Rename(Block* b)
 				}
 				var.insert(var.begin() + insertIndex, instr.result);
 			}
-		}
-		if (instr.instrType != TokenType::PRINT)
-		{
-			std::string name;
-			if (instr.result.IsTemp())
-			{
-				name = instr.result.value.AsString() + "_" + std::to_string(instr.result.version);
-			}
-			else name = instr.result.value.AsString();
 		}
 	}
 
@@ -1190,14 +1180,7 @@ void UpdateOperandAndCalculate(Operand& targetOperand, Operand& otherOperand,
 	}
 }
 void UpdateDeclare(Block* block, size_t iterIndex, LatticeMap& value, std::deque<std::pair<int, std::string>>& workList) {
-	
-	if (block->instructions[iterIndex].instrType
-		== TokenType::PRINT)
-	{
-		auto& newValue = block->instructions[iterIndex - 1].operRight;
-		block->instructions[iterIndex].operRight = newValue;
-		return;
-	}
+
 	if (block->instructions[iterIndex].instrType
 		== TokenType::BRANCH
 		|| block->instructions[iterIndex].instrType
@@ -1240,7 +1223,6 @@ int ProcessInstructions(Block* block, size_t iterIndex, Instruction& initialInst
 		// Check for specific instruction types that terminate the loop
 		if (nextInstr.instrType == TokenType::JUMP_BRANCH ||
 			nextInstr.instrType == TokenType::BRANCH_WHILE ||
-			nextInstr.instrType == TokenType::PRINT ||
 			nextInstr.instrType == TokenType::BRANCH_ELIF ||
 			nextInstr.instrType == TokenType::BRANCH ||
 			nextInstr.instrType == TokenType::DECLARE ||
@@ -2292,18 +2274,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		break;
 	}
 	
-	case TokenType::PRINT:
-	{
-		auto value = ConvertExpressionAST(expr->left.get());
-		Instruction instr{ type,{},value, CreateTemp()};
-		MakeCritical(instr);
-		if (parseFunc.size() > 0)
-		{
-			isFuncCritical[currentFunc] = true;
-		}
-		currentBlock->instructions.push_back(instr);
-		break;
-	}
+	
 	case TokenType::RETURN:
 	{
 		auto tmp = currentScope;
@@ -2404,11 +2375,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 	}
 }
 
-void CFG::MarkFuncIfCritical(Instruction& funcCall)
+void CFG::MarkFuncIfCritical(Instruction& funcCall, bool isNative)
 {
 	auto name = funcCall.operRight.value.AsString();
 	// funciton has critical operations we should not remove a call
-	if (isFuncCritical.at(name))
+	if  ( isNative || isFuncCritical.at(name) )
 	{
 		funcCall.isCritical = true;
 		if (writeToVariable)
@@ -2432,13 +2403,15 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		args.reserve(call->args.size());
 		auto res = CreateTemp();
 		
-		Operand  funcNameOp{ {call->name},false,2 };
+		// 
+		Operand  funcNameOp{ {call->name},call->isNative,2 };
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
 
-		if (isFuncCritical.find(call->name) != isFuncCritical.end())
+		// for now we treat all native calls as critical
+		if (isFuncCritical.find(call->name) != isFuncCritical.end() || call->isNative)
 		{
 			// we have parsed function definition 
-			MarkFuncIfCritical(funcCall);
+			MarkFuncIfCritical(funcCall, call->isNative);
 		}
 		else
 		{
@@ -2452,24 +2425,23 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		funcCall.argBlock->name = name;
 		funcCall.argBlock->parents = {currentBlock};
 		funcCall.argBlock->markAll = true;
-		GiveType(funcCall, res, compiler->GetGlobalType(call->name));
+		GiveType(funcCall, res, compiler->GetGlobalType(call->name, call->isNative));
 		currentBlock->instructions.push_back(funcCall);
 		auto prevBlock = currentBlock;
 		auto funcCallIndex = prevBlock->instructions.size() - 1;
 		currentBlock = funcCall.argBlock;
 		
 		
-		auto funcEntry = compiler->GetGlobals().Get(call->name);
-		auto funcValue = funcEntry->value.AsFunc();
+		auto funcValue = compiler->GetCallable(call->name, call->isNative);
 		getAsParam = true;
 		for (auto i = 0; i < call->args.size(); i++)
 		{
-			paramType = funcValue->argTypes[i];
 			auto& arg = call->args[i];
 			auto argOp = ConvertExpressionAST(arg.get());
 
 			Operand actual = Operand{ ValueContainer{argOp.type},false,2 };
-			Operand decl = Operand{ ValueContainer{funcValue->argTypes[i]},false,2 };
+			auto declType = funcValue->IsArgUnlimited() ? argOp.type : funcValue -> argTypes[i];
+			Operand decl = Operand{ ValueContainer{declType},false,2 };
 			Instruction instr{ TokenType::VAR,actual,decl,argOp };
 			currentBlock->instructions.push_back(instr);
 
@@ -2481,15 +2453,10 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		{
 			Instruction instr{ TokenType::BLOCK,{}, Operand{1,true,IS_TEMP},{} };
 			MakeCritical(instr);
-			//prevBlock->instructions.begin() + funcCallIndex
 			prevBlock->instructions.push_back( instr);
 
 		}
 		
-		//auto callInstr = Instruction{ TokenType::CALL ,{},funcNameOp,{} };
-		//callInstr.variables = args;
-		//GiveType(callInstr, res, compiler->GetGlobalType(call->name));
-		//currentBlock->instructions.push_back(callInstr);
 		currentBlock = prevBlock;
 		return res;
 		break;
@@ -2743,7 +2710,7 @@ void CFG::ResolveFunctions()
 		auto& instr = b->instructions[index];
 		if (isFuncCritical.at(instr.operRight.value.AsString()))
 		{
-			MarkFuncIfCritical(instr);
+			MarkFuncIfCritical(instr,false);
 		}
 	}
 }

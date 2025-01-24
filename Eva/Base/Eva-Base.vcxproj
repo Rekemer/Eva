@@ -127,8 +127,9 @@
     <ClInclude Include="src\Incode.h" />
     <ClInclude Include="src\Local.h" />
     <ClInclude Include="src\Log.h" />
+    <ClInclude Include="src\Native.h" />
     <ClInclude Include="src\Nodes.h" />
-    <ClInclude Include="src\Object.h" />
+    <ClInclude Include="src\ICallable.h" />
     <ClInclude Include="src\ParseArg.h" />
     <ClInclude Include="src\Serialize.h" />
     <ClInclude Include="src\TokenConversion.h" />
@@ -136,9 +137,10 @@
     <ClInclude Include="src\Value.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Function.cpp" />
     <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\HashTable.cpp" />
-    <ClCompile Include="src\Object.cpp" />
+    <ClCompile Include="src\Native.cpp" />
     <ClCompile Include="src\Tokens.cpp" />
     <ClCompile Include="src\Value.cpp" />
   </ItemGroup>

@@ -33,7 +33,6 @@ std::map<TokenType, std::string> tokenStrings = {
 		{TokenType::IF, "IF"},
 		{TokenType::NIL, "NIL"},
 		{TokenType::OR, "OR"},
-		{TokenType::PRINT, "PRINT"},
 		{TokenType::RETURN, "RETURN"},
 		{TokenType::SUPER, "SUPER"},
 		{TokenType::THIS, "THIS"},

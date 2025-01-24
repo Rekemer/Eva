@@ -7,6 +7,7 @@
 #include "Function.h"
 #include "HashTable.h"
 class CFG;
+class ICallable;
 struct Node;
 struct Func;
 struct Block;
@@ -26,8 +27,8 @@ public:
 	int Compile(const char* source);
 	HashTable& GetGlobals() { return globalVariables; };
 	HashTable& GetGlobalsType() { return globalVariablesTypes; };
-	ValueType GetGlobalType(const std::string& str);
-
+	ValueType GetGlobalType(const std::string& str, bool isNative = false);
+	std::shared_ptr<ICallable> GetCallable(std::string_view name, bool isNative);
 
 	// so we can keep track of calls of functions
 	// that defined after call is parsed

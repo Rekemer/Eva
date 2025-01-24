@@ -15,6 +15,7 @@
     <ClInclude Include="src\VirtualMachine.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\CallFrame.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\VirtualMachine.cpp">

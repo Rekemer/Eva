@@ -5,7 +5,7 @@
 #include <cassert>
 #include <string>
 #include<ostream>
-//#include"Object.h"
+//#include"ICallable.h"
 //#include <string>
 //#include"Function.h"
 
@@ -67,12 +67,12 @@ inline bool IsCastable(ValueType toType, ValueType fromType)
 	}
 }
 
-class Object;
+class ICallable;
 class String;
 struct Func;
 class VirtualMachine;
 const char* ValueToStr(ValueType valueType);
-using AsType = std::variant<bool, float, int, std::string, std::shared_ptr<Func>>;
+using AsType = std::variant<bool, float, int, std::string, std::shared_ptr<ICallable>>;
 class ValueContainer
 {
 public:
@@ -165,10 +165,9 @@ public:
 	{
 		return std::get<std::string>(as);
 	}
-	std::shared_ptr<Func> AsFunc() const
-	{
-		return std::get<std::shared_ptr<Func>>(as);
-	}
+	std::shared_ptr<Func> AsFunc() const;
+	std::shared_ptr<ICallable> AsCallable() const;
+	
 private:
 	friend class cereal::access;
 	friend std::ostream& operator<<(std::ostream& os, const ValueContainer& v);

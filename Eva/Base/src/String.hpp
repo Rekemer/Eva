@@ -1,8 +1,6 @@
 #pragma once
-#include "object.h"
 #include <ostream>
-
-class String  : public Object
+class String 
 {
 public:
 	String() :m_Size{ 0 }, m_Data{nullptr} {

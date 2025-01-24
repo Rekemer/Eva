@@ -4,6 +4,7 @@
 #include "AST.h"
 #include "Function.h"
 #include "InCode.h"
+#include "Native.h"
 #include "SSA.h"
 #include "Options.h"
 #include "Serialize.h"
@@ -261,8 +262,12 @@ void Compiler::PatchBreak(int prevSizeBreak)
 		m_BreakIndexes.pop();
 	}
 }
-ValueType Compiler::GetGlobalType(const std::string& str)
+ValueType Compiler::GetGlobalType(const std::string& str, bool isNative)
 {
+	if (isNative)
+	{
+		return GetNativeType(str);
+	}
 	auto entry = globalVariablesTypes.Get(str);
 	if (!entry->IsInit())
 	{
@@ -274,6 +279,19 @@ ValueType Compiler::GetGlobalType(const std::string& str)
 	}
 	return entry->value.type;
 }
+
+std::shared_ptr<ICallable> Compiler::GetCallable(std::string_view name, bool isNative)
+{
+	if (isNative)
+	{
+		return GetNative(name);
+	}
+	else
+	{
+		return globalVariables.Get(name)->value.AsCallable();
+	}
+}
+
 Block* Compiler::HandleBranch(std::vector<Block*> branches, const  Instruction& instr)
 {
 	std::vector<int> indexJumps;
@@ -402,8 +420,15 @@ void Compiler::GenerateBlockInstructions(Block* block)
 		}
 		case TokenType::LEFT_PAREN:
 		{
+			auto isNative = instr.operRight.isConstant;
+
 			auto callName = instr.operRight.value.AsString();
+
+			if (isNative)
+			currentFunc->opCode.push_back((Bytecode)InCode::GET_NATIVE_NAME);
+			else
 			currentFunc->opCode.push_back((Bytecode)InCode::GET_GLOBAL_VAR);
+
 			currentFunc->constants.emplace_back(callName);
 			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 			auto argBlock = instr.argBlock;
@@ -720,23 +745,6 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::NIL:
 			break;
-		case TokenType::PRINT:
-		{
-			auto& argument = instr.operRight;
-			if (argument.isConstant)
-			{
-				GenerateConstant(argument.value);
-			}
-			else
-			{
-				if (!argument.IsTemp())
-				{
-					EmitGet(currentFunc, argument);
-				}
-			}
-			currentFunc->opCode.push_back((uint8_t)InCode::PRINT);
-			break;
-		}
 		case TokenType::RETURN:
 		{
 			if (m_FuncReturnType != ValueType::NIL)
@@ -971,15 +979,22 @@ int Compiler::Compile(const char* line)
 		}
 		trees.push_back(std::move( tree));
 	}
-
+	// the function either not defined and is native function
+	// or the function is defined but a user one
 	for (auto& [name, numberLine]: unresolvedFuncNames)
 	{
-		auto isDeclared = globalVariables.Get(name)->IsInit();
-		if (!isDeclared)
+		auto isDeclaredUser = globalVariables.Get(name)->IsInit();
+		if (isDeclaredUser)
 		{
-			panic = true;
-			std::cout << std::format("undefined function {} is called at {}\n", name, numberLine);
+			continue;
 		}
+		auto isNative = IsNative(name);
+		if (isNative)
+		{
+			continue;
+		}
+		panic = true;
+		std::cout << std::format("undefined function {} is called at {}\n", name, numberLine);
 	}
 	if (panic)
 	{

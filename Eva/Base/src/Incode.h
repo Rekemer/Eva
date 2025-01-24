@@ -44,11 +44,12 @@ enum class InCode  : Bytecode
 	AND,
 	OR,
 	NOT,
-	PRINT,
 
 
 	SET_GLOBAL_VAR,
 	GET_GLOBAL_VAR,
+
+	GET_NATIVE_NAME,
 
 	SET_LOCAL_VAR,
 	GET_LOCAL_VAR,

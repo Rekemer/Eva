@@ -8,9 +8,13 @@
 #include <cereal/types/variant.hpp>
 #include <cereal/access.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/polymorphic.hpp>
 #include "Function.h"
 #include "Entry.h"
 #include "HashTable.h"
+
+CEREAL_REGISTER_TYPE(Func)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(ICallable, Func)
 
 inline bool HasJsonExtension(std::string_view str)	
 {
@@ -29,11 +33,22 @@ namespace cereal
 		std::is_base_of_v<cereal::BinaryInputArchive, Archive> ||
 		std::is_base_of_v<cereal::BinaryOutputArchive, Archive>;
 
+
+	template <class Archive>
+	void serialize(Archive& archive, ICallable& func)
+	{
+		archive(
+			cereal::make_nvp("argCount", func.argCount),
+			cereal::make_nvp("argTypes", func.argTypes),
+			cereal::make_nvp("name", func.name)
+		);
+	}
+
 	template <class Archive>
 	void serialize(Archive& archive, Func& func) {
 		auto& constPool = func.constants;
 		auto& bytecode = func.opCode;
-
+		archive(cereal::virtual_base_class<ICallable>(&func));
 		if constexpr (is_binary_archive_v<Archive>) {
 			// Binary: no name-value pairs
 			archive(constPool, bytecode);

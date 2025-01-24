@@ -163,4 +163,5 @@ struct Call : public Node
 	// can store return type?
 	std::string name;
 	std::vector<std::unique_ptr<Node>> args;
+	bool isNative = false;
 };

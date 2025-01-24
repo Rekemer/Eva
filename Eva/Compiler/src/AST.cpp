@@ -6,6 +6,7 @@
 #include "Value.h"
 #include "Function.h"
 #include "Compiler.h"
+#include "Native.h"
 #include "Tokens.h"
 #include "TokenConversion.h"
 
@@ -135,6 +136,34 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 return nullptr;
  }
 
+ std::unique_ptr<Node> AST::CallFunc(std::string_view str,Iterator& currentToken, bool isGlobal)
+ {
+
+	 bool isNative = IsNative(str);
+	 // function call
+	 if (!isGlobal && !isNative)
+	 {
+		 compiler->unresolvedFuncNames.push_back({ str.data(),(currentToken + 1)->line});
+	 }
+	 // call a function
+	 auto call = std::make_unique<Call>();
+	 call->name = str;
+	 call->isNative = isNative;
+	 call->type = TokenType::LEFT_PAREN;
+	 currentToken += 2;
+	 while (currentToken->type != TokenType::RIGHT_PAREN)
+	 {
+		 auto arg = LogicalOr(currentToken);
+		 call->args.push_back(std::move(arg));
+		 if (currentToken->type != TokenType::RIGHT_PAREN)
+		 {
+			 Error(TokenType::COMMA, currentToken, "Arguments must be separated with comma");
+		 }
+	 }
+	 Error(TokenType::RIGHT_PAREN, currentToken, "Arguments list must end with ) ");
+	 return call;
+ }
+
  std::unique_ptr<Node> AST::Value( Iterator& currentToken)
 {
 	auto node = std::make_unique<Expression>();
@@ -171,35 +200,8 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 
 		if ((currentToken + 1)->type == TokenType::LEFT_PAREN)
 		{
-			// function call
-			if (!isGlobal)
-			{
-				compiler->unresolvedFuncNames.push_back({ str,(currentToken+1)->line });
-				//std::stringstream ss;
-				//ss << "There is no function " << str << " to call";
-				//Error(currentToken,ss);
-				//return{};
-			}
-
-			// call a function
-			auto call = std::make_unique<Call>();
-			call->name = str;
-			call->type = TokenType::LEFT_PAREN;
-			currentToken+=2;
-			while (currentToken->type != TokenType::RIGHT_PAREN)
-			{
-				auto arg = LogicalOr(currentToken);
-				call->args.push_back(std::move(arg));
-				if (currentToken->type != TokenType::RIGHT_PAREN)
-				{
-					Error(TokenType::COMMA, currentToken, "Arguments must be separated with comma");
-				}
-			}
-
-			Error(TokenType::RIGHT_PAREN, currentToken, "Arguments list must end with ) ");
-			//if (currentToken->type == TokenType::SEMICOLON)
-			//Error(TokenType::SEMICOLON, currentToken, "Function call must end with ;");
-			return call;
+			
+			return CallFunc(str,currentToken,isGlobal);
 		}
 		else
 		{
@@ -1117,16 +1119,6 @@ void Print(const Expression* tree, int level) {
  {
 
 
-	 if (currentToken->type == TokenType::PRINT)
-	 {
-		 auto printNode = std::make_unique<Expression>();
-		 printNode->line = currentToken->line;
-		 printNode->type = TokenType::PRINT;
-		 currentToken += 1;
-		 printNode->left = LogicalOr(currentToken);
-		 Error(TokenType::SEMICOLON, currentToken, "Expected ; at the end of expression");
-		 return printNode;
-	 }
 	 // ifnode represents the whole if statement
 	 // left child is condition
 	 // right child is the then and else branches
@@ -1140,7 +1132,7 @@ void Print(const Expression* tree, int level) {
 		//	   /    \
 		//	 [else][then]
 
-	 else if (currentToken->type == TokenType::IF)
+	if (currentToken->type == TokenType::IF)
 	 {
 		 auto ifnode = EatIf(currentToken);
 		 auto expr = static_cast<Expression*>(ifnode.get());
@@ -1418,6 +1410,11 @@ TokenType AST::TypeCheckIfStatement(Node* node)
 TokenType AST::TypeCheckFunctionCall(Node* node)
 {
 	auto call = static_cast<Call*>(node);
+	if (call->isNative)
+	{
+		return TypeToLiteral(ValueType::NIL);
+		assert(false && "handle native funcs");
+	}
 	auto& globals = compiler->GetGlobals();
 	auto funcEntry = globals.Get(call->name);
 	if (!funcEntry)
@@ -1426,7 +1423,8 @@ TokenType AST::TypeCheckFunctionCall(Node* node)
 		return TokenType::NIL;
 	}
 
-	auto funcValue = funcEntry->value.AsFunc();
+
+	auto funcValue = funcEntry->value.AsCallable();
 	if (call->args.size() != funcValue->argTypes.size())
 	{
 		ErrorTypeCheck(call->line, "Incorrect number of arguments for function '" + call->name + "'");

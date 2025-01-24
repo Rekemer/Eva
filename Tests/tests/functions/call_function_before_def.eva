@@ -23,7 +23,7 @@ fun main() : int
 
 fun lol () : int
 {
-	Print "lol";
+	Print("lol"); 
 	return 2;
 }
 fun lol2 () : int

@@ -89,8 +89,6 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 		return strSize == 8 && AreEqual(str, strSize, "continue", 8);
 	case TokenType::BREAK:
 		return strSize == 5 && AreEqual(str, strSize, "break", 5);
-	case TokenType::PRINT:
-		return strSize == 5 && AreEqual(str, strSize, "Print", 5);
 	case TokenType::IF:
 		return strSize == 2 && AreEqual(str, strSize, "if", 2);
 	case TokenType::ELIF:
@@ -118,12 +116,7 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 
 void Lexer::EatType(TokenType type)
 {
-	if (type == TokenType::PRINT)
-	{
-		tokens.emplace_back(CreateToken(TokenType::PRINT, ValueContainer{}, currentLine));
-		currentSymbol += 5;
-	}
-	else if (type == TokenType::INT_TYPE)
+	if (type == TokenType::INT_TYPE)
 	{
 		tokens.emplace_back(CreateToken(TokenType::INT_TYPE, ValueContainer{}, currentLine));
 		currentSymbol += 3;
@@ -611,16 +604,7 @@ void Lexer::ParseDeclaration()
 	
 
 }
-void Lexer::ParseStatement()
-{
-	if (IsMatch(currentSymbol,5, TokenType::PRINT))
-	{	
-		EatType(TokenType::PRINT);
-		startSymbol = currentSymbol;
-	}
-	
-	
-}
+
 bool Lexer::Parse(const char* source)
 {
 	startSymbol = source;

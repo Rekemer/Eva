@@ -8,20 +8,13 @@
 #include "Function.h"
 #include "HashTable.h"
 #include "Bytecode.h"
+#include "CallFrame.h"
 
  
 
 
 
-struct CallFrame
-{
-	Func* function;
-	size_t ip = 0;	
-	// base pointer to stack
-	// which is start of counting
-	// for the function 
-	int stackIndex = -1;
-};
+
 class AST;
 struct Node;
 struct Block;
@@ -91,6 +84,8 @@ public:
 	Func* mainFunc = nullptr;
 	std::vector<std::string> functionNames;
 private:
+	friend Func;
+	friend NativeFunc;
 	// function we build or execute
 	Func* currentFunc = nullptr;
 	// entry point
@@ -102,7 +97,7 @@ private:
 
 	ValueContainer temp;
 	
-	std::array<CallFrame, 64> callFrames;
+	std::array<CallFrame, callFrameAmount > callFrames;
 	int nextToCurrentCallFrame = 0;
 	bool m_Panic = false;
 	// if we hit break or continue we should know where to jump

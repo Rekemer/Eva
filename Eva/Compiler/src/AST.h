@@ -93,8 +93,8 @@ private:
 	void Error( Iterator& currentToken, std::stringstream& ss);
 
 	void ErrorTypeCheck(int line, const std::string& str);
-
 	TokenType TypeCheck(Node* expr);
+	std::unique_ptr<Node> CallFunc(std::string_view str, Iterator& currentToken, bool isGlobal);
 	std::unique_ptr<Node> UnaryOpPrefix(Iterator& currentToken);
 	std::unique_ptr<Node> UnaryOpPostfix(Iterator& currentToken);
 	std::unique_ptr<Node> Value(Iterator& currentToken);

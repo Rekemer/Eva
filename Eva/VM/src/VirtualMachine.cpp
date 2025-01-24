@@ -8,6 +8,8 @@
 #include <format>
 #include "TokenConversion.h"
 #include "Local.h"
+#include "ICallable.h"
+#include "Native.h"
 
 
 #include <fstream>
@@ -334,7 +336,7 @@ void VirtualMachine::Execute()
 			break;
 		}case InCode::NIL:
 		{
-			vmStack.push_back(ValueContainer{ -1});
+			vmStack.push_back(ValueContainer{ -1 });
 			break;
 		}
 		case InCode::FALSE:
@@ -354,12 +356,12 @@ void VirtualMachine::Execute()
 		}
 		case InCode::MULTIPLY_FLOAT:
 		{
-			BINARY_OP(float,*);
+			BINARY_OP(float, *);
 			break;
 		}
 		case InCode::DIVIDE_FLOAT:
 		{
-			BINARY_OP(float ,/ );
+			BINARY_OP(float, / );
 			break;
 		}
 		case InCode::ADD_INT:
@@ -369,15 +371,15 @@ void VirtualMachine::Execute()
 		}
 		case InCode::ADD_STRING:
 		{
-			auto v = vmStack.back().AsString(); 
-			vmStack.pop_back(); 
+			auto v = vmStack.back().AsString();
+			vmStack.pop_back();
 			auto v2 = vmStack.back().AsString();
-			vmStack.pop_back(); 
+			vmStack.pop_back();
 			//auto newString = VirtualMachine::AddStrings(v2,v);
 			auto newString = v2 + v;
 			vmStack.push_back(ValueContainer{ newString }); \
 
-			break;
+				break;
 		}
 		case InCode::CAST_FLOAT:
 		{
@@ -428,7 +430,7 @@ void VirtualMachine::Execute()
 		}
 		case InCode::DIVIDE_PERCENT:
 		{
-			BINARY_OP(int, % );
+			BINARY_OP(int, %);
 			break;
 		}
 		case InCode::INCREMENT_INT:
@@ -461,11 +463,11 @@ void VirtualMachine::Execute()
 			vmStack.pop_back();
 			if (value.type == ValueType::FLOAT)
 			{
-				vmStack.push_back(ValueContainer{-value.As<float>()});
+				vmStack.push_back(ValueContainer{ -value.As<float>() });
 			}
 			else if (value.type == ValueType::INT)
 			{
-				vmStack.push_back(ValueContainer{-value.As<int>() });
+				vmStack.push_back(ValueContainer{ -value.As<int>() });
 			}
 			else
 			{
@@ -512,12 +514,12 @@ void VirtualMachine::Execute()
 		}
 		case InCode::AND:
 		{
-			BINARY_OP(bool, && );
+			BINARY_OP(bool, &&);
 			break;
 		}
 		case InCode::OR:
 		{
-			BINARY_OP(bool, ||);
+			BINARY_OP(bool, || );
 			break;
 		}
 		case InCode::RETURN:
@@ -536,21 +538,16 @@ void VirtualMachine::Execute()
 			if (callFrames[nextToCurrentCallFrame - 1].function == globalFunc.get())
 			{
 				vmStack.resize(0);
-			}else
-			vmStack.resize(callFrames[nextToCurrentCallFrame-1].stackIndex);
+			}
+			else
+				vmStack.resize(callFrames[nextToCurrentCallFrame - 1].stackIndex);
 			vmStack.push_back(res);
 			nextToCurrentCallFrame--;
 			frame = &callFrames[prevCallFrameIndex];
 			break;
 		}
-		case InCode::PRINT:
-		{	auto& v = vmStack.back();
-			std::cout << v << "\n";
-			vmStack.pop_back();
-			break;
-		}
 		case InCode::GET_GLOBAL_VAR:
-		{	
+		{
 			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
 			auto string = nameOfVariable.AsString();
 			auto entry = globalVariables.Get(string);
@@ -558,7 +555,7 @@ void VirtualMachine::Execute()
 			break;
 		}
 		case InCode::SET_GLOBAL_VAR:
-		{	
+		{
 			auto& value = vmStack.back();
 			auto& nameOfVariable = frame->function->constants[frame->function->opCode[frame->ip++]];
 			auto string = nameOfVariable.AsString();
@@ -571,7 +568,7 @@ void VirtualMachine::Execute()
 		case InCode::GET_LOCAL_VAR:
 		{
 			auto index = frame->function->opCode[frame->ip++] + 1;
-			vmStack.push_back(vmStack[frame->stackIndex+index]);
+			vmStack.push_back(vmStack[frame->stackIndex + index]);
 			break;
 		}
 		case InCode::SET_LOCAL_VAR:
@@ -588,7 +585,7 @@ void VirtualMachine::Execute()
 			// if it is not false, then we should get to then block
 			auto offset = frame->function->opCode[frame->ip++];
 			auto condition = vmStack.back().As<bool>();
-			if (!condition) frame->ip = (frame->ip-1) + (offset);
+			if (!condition) frame->ip = (frame->ip - 1) + (offset);
 			break;
 		}
 		case InCode::JUMP:
@@ -603,15 +600,47 @@ void VirtualMachine::Execute()
 			frame->ip -= offset;
 			break;
 		}
+		case InCode::GET_NATIVE_NAME:
+		{
+			auto index = frame->function->opCode[frame->ip++];
+			auto name = frame->function->constants[index];
+			auto v = ValueContainer{ GetNative(name.AsString()) };
+			vmStack.push_back(v);
+			break;
+		}
 		case InCode::CALL:
 		{
 			// up to this point arguments and function are on stack
+			//auto argumentCount = frame->function->opCode[frame->ip++];
+			//auto funcIndex = vmStack.size()  - 1 - argumentCount;
+			//auto func = vmStack[funcIndex].AsFunc();
+			//auto newIndexFrame = CallFunction(func.get(), argumentCount, funcIndex);
+			//// update our call frame 
+			//frame = &callFrames[newIndexFrame];
+
+			// arguments and function are on stack
 			auto argumentCount = frame->function->opCode[frame->ip++];
-			auto funcIndex = vmStack.size()  - 1 - argumentCount;
-			auto func = vmStack[funcIndex].AsFunc();
-			auto newIndexFrame = CallFunction(func.get(), argumentCount, funcIndex);
-			// update our call frame 
-			frame = &callFrames[newIndexFrame];
+			auto funcIndex = vmStack.size() - 1 - argumentCount;
+
+			// Retrieve the ICallable from the stack
+			auto callable = vmStack[funcIndex].AsCallable();
+
+			// "Call" the function
+			size_t newFrameIndex = callable->Call(*this, argumentCount, funcIndex);
+
+			// If it's a user function, newFrameIndex is a valid frame
+			// If it's a native function, newFrameIndex might be SIZE_MAX
+			if (newFrameIndex != SIZE_MAX) {
+				// Switch to that new frame
+				frame = &callFrames[newFrameIndex];
+			}
+			else {
+				// It's a native function, we stay in the current frame
+				// Possibly pop the function and its arguments from the stack
+				// if that's your calling convention
+			}
+
+
 			break;
 		}
 		case InCode::POP:

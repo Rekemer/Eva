@@ -1,6 +1,6 @@
 #include "Value.h"
 #include <cassert>
-#include "Object.h"
+#include "ICallable.h"
 #include <string>
 #include "Function.h"
 
@@ -23,6 +23,16 @@ switch (valueType)
 	default:
 		return "Unknown value type";
 	}
+}
+
+
+std::shared_ptr<Func> ValueContainer::AsFunc() const
+{
+	return std::static_pointer_cast<Func>(AsCallable());
+}
+std::shared_ptr<ICallable> ValueContainer::AsCallable() const
+{
+	return std::get<std::shared_ptr<ICallable>>(as);
 }
 
 ValueContainer::ValueContainer(const ValueContainer& v)
@@ -280,7 +290,7 @@ std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 	}
 	case  ValueType::FUNCTION:
 	{
-		auto name =v.AsFunc()->name;
+		auto name =v.AsCallable()->name;
 		os << name;
 		break;
 	}
