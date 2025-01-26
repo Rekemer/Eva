@@ -675,11 +675,8 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			auto instr = info.second;
 			if (instr->instrType != TokenType::FUN)
 			{
-				if (instr->instrType != TokenType::VAR)
-				{
-					MarkOperand(info.first, instr->operRight, workList);
-					MarkOperand(info.first, instr->operLeft, workList);
-				}
+				MarkOperand(info.first, instr->operRight, workList);
+				MarkOperand(info.first, instr->operLeft, workList);
 				MarkOperand(info.first, instr->result, workList);
 				if (instr->instrType == TokenType::LEFT_PAREN)
 				{
@@ -2122,6 +2119,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 		parseFunc.push(true);
 		ConvertStatementAST(func->body.get());
 		parseFunc.pop();
+		if (isCurrentFuncCritical)
+		{
+			isCurrentFuncCritical = false;
+			isFuncCritical[func->name] = true;
+		}
 		//currentScope = prevScope;
 		currentFunc = prevFunc;
 		currentBlock = functionCFG.at(currentFunc).current;
@@ -2416,6 +2418,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		{
 			// we have parsed function definition 
 			MarkFuncIfCritical(funcCall, call->isNative);
+			isCurrentFuncCritical = true;
 		}
 		else
 		{

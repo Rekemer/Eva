@@ -83,18 +83,19 @@
 
 */
 
-fun p (a : int ) : int 
-{   
-    Print(a);
-    return 0;
-}
-fun main() : int 
-{
-a:=2;
-p(a + 2);
-
-return 0;
-}
+//fun p (a : int ) : int 
+//{   
+//    Print(a);
+//    return 0;
+//}
+//fun main() : int 
+//{
+//a:=2;
+//c:= a * 4;
+//p(c);
+//
+//return 0;
+//}
 
 //fun lol3 () : int 
 //{
@@ -122,3 +123,55 @@ return 0;
 //{	
 //	return 2;
 //}
+
+a:=2;
+fun main() : int
+{
+    unusedVar1 := 50;
+    unusedVar2 := 100;
+
+    x := 0 +a;
+    y := 10 *x;
+
+    result := 5;
+
+    for i := 0; i < 1; i++;
+    {
+      tempVar := i + 200 - y;
+      if (false)
+      {
+      }
+      else
+      {
+          result -= 20;
+          if (result <0 )
+          {
+              a = result;
+              unusedNestedIf := 3 * 2;
+          }
+      }
+    }
+    while x < y
+    {
+      x++;
+      if (x > 5)
+      {
+          break;
+      }
+    }
+    if (result > 10)
+    {
+      result += 5;
+    }
+    elif (result == 0)
+    {
+      result = y;
+    }
+    else
+    {
+      result += x;
+    }
+    a = result;
+    Print(a);
+    return result;
+}

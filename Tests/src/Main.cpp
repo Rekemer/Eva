@@ -176,8 +176,8 @@ int main()
     auto cases = DiscoverTestCases(TEST_CASES_DIR);
     auto str = std::filesystem::current_path();
     TestCase t;
-    t.filePath = "./tests/functions/call_function_before_def.eva";
-   // cases = { t };
+    t.filePath = "./tests/functions/call_function_assign_parametr.eva";
+    //cases = { t };
     for (auto& caseTest : cases)
     {
         // preproccess test data

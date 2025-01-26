@@ -575,7 +575,7 @@ void VirtualMachine::Execute()
 		{
 			auto index = frame->function->opCode[frame->ip++];
 			auto value = vmStack.back();
-			vmStack[index] = value;
+			vmStack[frame->stackIndex+1+index] = value;
 			vmStack.pop_back();
 			break;
 		}

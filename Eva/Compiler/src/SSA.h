@@ -56,7 +56,7 @@ struct Operand
 
 	bool IsVariable() const
 	{
-		return value.type == ValueType::STRING && isConstant == false && isTemp == false;
+		return depth!= -1 && value.type == ValueType::STRING && isConstant == false && isTemp == false;
 	}
 	bool IsTemp()  const
 	{
@@ -269,7 +269,7 @@ private:
 	std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
 	std::unordered_map<int, int> removedLocalTotal;
 
-
+	bool isCurrentFuncCritical = false;
 	std::unordered_map<std::string, bool> isFuncCritical;
 	
 	// to mark functons calls as critical if not func not defined yet
