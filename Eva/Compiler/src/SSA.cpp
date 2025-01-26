@@ -272,7 +272,7 @@ void CFG::Rename(Block* b)
 				continue;
 			}
 
-			auto pops = instr.operRight.value.As<int>();
+			auto pops = instr.operRight.value.As<eint>();
 			// we clear return variable that is not used by anyone
 			if (instr.operRight.version == IS_TEMP) continue;
 			assert(pops <= var.size());
@@ -675,8 +675,11 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			auto instr = info.second;
 			if (instr->instrType != TokenType::FUN)
 			{
-				MarkOperand(info.first, instr->operRight, workList);
-				MarkOperand(info.first, instr->operLeft, workList);
+				if (instr->instrType != TokenType::VAR)
+				{
+					MarkOperand(info.first, instr->operRight, workList);
+					MarkOperand(info.first, instr->operLeft, workList);
+				}
 				MarkOperand(info.first, instr->result, workList);
 				if (instr->instrType == TokenType::LEFT_PAREN)
 				{
@@ -709,6 +712,7 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 		}
 		for (auto f : funcCalls)
 		{
+
 			Mark(f->argBlock, workList);
 			MarkInstruction(*f, b);
 		}
@@ -827,7 +831,7 @@ void CFG::Sweep(Block* block)
 						(flowCommand->instrType == TokenType::CONTINUE || flowCommand->instrType == TokenType::BREAK))
 					{
 						auto total = 0;
-						auto loopDepth = flowCommand->operRight.value.As<int>();
+						auto loopDepth = flowCommand->operRight.value.As<eint>();
 						for (auto [k, v] : removedLocalTotal)
 						{
 							if (k >= loopDepth)
@@ -836,14 +840,14 @@ void CFG::Sweep(Block* block)
 								//removedLocalTotal.at(k) = 0;
 							}
 						}
-						it->operRight.value.AsRef<int>() -= total;
+						it->operRight.value.AsRef<eint>() -= total;
 					}
 					else
 					{
 						auto iter = removedLocalTotal.find(it->operRight.depth);
 						if (iter != removedLocalTotal.end())
 						{
-							it->operRight.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
+							it->operRight.value.AsRef<eint>() -= removedLocalTotal.at(it->operRight.depth);
 							removedLocalTotal.at(it->operRight.depth) = 0;
 						}
 					}
@@ -853,7 +857,7 @@ void CFG::Sweep(Block* block)
 					auto iter = removedLocalTotal.find(it->operRight.depth);
 					if (iter != removedLocalTotal.end())
 					{
-						it->operLeft.value.AsRef<int>() -= removedLocalTotal.at(it->operRight.depth);
+						it->operLeft.value.AsRef<eint>() -= removedLocalTotal.at(it->operRight.depth);
 						removedLocalTotal.at(it->operRight.depth) = 0;
 					}
 				}
@@ -954,7 +958,7 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 	case TokenType::GREATER_EQUAL:
 	{
 		resultValue = ValueContainer::Less(left.value, right.value);
-		resultValue = !resultValue.AsRef<bool>();
+		resultValue = !resultValue.AsRef<ebool>();
 	}
 		break;
 	case TokenType::LESS:
@@ -963,7 +967,7 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 	case TokenType::LESS_EQUAL:
 	{
 		resultValue = ValueContainer::Greater(left.value, right.value);
-		resultValue = !resultValue.AsRef<bool>();
+		resultValue = !resultValue.AsRef<ebool>();
 	}
 	break;
 	case TokenType::EQUAL_EQUAL:
@@ -972,7 +976,7 @@ void CalculateConstant(TokenType op, Operand& left, Operand& right, Instruction&
 	case TokenType::BANG_EQUAL:
 	{
 		resultValue = ValueContainer::Equal(left.value, right.value);
-		resultValue = !resultValue.AsRef<bool>();
+		resultValue = !resultValue.AsRef<ebool>();
 		break;
 	}
 
@@ -2088,7 +2092,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 	{
 		auto func = tree->As<FunctionNode>();
 		isFuncCritical[func->name] = false;
-		Instruction funcInstr{ TokenType::FUN,{},Operand{func->name,false,2},{} };
+		Instruction funcInstr{ TokenType::FUN,{},Operand{func->name,false,SYSTEM_VER},{} };
 		MakeCritical(funcInstr);
 		currentBlock->instructions.push_back(funcInstr);
 		auto prevFunc = currentFunc;
@@ -2354,7 +2358,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		block = currentBlock;
 		while (block->instructions.size() > 0 && block->instructions.back().instrType == TokenType::BLOCK)
 		{
-			acc += block->instructions.back().operRight.value.As<int>();
+			acc += block->instructions.back().operRight.value.As<eint>();
 			block->instructions.pop_back();
 		}
 		// to know how many times we need to pop
@@ -2404,7 +2408,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto res = CreateTemp();
 		
 		// 
-		Operand  funcNameOp{ {call->name},call->isNative,2 };
+		Operand  funcNameOp{ {call->name},call->isNative,SYSTEM_VER };
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
 
 		// for now we treat all native calls as critical
@@ -2439,16 +2443,16 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 			auto& arg = call->args[i];
 			auto argOp = ConvertExpressionAST(arg.get());
 
-			Operand actual = Operand{ ValueContainer{argOp.type},false,2 };
+			Operand actual = Operand{ ValueContainer{argOp.type},false,SYSTEM_VER };
 			auto declType = funcValue->IsArgUnlimited() ? argOp.type : funcValue -> argTypes[i];
-			Operand decl = Operand{ ValueContainer{declType},false,2 };
+			Operand decl = Operand{ ValueContainer{declType},false,SYSTEM_VER };
 			Instruction instr{ TokenType::VAR,actual,decl,argOp };
 			currentBlock->instructions.push_back(instr);
 
 			args.push_back(argOp);
 		}
 		getAsParam = false;
-		prevBlock->instructions[funcCallIndex].operLeft = Operand{ ValueContainer{(int)call->args.size()},true,2 };
+		prevBlock->instructions[funcCallIndex].operLeft = Operand{ ValueContainer{(int)call->args.size()},true,SYSTEM_VER };
 		if (!writeToVariable && !(isReturn.size() > 0) && parseFunc.size() > 0)
 		{
 			Instruction instr{ TokenType::BLOCK,{}, Operand{1,true,IS_TEMP},{} };
@@ -2504,7 +2508,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	}
 	case TokenType::INT_LITERAL:
 	{
-		auto number = expr->value.As<int>();
+		auto number = expr->value.As<eint>();
 		Operand op{ number,true,0 };
 		op.depth = currentScope != nullptr ? currentScope->depth : 0;
 		op.type = ValueType::INT;
@@ -2513,7 +2517,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	}
 	case TokenType::FLOAT_LITERAL:
 	{
-		auto number = expr->value.As<float>();
+		auto number = expr->value.As<efloat>();
 		Operand op{ number,true,0 };
 		op.depth = currentScope != nullptr ? currentScope->depth : 0;
 		op.type = ValueType::FLOAT;
@@ -2532,7 +2536,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::TRUE:
 	case TokenType::FALSE:
 	{
-		auto value = expr->value.As<bool>();
+		auto value = expr->value.As<ebool>();
 		Operand op{ value,true,0 };
 		op.type = ValueType::BOOL;
 		op.depth = currentScope != nullptr ? currentScope->depth : 0;

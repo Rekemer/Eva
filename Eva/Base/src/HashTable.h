@@ -24,7 +24,7 @@ namespace cereal {
 
 inline bool IsTombstone(Entry* entry)
 {
-	return !entry->IsInit() && entry->value.As<bool>() == true;
+	return !entry->IsInit() && entry->value.As<ebool>() == true;
 	//return entry->IsInit();
 }
 inline bool IsSet(Entry* entry)

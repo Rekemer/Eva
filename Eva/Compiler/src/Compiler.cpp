@@ -364,7 +364,7 @@ void Compiler::GenerateConstant(const ValueContainer& v)
 {
 	if (v.type == ValueType::BOOL)
 	{
-		auto instr = v.As<bool>() ? (Bytecode)InCode::TRUE : (Bytecode)InCode::FALSE;
+		auto instr = v.As<ebool>() ? (Bytecode)InCode::TRUE : (Bytecode)InCode::FALSE;
 		currentFunc->opCode.push_back(instr);
 		return;
 	}
@@ -441,7 +441,7 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			//	GenerateCFGOperand(arg,instr.returnType);
 			//}
 			currentFunc->opCode.push_back((Bytecode)InCode::CALL);
-			currentFunc->opCode.push_back(instr.operLeft.value.As<int>());
+			currentFunc->opCode.push_back(instr.operLeft.value.As<eint>());
 			if (instr.returnType == ValueType::NIL)
 			{
 				EmitPop(currentFunc->opCode);
@@ -749,7 +749,7 @@ void Compiler::GenerateBlockInstructions(Block* block)
 		{
 			if (m_FuncReturnType != ValueType::NIL)
 			{
-				auto popAmount = instr.operLeft.value.As<int>();
+				auto popAmount = instr.operLeft.value.As<eint>();
 
 				GenerateCFGOperand(instr.operRight, m_FuncReturnType);
 				currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
@@ -780,7 +780,7 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			break;
 		case TokenType::BLOCK:
 		{
-			auto popAmmount = instr.operRight.value.As<int>();
+			auto popAmmount = instr.operRight.value.As<eint>();
 			for (int i = 0; i < popAmmount; i++)
 			{
 				currentFunc->opCode.push_back((Bytecode)InCode::POP);

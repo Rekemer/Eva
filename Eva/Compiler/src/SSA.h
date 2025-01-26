@@ -13,10 +13,12 @@
 #include <format>
 #include "Value.h"
 
+// should we perhaps use bit logic?
 const int LABEL_VERSION = -3;
 const int NOT_INIT_VERSION = -2;
 const int NOT_INIT_OPERAND = -1;
 const int IS_TEMP = -4;
+const int SYSTEM_VER = 2;
 struct Operand
 {
 	ValueContainer value;

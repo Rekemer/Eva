@@ -101,7 +101,6 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 		return strSize == 3 && AreEqual(str, strSize, "for", 3);
 	case TokenType::INT_TYPE:
 		return strSize == 3 && AreEqual(str, strSize, "int", 3);
-
 	case TokenType::FLOAT_TYPE:
 		return strSize == 5 && AreEqual(str, strSize, "float", 5);
 
@@ -112,31 +111,6 @@ bool IsMatch(const char* str, size_t strSize, TokenType type) {
 	}
 }
 
-
-
-void Lexer::EatType(TokenType type)
-{
-	if (type == TokenType::INT_TYPE)
-	{
-		tokens.emplace_back(CreateToken(TokenType::INT_TYPE, ValueContainer{}, currentLine));
-		currentSymbol += 3;
-	}
-	else if (type == TokenType::FLOAT_TYPE)
-	{
-		tokens.emplace_back(CreateToken(TokenType::FLOAT_TYPE, ValueContainer{}, currentLine));
-		currentSymbol += 5;
-	}
-	else if (type == TokenType::STRING_TYPE)
-	{
-		tokens.emplace_back(CreateToken(TokenType::STRING_TYPE, ValueContainer{}, currentLine));
-		currentSymbol += 6;
-	}
-	else
-	{
-		assert(false);
-	}
-	
-}
 bool Lexer::IsNewLine(const char* symbol) 
 {
 	if (Peek() == '\0') return false;
@@ -309,12 +283,12 @@ void Lexer::ParseNumber()
 		}
 		if (isFloat)
 		{
-			float floatValue = std::strtof(nextToken, nullptr);
+			efloat floatValue = std::strtof(nextToken, nullptr);
 			tokens.push_back(CreateToken(TokenType::FLOAT_LITERAL, ValueContainer{floatValue}, currentLine));
 		}
 		else
 		{
-			auto intValue = atoi(nextToken);
+			eint intValue = atoi(nextToken);
 			tokens.push_back(CreateToken(TokenType::INT_LITERAL, ValueContainer{ intValue }, currentLine));
 		}
 		//startSymbol = currentSymbol;

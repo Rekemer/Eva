@@ -113,7 +113,7 @@ void FillTest(TestCase& test,std::string_view variableName, std::string_view lin
         }
         else  v = IsFloat(valueString)
             ? ValueContainer{ std::stof(std::string{valueString}) }
-        : ValueContainer{ std::stoi(std::string{valueString}) };
+        : ValueContainer{ eint(std::stoi(std::string{valueString})) };
 
         test.expected[name] = v;
     }
@@ -176,8 +176,8 @@ int main()
     auto cases = DiscoverTestCases(TEST_CASES_DIR);
     auto str = std::filesystem::current_path();
     TestCase t;
-    t.filePath = "./tests/expressions/expression_2.eva";
-    //cases = { t };
+    t.filePath = "./tests/functions/call_function_before_def.eva";
+   // cases = { t };
     for (auto& caseTest : cases)
     {
         // preproccess test data

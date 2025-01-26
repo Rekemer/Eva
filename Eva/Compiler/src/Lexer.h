@@ -28,8 +28,6 @@ private:
 	void EatWhiteSpace();
 	void EatOdinaryComments();
 	void EatDoubleComments();
-	// eats statement and declaration tokens
-	void EatType(TokenType type);
 
 	void ErrorCharacter(const char* msg, const char character, size_t line);
 	void Error(const char* msg,  size_t line);

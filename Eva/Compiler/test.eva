@@ -1,7 +1,47 @@
+
+//foreign import "glfw3.dll"
+//{
+//	/* 
+//		declare functions
+//		so that we know the signature right away
+//
+//        wherever we need a ptr, we use long as a handle
+//	*/
+//
+//	// Initializes the GLFW library
+//    fun glfwInit() : int;
+//
+//    // Creates a new window
+//    fun glfwCreateWindow(width: int, height: int, title: String, monitor: long, share: long) : long;
+//
+//   // // Sets the current OpenGL context
+//   // fun glfwMakeContextCurrent(window: *void) -> void;
+//   //
+//   // // Checks if the window should close
+//   // fun glfwWindowShouldClose(window: *void) -> int;
+//   //
+//   // // Polls for window events
+//   // fun glfwPollEvents() -> void;
+//   //
+//   // // Swaps the front and back buffers for a window
+//   // fun glfwSwapBuffers(window: *void) -> void;
+//   //
+//   // // Terminates the GLFW library
+//   // fun glfwTerminate() -> void;
+//
+//}
+//
+//
+//
+//a : long = 2;
+//Print (a);
+
+
+
 //Print 2;
 //Print ("{} \n {} \n Hello \n {} \n ", "Ilia", "Says", "Cate");
 
-Print("Hello", "Ilia","Says", "Hello");
+//Print("Hello", "Ilia","Says", "Hello");
 
 //a:= foo();
 //fun foo () : int
@@ -36,3 +76,49 @@ Print("Hello", "Ilia","Says", "Hello");
 //	return 2;
 //}
 
+
+/*
+    #test
+    a = 10
+
+*/
+
+fun p (a : int ) : int 
+{   
+    Print(a);
+    return 0;
+}
+fun main() : int 
+{
+a:=2;
+p(a + 2);
+
+return 0;
+}
+
+//fun lol3 () : int 
+//{
+//    return 3;
+//}
+//
+//// 6
+//a:=lol() * lol3();
+//fun main() : int 
+//{
+//    // 6 + 2 + 2 = 10
+//	a += lol() + lol2();
+//	return 0;
+//}
+//
+//
+//
+//
+//fun lol () : int
+//{
+//	Print("lol"); 
+//	return 2;
+//}
+//fun lol2 () : int
+//{	
+//	return 2;
+//}

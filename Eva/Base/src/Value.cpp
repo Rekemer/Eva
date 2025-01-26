@@ -32,7 +32,7 @@ std::shared_ptr<Func> ValueContainer::AsFunc() const
 }
 std::shared_ptr<ICallable> ValueContainer::AsCallable() const
 {
-	return std::get<std::shared_ptr<ICallable>>(as);
+	return std::get<eCallable>(as);
 }
 
 ValueContainer::ValueContainer(const ValueContainer& v)
@@ -75,20 +75,20 @@ do {                                                           \
     {                                                          \
     case ValueType::FLOAT:                                     \
         if (v2.type == ValueType::FLOAT) {                     \
-            return ValueContainer{ v1.As<float>() op v2.As<float>() };  \
+            return ValueContainer{ v1.As<efloat>() op v2.As<efloat>() };  \
         } else {                                               \
-            return ValueContainer{ v1.As<float>() op v2.As<int>() };    \
+            return ValueContainer{ v1.As<efloat>() op v2.As<eint>() };    \
         }                                                      \
         break;                                                 \
     case ValueType::INT:                                       \
         if (v2.type == ValueType::FLOAT) {                     \
-            return ValueContainer{ v1.As<int>() op v2.As<float>() };    \
+            return ValueContainer{ v1.As<eint>() op v2.As<efloat>() };    \
         } else {                                               \
-            return ValueContainer{ v1.As<int>() op v2.As<int>() };      \
+            return ValueContainer{ v1.As<eint>() op v2.As<eint>() };      \
         }                                                      \
         break;                                                 \
     case ValueType::BOOL:                                      \
-        return ValueContainer{ v1.As<bool>() op v2.As<bool>() };\
+        return ValueContainer{ v1.As<ebool>() op v2.As<ebool>() };\
         break;                                                 \
     case ValueType::FUNCTION:                                  \
     case ValueType::DEDUCE:                                    \
@@ -108,16 +108,16 @@ std::string ValueContainer::ToString()
 	switch (type)
 	{
 	case ValueType::BOOL:
-		return std::get<bool>(as) ? "true" : "false";
+		return std::get<ebool>(as) ? "true" : "false";
 
 	case ValueType::INT:
-		return std::to_string(std::get<int>(as));
+		return std::to_string(std::get<eint>(as));
 
 	case ValueType::FLOAT:
-		return std::to_string(std::get<float>(as));
+		return std::to_string(std::get<efloat>(as));
 
 	case ValueType::STRING:
-		return std::get<std::string>(as);
+		return std::get<estring>(as);
 	case ValueType::FUNCTION:
 	case ValueType::DEDUCE:
 	case ValueType::NIL:
@@ -135,18 +135,18 @@ ValueContainer ValueContainer::Add(const ValueContainer& v1, const ValueContaine
 	case ValueType::FLOAT:
 		if (v2.type == ValueType::FLOAT) {
 			
-				return ValueContainer{ v1.As<float>() + v2.As<float>() };  
+				return ValueContainer{ v1.As<efloat>() + v2.As<efloat>() };  
 		}
-		return ValueContainer{ v1.As<float>() + v2.As<int>() };    
+		return ValueContainer{ v1.As<efloat>() + v2.As<eint>() };    
 		break;
 
 	case ValueType::INT:
 	{
 		
 		if (v2.type == ValueType::FLOAT) {
-			return ValueContainer{ v1.As<int>() + v2.As<float>() };
+			return ValueContainer{ v1.As<eint>() + v2.As<efloat>() };
 		}
-		return ValueContainer{ v1.As<int>() + v2.As<int>() };
+		return ValueContainer{ v1.As<eint>() + v2.As<eint>() };
 		break;
 	}
 
@@ -168,7 +168,7 @@ void ValueContainer::InverseBool()
 {
 	auto isBool = type == ValueType::BOOL;
 	assert(isBool);
-	auto& v = std::get<bool>(as);
+	auto& v = std::get<ebool>(as);
 	v = !v;
 }
 void ValueContainer::Negate()
@@ -178,12 +178,12 @@ void ValueContainer::Negate()
 	assert(isInt|| isFloat);
 	if (isInt)
 	{
-		auto v = std::get<int>(as);
+		auto v = std::get<eint>(as);
 		as = -v;
 	}
 	else
 	{
-		auto v = std::get<float>(as);
+		auto v = std::get<efloat>(as);
 		as = -v;
 	}
 }
@@ -201,7 +201,7 @@ ValueContainer ValueContainer::Percent(const ValueContainer& v1, const ValueCont
 {
 	assert(v1.type == ValueType::INT);
 	assert(v2.type == ValueType::INT);
-	return v1.As<int>() % v2.As<int>();
+	return v1.As<eint>() % v2.As<eint>();
 	//OP(v1, v2, %);
 }
 ValueContainer ValueContainer::Multiply(const ValueContainer& v1, const ValueContainer& v2)
@@ -266,19 +266,19 @@ std::ostream& operator<<(std::ostream& os, const ValueContainer& v)
 	{
 	case  ValueType::BOOL:
 	{
-		bool val = std::get<bool>(v.as);
+		bool val = std::get<ebool>(v.as);
 		os << val;
 		break;
 	}
 	case  ValueType::FLOAT:
 	{
-		float num = std::get<float>(v.as);
+		float num = std::get<efloat>(v.as);
 		os << num;
 		break;
 	}
 	case  ValueType::INT:
 	{
-		int num = std::get<int>(v.as);
+		int num = std::get<eint>(v.as);
 		os << num;
 		break;
 	}

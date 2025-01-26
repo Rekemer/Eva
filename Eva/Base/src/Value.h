@@ -20,6 +20,7 @@ enum class ValueType
 {
 	BOOL,
 	INT,
+	LONG,
 	FLOAT,
 
 	STRING,
@@ -43,11 +44,13 @@ inline bool IsCastable(ValueType toType, ValueType fromType)
 	case ValueType::INT:
 		return fromType == ValueType::FLOAT ||
 			fromType == ValueType::BOOL ||
-			fromType == ValueType::INT;
+			fromType == ValueType::INT ||
+			fromType == ValueType::LONG;
 
 	case ValueType::FLOAT:
 		return fromType == ValueType::INT ||
-			fromType == ValueType::FLOAT;
+			fromType == ValueType::FLOAT || 
+			fromType == ValueType::LONG;
 
 	case ValueType::STRING:
 		return fromType == ValueType::STRING;
@@ -72,7 +75,14 @@ class String;
 struct Func;
 class VirtualMachine;
 const char* ValueToStr(ValueType valueType);
-using AsType = std::variant<bool, float, int, std::string, std::shared_ptr<ICallable>>;
+
+using ebool = bool;
+using eint = long;
+using efloat = float;
+using estring = std::string;
+using eCallable = std::shared_ptr<ICallable>;
+
+using AsType = std::variant<ebool, efloat, eint, estring, eCallable>;
 class ValueContainer
 {
 public:
@@ -82,17 +92,17 @@ public:
 	template <typename T>
 	ValueContainer(T v)
 	{
-		if constexpr (std::is_same_v<T, int>) {
+		if constexpr (std::is_same_v<T, eint>) {
 			type = ValueType::INT;
 		}
-		else if constexpr (std::is_same_v<T, float>) {
+		else if constexpr (std::is_same_v<T, efloat>) {
 			type = ValueType::FLOAT;
 		}
-		else if constexpr (std::is_same_v<T, std::string> 
+		else if constexpr (std::is_same_v<T, estring> 
 			|| std::is_same_v<T, const char*>) {
 			type = ValueType::STRING;
 		}
-		else if constexpr (std::is_same_v<T, bool>) {
+		else if constexpr (std::is_same_v<T, ebool>) {
 			type = ValueType::BOOL;
 		}
 		else {
@@ -144,12 +154,12 @@ public:
 	bool operator == (const ValueContainer& v) const
 	{
 		if (&v == this) return true;
-		return Equal(*this, v).As<bool>();
+		return Equal(*this, v).As<ebool>();
 	}
 	bool operator != (const ValueContainer& v) const 
 	{
 		if (&v == this) return false;
-		return !Equal(*this, v).As<bool>();
+		return !Equal(*this, v).As<ebool>();
 
 	}
 	template <typename T>
@@ -161,12 +171,12 @@ public:
 	U AsRef() {
 		return std::get<T>(as);
 	}
-	std::string AsString() const
+	estring AsString() const
 	{
-		return std::get<std::string>(as);
+		return std::get<estring>(as);
 	}
 	std::shared_ptr<Func> AsFunc() const;
-	std::shared_ptr<ICallable> AsCallable() const;
+	eCallable AsCallable() const;
 	
 private:
 	friend class cereal::access;

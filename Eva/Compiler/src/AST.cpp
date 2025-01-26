@@ -602,7 +602,7 @@ void Print(const Expression* tree, int level) {
 	 case TokenType::BANG_EQUAL:
 	 {
 		 auto newValue = ValueContainer::Equal(left->value, right->value);
-		 node->value = !newValue.AsRef<bool>();
+		 node->value = !newValue.AsRef<ebool>();
 		 break;
 	 }
 	 case TokenType::GREATER:
@@ -611,7 +611,7 @@ void Print(const Expression* tree, int level) {
 	 case TokenType::GREATER_EQUAL:
 	 {
 		 auto newValue = ValueContainer::Less(left->value, right->value);
-		 node->value = !newValue.AsRef<bool>();
+		 node->value = !newValue.AsRef<ebool>();
 		 break;
 	 }
 	 case TokenType::LESS:
@@ -620,7 +620,7 @@ void Print(const Expression* tree, int level) {
 	 case TokenType::LESS_EQUAL:
 	 {
 		 auto newValue = ValueContainer::Greater(left->value, right->value);
-		 node->value = !newValue.AsRef<bool>();
+		 node->value = !newValue.AsRef<ebool>();
 		 break;
 	 }
 	 default:
@@ -787,7 +787,7 @@ void Print(const Expression* tree, int level) {
 				 case TokenType::BANG_EQUAL:
 				 {
 					 auto newValue = ValueContainer::Equal(leftExpr->value, rightExpr->value);
-					 node->value = !newValue.AsRef<bool>();
+					 node->value = !newValue.AsRef<ebool>();
 					 break;
 				 }
 
@@ -795,14 +795,14 @@ void Print(const Expression* tree, int level) {
 					 assert(false && "unknown binary operation on bool literals");
 					 break;
 				 }
-				 node->type = node->value.As<bool>() ? TokenType::TRUE : TokenType::FALSE;
+				 node->type = node->value.As<ebool>() ? TokenType::TRUE : TokenType::FALSE;
 			 }
 			 else
 			 {
 				 CalculateConstant(expr->type,leftExpr,rightExpr,node);
 				 if (IsBinaryBoolOp(expr->type))
 				 {
-					 node->type = node->value.As<bool>() ? TokenType::TRUE : TokenType::FALSE;
+					 node->type = node->value.As<ebool>() ? TokenType::TRUE : TokenType::FALSE;
 				 }
 				 else
 				 {
@@ -1620,6 +1620,7 @@ TokenType AST::TypeCheckExpression(Node* node)
 		return expr->type;
 	}
 }
+
 
 
 TokenType AST::TypeCheckBinaryOperation(Expression* expr, TokenType leftType, TokenType rightType) {

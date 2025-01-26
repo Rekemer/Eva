@@ -256,7 +256,7 @@ void VirtualMachine::GenerateConstant(const ValueContainer& v)
 {
 	if (v.type == ValueType::BOOL)
 	{
-		auto instr = v.As<bool>() ? (Bytecode)InCode::TRUE : (Bytecode)InCode::FALSE;
+		auto instr = v.As<ebool>() ? (Bytecode)InCode::TRUE : (Bytecode)InCode::FALSE;
 		currentFunc->opCode.push_back(instr);
 		return;
 	}
@@ -274,15 +274,15 @@ bool VirtualMachine::AreEqual(const ValueContainer& a, const ValueContainer& b)
 {
 	if (a.type == b.type && a.type == ValueType::BOOL)
 	{
-		return a.As<bool>() == b.As<bool>();
+		return a.As<ebool>() == b.As<ebool>();
 	}
 	else if (a.type == b.type && a.type == ValueType::FLOAT)
 	{
-		return fabs(a.As<float>() - b.As<float>()) < 0.04;
+		return fabs(a.As<efloat>() - b.As<efloat>()) < 0.04;
 	}
 	else if (a.type == b.type && a.type == ValueType::INT)
 	{
-		return a.As<int>() == b.As<int>();
+		return a.As<eint>() == b.As<eint>();
 	}
 	else if (a.type == b.type && a.type == ValueType::STRING)
 	{
@@ -346,27 +346,27 @@ void VirtualMachine::Execute()
 		}
 		case InCode::ADD_FLOAT:
 		{
-			BINARY_OP(float, +);
+			BINARY_OP(efloat, +);
 			break;
 		}
 		case InCode::SUBSTRACT_FLOAT:
 		{
-			BINARY_OP(float, -);
+			BINARY_OP(efloat, -);
 			break;
 		}
 		case InCode::MULTIPLY_FLOAT:
 		{
-			BINARY_OP(float, *);
+			BINARY_OP(efloat, *);
 			break;
 		}
 		case InCode::DIVIDE_FLOAT:
 		{
-			BINARY_OP(float, / );
+			BINARY_OP(efloat, / );
 			break;
 		}
 		case InCode::ADD_INT:
 		{
-			BINARY_OP(int, +);
+			BINARY_OP(eint, +);
 			break;
 		}
 		case InCode::ADD_STRING:
@@ -385,7 +385,7 @@ void VirtualMachine::Execute()
 		{
 			auto& value = vmStack.back();
 			value.type = ValueType::FLOAT;
-			float v = value.As<int>();
+			float v = value.As<eint>();
 			value.as = v;
 			break;
 		}
@@ -393,7 +393,7 @@ void VirtualMachine::Execute()
 		{
 			auto& value = vmStack.back();
 			value.type = ValueType::INT;
-			int v = value.As<float>();
+			int v = value.As<efloat>();
 			value.as = v;
 			break;
 		}
@@ -401,7 +401,7 @@ void VirtualMachine::Execute()
 		{
 			auto& value = vmStack.back();
 			value.type = ValueType::BOOL;
-			bool v = value.As<int>();
+			bool v = value.As<eint>();
 			value.as = v;
 			break;
 		}
@@ -409,40 +409,40 @@ void VirtualMachine::Execute()
 		{
 			auto& value = vmStack.back();
 			value.type = ValueType::BOOL;
-			bool v = value.As<float>();
+			bool v = value.As<efloat>();
 			value.as = v;
 			break;
 		}
 		case InCode::SUBSTRACT_INT:
 		{
-			BINARY_OP(int, -);
+			BINARY_OP(eint, -);
 			break;
 		}
 		case InCode::MULTIPLY_INT:
 		{
-			BINARY_OP(int, *);
+			BINARY_OP(eint, *);
 			break;
 		}
 		case InCode::DIVIDE_INT:
 		{
-			BINARY_OP(int, / );
+			BINARY_OP(eint, / );
 			break;
 		}
 		case InCode::DIVIDE_PERCENT:
 		{
-			BINARY_OP(int, %);
+			BINARY_OP(eint, %);
 			break;
 		}
 		case InCode::INCREMENT_INT:
 		{
 			auto& value = vmStack.back();
-			value.AsRef<int>()++;
+			value.AsRef<eint>()++;
 			break;
 		}
 		case InCode::DECREMENT_INT:
 		{
 			auto& value = vmStack.back();
-			value.AsRef<int>()--;
+			value.AsRef<eint>()--;
 			break;
 		}
 		case InCode::INCREMENT_FLOAT:
@@ -463,11 +463,11 @@ void VirtualMachine::Execute()
 			vmStack.pop_back();
 			if (value.type == ValueType::FLOAT)
 			{
-				vmStack.push_back(ValueContainer{ -value.As<float>() });
+				vmStack.push_back(ValueContainer{ -value.As<efloat>() });
 			}
 			else if (value.type == ValueType::INT)
 			{
-				vmStack.push_back(ValueContainer{ -value.As<int>() });
+				vmStack.push_back(ValueContainer{ -value.As<eint>() });
 			}
 			else
 			{
@@ -479,27 +479,27 @@ void VirtualMachine::Execute()
 		{
 			auto value = vmStack.back();
 			vmStack.pop_back();
-			vmStack.push_back(ValueContainer{ !value.As<bool>() });
+			vmStack.push_back(ValueContainer{ !value.As<ebool>() });
 			break;
 		}
 		case InCode::LESS_FLOAT:
 		{
-			BINARY_OP(float, < );
+			BINARY_OP(efloat, < );
 			break;
 		}
 		case InCode::GREATER_FLOAT:
 		{
-			BINARY_OP(float, > );
+			BINARY_OP(efloat, > );
 			break;
 		}
 		case InCode::LESS_INT:
 		{
-			BINARY_OP(int, < );
+			BINARY_OP(eint, < );
 			break;
 		}
 		case InCode::GREATER_INT:
 		{
-			BINARY_OP(int, > );
+			BINARY_OP(eint, > );
 			break;
 		}
 
@@ -514,12 +514,12 @@ void VirtualMachine::Execute()
 		}
 		case InCode::AND:
 		{
-			BINARY_OP(bool, &&);
+			BINARY_OP(ebool, &&);
 			break;
 		}
 		case InCode::OR:
 		{
-			BINARY_OP(bool, || );
+			BINARY_OP(ebool, || );
 			break;
 		}
 		case InCode::RETURN:
@@ -584,7 +584,7 @@ void VirtualMachine::Execute()
 		{
 			// if it is not false, then we should get to then block
 			auto offset = frame->function->opCode[frame->ip++];
-			auto condition = vmStack.back().As<bool>();
+			auto condition = vmStack.back().As<ebool>();
 			if (!condition) frame->ip = (frame->ip - 1) + (offset);
 			break;
 		}

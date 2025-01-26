@@ -16,7 +16,7 @@ The main purpose of the language is to learn more about how to build them.
 g := 2;
 
 fun print(a: float, b: int) : int {
-    Print g;
+    Print(g);
     c: int = b + a;
     return c;
 }

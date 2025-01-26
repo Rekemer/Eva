@@ -51,48 +51,48 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 #if EXPR && !DEC
 	TEST_CASE("testing bool expressions")
 	{
-		CHECK(CompileTest("1/2 == 1/2").As<bool>() == true);
-		CHECK(CompileTest("1 == 1").As<bool>() == true);
-		CHECK(CompileTest("1 == (1+2)").As<bool>() == false);
-		CHECK(CompileTest("(1-2) == (1+2)").As<bool>() == false);
-		CHECK(CompileTest("true == true").As<bool>() == true);
-		CHECK(CompileTest("false == true").As<bool>() == false);
-		CHECK(CompileTest("(2*10 - 1/5) == (2*10 - 1/5) ").As<bool>() == true);
-		CHECK(CompileTest("2*10  == 2*10 ").As<bool>() == true);
-		CHECK(CompileTest("2+2 ").As<int>() == 4);
-		CHECK(CompileTest("3%2 ").As<int>() == 1);
-		CHECK(CompileTest("true == true").As<bool>() == true);
+		CHECK(CompileTest("1/2 == 1/2").As<ebool>() == true);
+		CHECK(CompileTest("1 == 1").As<ebool>() == true);
+		CHECK(CompileTest("1 == (1+2)").As<ebool>() == false);
+		CHECK(CompileTest("(1-2) == (1+2)").As<ebool>() == false);
+		CHECK(CompileTest("true == true").As<ebool>() == true);
+		CHECK(CompileTest("false == true").As<ebool>() == false);
+		CHECK(CompileTest("(2*10 - 1/5) == (2*10 - 1/5) ").As<ebool>() == true);
+		CHECK(CompileTest("2*10  == 2*10 ").As<ebool>() == true);
+		CHECK(CompileTest("2+2 ").As<eint>() == 4);
+		CHECK(CompileTest("3%2 ").As<eint>() == 1);
+		CHECK(CompileTest("true == true").As<ebool>() == true);
 		//
-		CHECK(CompileTest("false&&true == true&&true").As<bool>() == false);
-		CHECK(CompileTest("false&&true || true&&true").As<bool>() == true);
-		CHECK(CompileTest("false&&true || true&&false").As<bool>() == false);
-		CHECK(CompileTest("false&&true").As<bool>() == false);
-		CHECK(CompileTest("true&&true").As<bool>() == true);
-		CHECK(CompileTest("true || false").As<bool>() == true);
+		CHECK(CompileTest("false&&true == true&&true").As<ebool>() == false);
+		CHECK(CompileTest("false&&true || true&&true").As<ebool>() == true);
+		CHECK(CompileTest("false&&true || true&&false").As<ebool>() == false);
+		CHECK(CompileTest("false&&true").As<ebool>() == false);
+		CHECK(CompileTest("true&&true").As<ebool>() == true);
+		CHECK(CompileTest("true || false").As<ebool>() == true);
 		
-		CHECK(CompileTest("-2 == -2+1-1 &&  1 == 1").As<bool>() == true);
-		CHECK(CompileTest("2+2 == 2+1+1 ").As<bool>() == true);
-		CHECK(CompileTest("2+2 < 2+1+1+1 ").As<bool>() == true);
-		CHECK(CompileTest("2+2 <= 2+2 ").As<bool>() == true);
-		CHECK(CompileTest("2+2 >= 2+2 ").As<bool>() == true);
+		CHECK(CompileTest("-2 == -2+1-1 &&  1 == 1").As<ebool>() == true);
+		CHECK(CompileTest("2+2 == 2+1+1 ").As<ebool>() == true);
+		CHECK(CompileTest("2+2 < 2+1+1+1 ").As<ebool>() == true);
+		CHECK(CompileTest("2+2 <= 2+2 ").As<ebool>() == true);
+		CHECK(CompileTest("2+2 >= 2+2 ").As<ebool>() == true);
 		//
-		CHECK(CompileTest("2.0 >= 2 ").As<bool>() == true);
-		CHECK(CompileTest("2.0 == 2 ").As<bool>() == true);
-		CHECK(CompileTest("2.0 != 2 ").As<bool>() == false);
-		CHECK(CompileTest("2.0 < 4.0 ").As<bool>() == true);
-		CHECK(CompileTest("2 <= 4.0 ").As<bool>() == true);
+		CHECK(CompileTest("2.0 >= 2 ").As<ebool>() == true);
+		CHECK(CompileTest("2.0 == 2 ").As<ebool>() == true);
+		CHECK(CompileTest("2.0 != 2 ").As<ebool>() == false);
+		CHECK(CompileTest("2.0 < 4.0 ").As<ebool>() == true);
+		CHECK(CompileTest("2 <= 4.0 ").As<ebool>() == true);
 		////
-		CHECK(CompileTest("2+5 >= 2+2 ").As<bool>() == true);
-		CHECK(CompileTest("2+5 != 2+2 ").As<bool>() == true);
-		CHECK(CompileTest("!(2+5 == 2+2 )").As<bool>() == true);
-		CHECK(CompileTest("(2/2 * 2 == 2 )").As<bool>() == true);
-		CHECK(CompileTest("(4* 6/3 == 8 )").As<bool>() == true);
-		CHECK(CompileTest("(4.0* 6/3 == 8.0 )").As<bool>()==true);
-		CHECK(CompileTest("(4.0* 6/3 + 2 == 10.0 )").As<bool>() == true);
-		CHECK(CompileTest("(4.0* 6/(4/2.0) + 2==14.0 )").As<bool>() == true);
-		CHECK(CompileTest("( 6.0/(6/2.0) * 4.0 + 2==10.0 )").As<bool>() ==true);
-		CHECK(CompileTest("( 2.0 / 4 * 3  == 1.5)").As<bool>()==true);
-		CHECK(CompileTest("( 3 * 2 / 4.0 == 6.0/4)").As<bool>() == true);
+		CHECK(CompileTest("2+5 >= 2+2 ").As<ebool>() == true);
+		CHECK(CompileTest("2+5 != 2+2 ").As<ebool>() == true);
+		CHECK(CompileTest("!(2+5 == 2+2 )").As<ebool>() == true);
+		CHECK(CompileTest("(2/2 * 2 == 2 )").As<ebool>() == true);
+		CHECK(CompileTest("(4* 6/3 == 8 )").As<ebool>() == true);
+		CHECK(CompileTest("(4.0* 6/3 == 8.0 )").As<ebool>()==true);
+		CHECK(CompileTest("(4.0* 6/3 + 2 == 10.0 )").As<ebool>() == true);
+		CHECK(CompileTest("(4.0* 6/(4/2.0) + 2==14.0 )").As<ebool>() == true);
+		CHECK(CompileTest("( 6.0/(6/2.0) * 4.0 + 2==10.0 )").As<ebool>() ==true);
+		CHECK(CompileTest("( 2.0 / 4 * 3  == 1.5)").As<ebool>()==true);
+		CHECK(CompileTest("( 3 * 2 / 4.0 == 6.0/4)").As<ebool>() == true);
 	}
 
 #endif // EXPR
@@ -100,11 +100,11 @@ bool CheckVariable(const std::string& variableName, ExpectedType expectedValue,
 #if STRINGS
 	TEST_CASE("testing strings ")
 	{
-		CHECK(CompileTest("\"Helo\" == \"Hello\" ").As<bool>() == false);
-		CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
-		CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<bool>() == true);
-		CHECK(CompileTest("\"2\" == \"2\" ").As<bool>() == true);
-		CHECK(CompileTest("\"Hello\" == \"Hello\" &&  \"Hello\" == \"Hello\"").As<bool>() ==	true);
+		CHECK(CompileTest("\"Helo\" == \"Hello\" ").As<ebool>() == false);
+		CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<ebool>() == true);
+		CHECK(CompileTest("\"Hello\" == \"Hello\" ").As<ebool>() == true);
+		CHECK(CompileTest("\"2\" == \"2\" ").As<ebool>() == true);
+		CHECK(CompileTest("\"Hello\" == \"Hello\" &&  \"Hello\" == \"Hello\"").As<ebool>() ==	true);
 	}
 #endif // STRING
 
@@ -113,7 +113,7 @@ TEST_CASE("testing hash table ")
 	HashTable table;
 	table.Add( "hi",ValueContainer(2.f));
 	auto entry = table.Get("hi");
-	CHECK(entry->value.As<float>() == 2.f);
+	CHECK(entry->value.As<efloat>() == 2.f);
 	CHECK(table.IsExist("hi") == true);
 	table.Delete("hi");
 	CHECK(table.IsExist("hi") == false);
