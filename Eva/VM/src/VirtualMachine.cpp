@@ -448,13 +448,13 @@ void VirtualMachine::Execute()
 		case InCode::INCREMENT_FLOAT:
 		{
 			auto& value = vmStack.back();
-			value.AsRef<float>()++;
+			value.AsRef<efloat>()++;
 			break;
 		}
 		case InCode::DECREMENT_FLOAT:
 		{
 			auto& value = vmStack.back();
-			value.AsRef<float>()--;
+			value.AsRef<efloat>()--;
 			break;
 		}
 		case InCode::NEGATE:

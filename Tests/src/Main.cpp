@@ -112,7 +112,7 @@ void FillTest(TestCase& test,std::string_view variableName, std::string_view lin
             v = ValueContainer{ true};
         }
         else  v = IsFloat(valueString)
-            ? ValueContainer{ std::stof(std::string{valueString}) }
+            ? ValueContainer{ std::stod(std::string{valueString}) }
         : ValueContainer{ eint(std::stoi(std::string{valueString})) };
 
         test.expected[name] = v;

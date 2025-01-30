@@ -283,7 +283,7 @@ void Lexer::ParseNumber()
 		}
 		if (isFloat)
 		{
-			efloat floatValue = std::strtof(nextToken, nullptr);
+			efloat floatValue = std::strtod(nextToken, nullptr);
 			tokens.push_back(CreateToken(TokenType::FLOAT_LITERAL, ValueContainer{floatValue}, currentLine));
 		}
 		else

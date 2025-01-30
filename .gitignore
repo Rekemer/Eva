@@ -11,3 +11,4 @@ Eva/VM/dump_global.json
 Tests/dumpGlobal.json
 Tests/test.evc
 Eva/VM/dumpGlobal.json
+Modules/glfw/__pycache__/

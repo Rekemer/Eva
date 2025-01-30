@@ -112,6 +112,10 @@ fun func_name()
 
 add spdlog to compiler and vm
 
+we don't const prop for argument block for now, because it is difficult to figure out 
+what exactly we need to delete in dead code elmination (make it by default marked all, 
+and then delete ones we processed?)
+
 
 
 

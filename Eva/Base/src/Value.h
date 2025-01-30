@@ -78,7 +78,7 @@ const char* ValueToStr(ValueType valueType);
 
 using ebool = bool;
 using eint = long;
-using efloat = float;
+using efloat = double;
 using estring = std::string;
 using eCallable = std::shared_ptr<ICallable>;
 

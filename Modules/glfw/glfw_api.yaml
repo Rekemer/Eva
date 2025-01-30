@@ -1,0 +1,84 @@
+# This is a description of the GLFW functions Eva supports,
+# now storing more accurate C types in "type:" for each argument
+# and the return.
+
+functions:
+  # GLFW Initialization and Termination
+  - name: glfwInit
+    return: int
+    args: []
+
+  - name: glfwTerminate
+    return: void
+    args: []
+
+  # Window Creation and Context
+  - name: glfwCreateWindow
+    return: "GLFWwindow*"
+    args:
+      - type: int             # width
+      - type: int             # height
+      - type: "const char*"   # title
+      - type: "GLFWmonitor*"  # monitor
+      - type: "GLFWwindow*"   # share
+
+  - name: glfwDestroyWindow
+    return: void
+    args:
+      - type: "GLFWwindow*"
+
+  - name: glfwMakeContextCurrent
+    return: void
+    args:
+      - type: "GLFWwindow*"
+
+  # Event Handling
+  - name: glfwWindowShouldClose
+    return: int
+    args:
+      - type: "GLFWwindow*"
+
+  - name: glfwSetWindowShouldClose
+    return: void
+    args:
+      - type: "GLFWwindow*"
+      - type: int     # value (0 or 1)
+
+  - name: glfwPollEvents
+    return: void
+    args: []
+
+  - name: glfwSwapBuffers
+    return: void
+    args:
+      - type: "GLFWwindow*"
+
+  # Input and Window Properties
+  - name: glfwGetKey
+    return: int
+    args:
+      - type: "GLFWwindow*"
+      - type: int     # key (GLFW_KEY_XXX)
+
+  - name: glfwSetFramebufferSizeCallback
+    return: void
+    args:
+      - type: "GLFWwindow*"
+      - type: "GLFWframebuffersizefun"  # function pointer for the callback
+
+  # Time
+  - name: glfwGetTime
+    return: double
+    args: []
+
+  # OpenGL Context Hints
+  - name: glfwWindowHint
+    return: void
+    args:
+      - type: int   # hint
+      - type: int   # value
+
+  - name: glfwSwapInterval
+    return: void
+    args:
+      - type: int   # interval
