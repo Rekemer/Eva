@@ -15,26 +15,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{293C628A-1509-BD95-3E22-AB3D2A4EF223}</ProjectGuid>
+    <ProjectGuid>{154B857C-0182-860D-AA6E-6C109684020F}</ProjectGuid>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>Eva-Base</RootNamespace>
+    <RootNamespace>GLFW</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
@@ -53,96 +53,93 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\..\bin\Eva-Base\Debug-windows-x86_64\</OutDir>
-    <IntDir>..\..\bin-int\Eva-Base\Debug-windows-x86_64\</IntDir>
-    <TargetName>Eva-Base</TargetName>
-    <TargetExt>.lib</TargetExt>
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>..\..\bin\Modules\GLFW\Debug-windows-x86_64\</OutDir>
+    <IntDir>..\..\bin-int\Modules\GLFW\Debug-windows-x86_64\</IntDir>
+    <TargetName>GLFW</TargetName>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\..\bin\Eva-Base\Release-windows-x86_64\</OutDir>
-    <IntDir>..\..\bin-int\Eva-Base\Release-windows-x86_64\</IntDir>
-    <TargetName>Eva-Base</TargetName>
-    <TargetExt>.lib</TargetExt>
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>..\..\bin\Modules\GLFW\Release-windows-x86_64\</OutDir>
+    <IntDir>..\..\bin-int\Modules\GLFW\Release-windows-x86_64\</IntDir>
+    <TargetName>GLFW</TargetName>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
-    <OutDir>..\..\bin\Eva-Base\Dist-windows-x86_64\</OutDir>
-    <IntDir>..\..\bin-int\Eva-Base\Dist-windows-x86_64\</IntDir>
-    <TargetName>Eva-Base</TargetName>
-    <TargetExt>.lib</TargetExt>
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>..\..\bin\Modules\GLFW\Dist-windows-x86_64\</OutDir>
+    <IntDir>..\..\bin-int\Modules\GLFW\Dist-windows-x86_64\</IntDir>
+    <TargetName>GLFW</TargetName>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\Dependencies\Cereal\include;..\..\Dependencies\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Eva\Base\src;..\..\Dependencies\Cereal\include;..\..\Dependencies\spdlog\include;Dependencies\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>Dependencies\GLFW\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>..\..\bin\Modules\GLFW\Debug-windows-x86_64\GLFW.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>..\..\Dependencies\Cereal\include;..\..\Dependencies\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Eva\Base\src;..\..\Dependencies\Cereal\include;..\..\Dependencies\spdlog\include;Dependencies\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>Dependencies\GLFW\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>..\..\bin\Modules\GLFW\Release-windows-x86_64\GLFW.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <AdditionalIncludeDirectories>..\..\Dependencies\Cereal\include;..\..\Dependencies\spdlog\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Eva\Base\src;..\..\Dependencies\Cereal\include;..\..\Dependencies\spdlog\include;Dependencies\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <AdditionalDependencies>glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>Dependencies\GLFW\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ImportLibrary>..\..\bin\Modules\GLFW\Dist-windows-x86_64\GLFW.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Bytecode.h" />
-    <ClInclude Include="src\Debug.h" />
-    <ClInclude Include="src\Entry.h" />
-    <ClInclude Include="src\Function.h" />
-    <ClInclude Include="src\HashTable.h" />
-    <ClInclude Include="src\ICallable.h" />
-    <ClInclude Include="src\Incode.h" />
-    <ClInclude Include="src\Local.h" />
-    <ClInclude Include="src\Log.h" />
-    <ClInclude Include="src\Native.h" />
-    <ClInclude Include="src\Nodes.h" />
-    <ClInclude Include="src\ParseArg.h" />
-    <ClInclude Include="src\Serialize.h" />
-    <ClInclude Include="src\TokenConversion.h" />
-    <ClInclude Include="src\Tokens.h" />
-    <ClInclude Include="src\Value.h" />
+    <ClCompile Include="src\glfw_wrappers.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Debug.cpp" />
-    <ClCompile Include="src\Function.cpp" />
-    <ClCompile Include="src\HashTable.cpp" />
-    <ClCompile Include="src\Native.cpp" />
-    <ClCompile Include="src\Tokens.cpp" />
-    <ClCompile Include="src\Value.cpp" />
+    <ProjectReference Include="..\..\Eva\Base\Eva-Base.vcxproj">
+      <Project>{293C628A-1509-BD95-3E22-AB3D2A4EF223}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

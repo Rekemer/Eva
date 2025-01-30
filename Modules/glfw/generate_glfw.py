@@ -5,7 +5,7 @@ from state import *
 # so each generated wrapper is "int wrapper_xyz(MyState* st)".
 
 HEADER_TEMPLATE = r'''#pragma once
-
+namespace Eva {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -44,15 +44,16 @@ def get_c_value(cType):
     elif cType == "int":
         return "As<eint>()"
     if isChar:
-        return "AsString()";
+        return "AsString().data()";
     return "LOX"
 
 def check_cast(cType,arg):
     isPointer = '*' in cType
+    callArg = f"{arg}.{get_c_value(cType)}"
     if isPointer:
-        return f"reinterpeter_cast<{cType}>({arg})"
+        return f"reinterpret_cast<{cType}>({callArg})"
     else:
-        return arg
+        return callArg
 def generate_prototypes_and_wrappers(data):
     """
     data is the parsed YAML with keys:
@@ -88,12 +89,12 @@ def generate_prototypes_and_wrappers(data):
         for i, arg in enumerate(arg_list):
             argCType = arg["type"]    # e.g. "int", "pointer", ...
             #parse_lines.append(f"    // {argCType} arg{i} = ??? // parse from st")
-            parse_lines.append(f"      auto arg{size - i} = st->stack->pop_back(); // parse from st")
+            parse_lines.append(f"      auto arg{size - i} = st->stack->back();\n\tst->stack->pop_back();")
         
         # Actual call
         # If return is "void", we won't store result
         # If return is "int" or "pointer", we do something
-        call_args = ", ".join([f"{check_cast(arg['type'],'arg{i}')}.{get_c_value(arg['type'])}" for i, arg in enumerate(arg_list)])
+        call_args = ", ".join([f"{check_cast(arg['type'],f'arg{i}')}" for i, arg in enumerate(arg_list)])
         if ret_type == "void":
             call_line = f"    {fn_name}({call_args});"
             ret_push = "// no return, so no results to push"
@@ -127,6 +128,38 @@ def generate_prototypes_and_wrappers(data):
 
     return wrapper_defs, function_table_entries
 
+# Suppose we have a dictionary describing how each C type maps to ValueType
+# In real usage, you could parse a YAML or JSON file. Here we just define inline.
+C_TYPE_MAP = {
+    "bool":       "ValueType::BOOL",
+    "int":        "ValueType::INT",
+    "float":      "ValueType::FLOAT",
+    "double":     "ValueType::FLOAT",   # or a separate ValueType::DOUBLE if you prefer
+    "GLFWwindow*":  "ValueType::PTR",
+    "GLFWmonitor*": "ValueType::PTR",
+    "const char*":  "ValueType::STRING",
+    "void" : "ValueType::NIL"
+}
+
+def generate_metatable(data):
+    
+    lines = []
+    lines.append("std::unordered_map<std::string, ValueType> initModule() {")
+    lines.append("    std::unordered_map<std::string, ValueType> typeMap;")
+    for func in data["functions"]:
+        ret_type = func["return"]
+        line = f'    typeMap["{func["name"]}"] = {C_TYPE_MAP[ret_type]};'
+        lines.append(line)
+    # For each entry in C_TYPE_MAP, generate code like:
+    #    typeMap["int"] = ValueType::INT;
+        #for ctype, valtype in C_TYPE_MAP.items():
+            
+
+    lines.append("")
+    lines.append("    return typeMap;")
+    lines.append("}")
+    return lines
+    
 
 def main():
     with open("glfw_api.yaml", "r") as f:
@@ -134,13 +167,14 @@ def main():
 
     # Generate the code
     wrapper_defs, function_table_entries = generate_prototypes_and_wrappers(data)
-
+    lines = generate_metatable(data)
     # Build the .h output
-    with open("glfw_wrappers.h", "w") as hf:
+    with open("./src/glfw_wrappers.h", "w+") as hf:
         hf.write(HEADER_TEMPLATE)
+        hf.write('\n}')
 
     # Build the .cpp output
-    with open("glfw_wrappers.cpp", "w") as sf:
+    with open("./src/glfw_wrappers.cpp", "w+") as sf:
         sf.write(SOURCE_HEADER)
         sf.write("\n")
 
@@ -154,8 +188,9 @@ def main():
             sf.write(entry + "\n")
         sf.write("};\n\n")
         sf.write("int g_glfwFunctionCount = sizeof(g_glfwFunctionTable)/sizeof(GLFWFuncEntry);\n")
-
-        sf.write("\n")
+        sf.write("\n".join(lines))
+        sf.write("\n}")
+    
 
 
 if __name__ == "__main__":

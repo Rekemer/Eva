@@ -9,6 +9,7 @@
 template <typename T>
 void Execute(T& iarchive, bool isTest)
 {
+	using namespace Eva;
 	VirtualMachine vm;
 	iarchive(*vm.globalFunc, vm.GetGlobals(), vm.functionNames);
 	auto e = vm.GetGlobals().Get("main");
@@ -28,6 +29,7 @@ void Execute(T& iarchive, bool isTest)
 
 int main(int argc, const char* argv[])
 {
+	using namespace Eva;
 	auto args = ParseArgsVM(argc, argv);
 	auto binaryPath = args[args.size() - 1].value;
 	auto isJson = HasJsonExtension(binaryPath);

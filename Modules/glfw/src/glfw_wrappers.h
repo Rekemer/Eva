@@ -1,5 +1,5 @@
 #pragma once
-
+namespace Eva {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,3 +23,5 @@ extern int g_glfwFunctionCount;
 #ifdef __cplusplus
 }
 #endif
+
+}

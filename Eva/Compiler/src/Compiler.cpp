@@ -9,9 +9,11 @@
 #include "Options.h"
 #include "Serialize.h"
 #include "Debug.h"
+#include "PluginLoader.h"
 
 #include <fstream>
-
+namespace Eva
+{
 
 #define CAST_INT_FLOAT(type1,type2)\
 if (type1== ValueType::INT && type2== ValueType::FLOAT)\
@@ -364,7 +366,7 @@ void Compiler::GenerateConstant(const ValueContainer& v)
 {
 	if (v.type == ValueType::BOOL)
 	{
-		auto instr = v.As<ebool>() ? (Bytecode)InCode::TRUE : (Bytecode)InCode::FALSE;
+		auto instr = v.As<ebool>() ? (Bytecode)InCode::TRUE : (Bytecode)Eva::InCode::FALSE;
 		currentFunc->opCode.push_back(instr);
 		return;
 	}
@@ -951,6 +953,13 @@ void DumpToFile(std::ofstream& os, T& archive, Args&... args)
 	}
 }
 
+void Compiler::LoadPlugin(std::string_view name)
+{
+	auto fullPath = std::format("./bin/Modules/GLFW/Debug-windows-x86_64/GLFW.dll");
+
+	auto handle = ::LoadDll(fullPath);
+}
+
 int Compiler::Compile(const char* line)
 {
 	Lexer parser;
@@ -1116,3 +1125,4 @@ int Compiler::Compile(const char* line)
 //	return { {},vm };
 }
 
+}

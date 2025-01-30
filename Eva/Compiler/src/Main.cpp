@@ -5,6 +5,7 @@
 #include <sstream>
 int main(int argc, const char* argv[])
 {
+	using namespace Eva;
 	auto args = ParseArgsCmp(argc,argv);
 	auto script = std::find_if(args.begin(), args.end(),
 		[](const Arg& arg) { return arg.type == ArgType::EVA_PATH; });

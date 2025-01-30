@@ -60,11 +60,11 @@ functions:
       - type: "GLFWwindow*"
       - type: int     # key (GLFW_KEY_XXX)
 
-  - name: glfwSetFramebufferSizeCallback
-    return: void
-    args:
-      - type: "GLFWwindow*"
-      - type: "GLFWframebuffersizefun"  # function pointer for the callback
+  # - name: glfwSetFramebufferSizeCallback
+  #   return: void
+  #   args:
+  #     - type: "GLFWwindow*"
+  #     - type: "GLFWframebuffersizefun"  # function pointer for the callback
 
   # Time
   - name: glfwGetTime

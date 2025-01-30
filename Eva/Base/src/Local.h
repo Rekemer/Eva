@@ -2,37 +2,40 @@
 #include <string>
 #include<array>
 #include<vector>
-
-struct Scope;
-struct Local
+namespace Eva
 {
-	int depth;
-	std::string name;
-};
-struct StackSim
-{
-	// so we can access previous scopes too - used during code generation in virtual machine
-	std::array<Local, 256> locals;
-	// track the declared locals
-	int m_StackPtr = 0;
-	std::string_view LastLocal()
+	struct Scope;
+	struct Local
 	{
-		return locals[m_StackPtr - 1].name;
-	}
-
-	std::tuple<bool, int> IsLocalExist(const std::string& name, size_t scope) const
+		int depth;
+		std::string name;
+	};
+	struct StackSim
 	{
-		auto temp = m_StackPtr - 1;
-		while (temp >= 0)
+		// so we can access previous scopes too - used during code generation in virtual machine
+		std::array<Local, 256> locals;
+		// track the declared locals
+		int m_StackPtr = 0;
+		std::string_view LastLocal()
 		{
-			if (name == locals[temp].name && scope >= locals[temp].depth)
-			{
-				return { true ,temp };
-			}
-			temp--;
+			return locals[m_StackPtr - 1].name;
 		}
-		return { false ,-1 };
-	}
+
+		std::tuple<bool, int> IsLocalExist(const std::string& name, size_t scope) const
+		{
+			auto temp = m_StackPtr - 1;
+			while (temp >= 0)
+			{
+				if (name == locals[temp].name && scope >= locals[temp].depth)
+				{
+					return { true ,temp };
+				}
+				temp--;
+			}
+			return { false ,-1 };
+		}
 
 
-};
+	};
+
+}

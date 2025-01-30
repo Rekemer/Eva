@@ -13,10 +13,11 @@
 #include "Serialize.h"
 #include "Log.h"
 
+
 struct TestCase {
     std::string name;
     std::string filePath;
-    std::unordered_map<std::string, ValueContainer> expected;
+    std::unordered_map<std::string, Eva::ValueContainer> expected;
 };
 
 /*
@@ -70,7 +71,7 @@ bool IsFloat(const std::string_view number)
 // a = 2,
 void FillTest(TestCase& test,std::string_view variableName, std::string_view line)
 {
-    
+    using namespace Eva;
     auto name = std::string{ variableName };
     auto index = 0l;
     while (line[index] != '=' || line[index] == ' ')
@@ -173,6 +174,7 @@ int GetExpectedData(TestCase& test)
 
 int main()
 {
+    using namespace Eva;
     auto cases = DiscoverTestCases(TEST_CASES_DIR);
     auto str = std::filesystem::current_path();
     TestCase t;

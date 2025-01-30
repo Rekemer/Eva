@@ -8,7 +8,8 @@
 #include <unordered_set>
 #include <format>
 
-
+namespace Eva
+{
 
 //https://www.cs.cornell.edu/courses/cs6120/2023fa/lesson/6/
 
@@ -2743,4 +2744,5 @@ void CFG::ConvertAST(const Node* tree)
 	}
 	
 	
+}
 }

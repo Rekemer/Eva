@@ -1,12 +1,16 @@
 #pragma once
 #include <string>
 #include "Value.h"
-struct Entry
+namespace Eva
 {
-	std::string key = "";
-	ValueContainer value;
-	bool IsInit()
+
+	struct Entry
 	{
-		return key != "";
-	}
-};
+		std::string key = "";
+		ValueContainer value;
+		bool IsInit()
+		{
+			return key != "";
+		}
+	};
+}

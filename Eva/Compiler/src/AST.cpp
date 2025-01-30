@@ -10,7 +10,8 @@
 #include "Tokens.h"
 #include "TokenConversion.h"
 
-
+namespace Eva
+{
 Expression::Expression(Expression&& e) : Node(std::move(e))
 {
 	left = std::move(e.left);
@@ -1305,6 +1306,11 @@ void Print(const Expression* tree, int level) {
 		 EndBlock();
 		 return scope;
 	 }
+	 else if (currentToken->type == TokenType::IMPORT)
+	 {
+		 auto libraryName = (currentToken + 1)->value.AsString();
+		 compiler->LoadPlugin(libraryName.data());
+	 }
 	 else
 	 {
 		auto node = Declaration(currentToken);
@@ -1760,4 +1766,5 @@ TokenType AST::TypeCheckVariableDeclaration(Expression* expr, TokenType leftType
 	}
 
 	return rightType;
+}
 }

@@ -10,11 +10,13 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include "Function.h"
+#include "ICallable.h"
 #include "Entry.h"
 #include "HashTable.h"
 
-CEREAL_REGISTER_TYPE(Func)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(ICallable, Func)
+
+CEREAL_REGISTER_TYPE(Eva::Func)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Eva::ICallable, Eva::Func)
 
 inline bool HasJsonExtension(std::string_view str)	
 {
@@ -35,7 +37,7 @@ namespace cereal
 
 
 	template <class Archive>
-	void serialize(Archive& archive, ICallable& func)
+	void serialize(Archive& archive, Eva::ICallable& func)
 	{
 		archive(
 			cereal::make_nvp("argCount", func.argCount),
@@ -45,10 +47,10 @@ namespace cereal
 	}
 
 	template <class Archive>
-	void serialize(Archive& archive, Func& func) {
+	void serialize(Archive& archive, Eva::Func& func) {
 		auto& constPool = func.constants;
 		auto& bytecode = func.opCode;
-		archive(cereal::virtual_base_class<ICallable>(&func));
+		archive(cereal::virtual_base_class<Eva::ICallable>(&func));
 		if constexpr (is_binary_archive_v<Archive>) {
 			// Binary: no name-value pairs
 			archive(constPool, bytecode);
@@ -64,7 +66,7 @@ namespace cereal
 	}
 	template<class Archive>
 	void serialize(Archive& archive,
-		ValueContainer& v)
+		Eva::ValueContainer& v)
 	{
 		if constexpr (is_binary_archive_v<Archive>)
 		{
@@ -79,7 +81,7 @@ namespace cereal
 	}
 	
 	
-	inline void saveEntry ( Entry* entry, int i, std::vector<Entry>& existingEntries)
+	inline void saveEntry ( Eva::Entry* entry, int i, std::vector<Eva::Entry>& existingEntries)
 		{
 			if (IsSet(entry + i))
 			{
@@ -91,9 +93,9 @@ namespace cereal
 			}
 		};
 	template<typename Archive>
-	void loadEntry(Archive& archive, HashTable& v)
+	void loadEntry(Archive& archive, Eva::HashTable& v)
 	{
-		std::vector<Entry> existingEntries;
+		std::vector<Eva::Entry> existingEntries;
 		if constexpr (is_binary_archive_v<Archive>)
 		{
 			archive(existingEntries);
@@ -104,7 +106,7 @@ namespace cereal
 		}
 		else
 		{
-			std::vector<Entry> existingEntries;
+			std::vector<Eva::Entry> existingEntries;
 			archive(cereal::make_nvp("entries", existingEntries));
 			for (auto& e : existingEntries)
 			{
@@ -113,9 +115,9 @@ namespace cereal
 		}
 	};
 	template <class Archive>
-	void save(Archive& archive, const HashTable& v)
+	void save(Archive& archive, const Eva::HashTable& v)
 	{
-		std::vector<Entry> existingEntries;
+		std::vector<Eva::Entry> existingEntries;
 		// Common fields
 		if constexpr (is_binary_archive_v<Archive>) {
 			// Binary output: just write raw data, no naming
@@ -142,14 +144,14 @@ namespace cereal
 	}
 
 	template <class Archive>
-	void load(Archive& archive, HashTable& v)
+	void load(Archive& archive, Eva::HashTable& v)
 	{
 		if constexpr (is_binary_archive_v<Archive>) {
 			// Binary input
 			archive(v.m_EntriesAmount, v.m_Size);
 
 			// Allocate array for entries
-			v.m_Data = std::make_unique<Entry[]>(v.m_Size);
+			v.m_Data = std::make_unique<Eva::Entry[]>(v.m_Size);
 			loadEntry(archive, v);
 			// Load entries
 			//for (int i = 0; i < v.m_Size; ++i) {
@@ -162,7 +164,7 @@ namespace cereal
 				CEREAL_NVP(v.m_EntriesAmount),
 				CEREAL_NVP(v.m_Size)
 			);
-			v.m_Data = std::make_unique<Entry[]>(v.m_Size);
+			v.m_Data = std::make_unique<Eva::Entry[]>(v.m_Size);
 			loadEntry(archive, v);
 
 			//for (int i = 0; i < v.m_Size; ++i) {
@@ -174,7 +176,7 @@ namespace cereal
 	// entry of  hashTable
 	template<class Archive>
 	void serialize(Archive& archive,
-		Entry& v)
+		Eva::Entry& v)
 	{
 		if constexpr (is_binary_archive_v<Archive>)
 		{

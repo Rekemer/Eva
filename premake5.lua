@@ -32,5 +32,9 @@ workspace "Eva"
 	include "Eva/VM"
 	include "Tests"
 	
+	group "Plugins"
+	include "Modules/glfw"
+	group ""
+	
 
 	

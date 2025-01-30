@@ -9,7 +9,4 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Dist|x64'">
     <LocalDebuggerCommandArguments>-test $(SolutionDir)Intermediates/test.json</LocalDebuggerCommandArguments>
   </PropertyGroup>
-  <PropertyGroup>
-    <ShowAllFiles>true</ShowAllFiles>
-  </PropertyGroup>
 </Project>

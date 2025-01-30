@@ -19,7 +19,7 @@ project "Tests"
     removefiles { "%{prj.location}/src/Tests.cpp"}
     links {"Eva-Base"}
     
-
+    dependson {"Eva-Base","Eva-Compiler", "Eva-VM"}
 
     filter "configurations:Debug"
     defines { "DEBUG" }

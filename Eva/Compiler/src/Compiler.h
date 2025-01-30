@@ -6,79 +6,82 @@
 #include "Value.h"
 #include "Function.h"
 #include "HashTable.h"
-class CFG;
-class ICallable;
-struct Node;
-struct Func;
-struct Block;
-struct Operand;
-struct Instruction;
-struct CFGFunction;
-class Compiler
+namespace Eva
 {
-public:
-	Compiler(std::string_view scriptPath, std::string_view bytecodePath)
-		:scriptPath{scriptPath},
-		bytecodePath{ bytecodePath }
+	class CFG;
+	class ICallable;
+	struct Node;
+	struct Func;
+	struct Block;
+	struct Operand;
+	struct Instruction;
+	struct CFGFunction;
+	class Compiler
 	{
+	public:
+		Compiler(std::string_view scriptPath, std::string_view bytecodePath)
+			:scriptPath{ scriptPath },
+			bytecodePath{ bytecodePath }
+		{
 
-	}
+		}
 
-	int Compile(const char* source);
-	HashTable& GetGlobals() { return globalVariables; };
-	HashTable& GetGlobalsType() { return globalVariablesTypes; };
-	ValueType GetGlobalType(const std::string& str, bool isNative = false);
-	std::shared_ptr<ICallable> GetCallable(std::string_view name, bool isNative);
+		int Compile(const char* source);
+		HashTable& GetGlobals() { return globalVariables; };
+		HashTable& GetGlobalsType() { return globalVariablesTypes; };
+		ValueType GetGlobalType(const std::string& str, bool isNative = false);
+		std::shared_ptr<ICallable> GetCallable(std::string_view name, bool isNative);
 
-	// so we can keep track of calls of functions
-	// that defined after call is parsed
-	std::vector<std::pair<std::string,int>> unresolvedFuncNames;
+		// so we can keep track of calls of functions
+		// that defined after call is parsed
+		std::vector<std::pair<std::string, int>> unresolvedFuncNames;
+		void LoadPlugin(std::string_view path);
+	private:
+		const std::string_view scriptPath;
+		const std::string_view bytecodePath;
+		Block* HandleBranch(std::vector<Block*> branches, const Instruction& instr);
 
-private:
-	const std::string_view scriptPath;
-	const std::string_view bytecodePath;
-	Block* HandleBranch(std::vector<Block*> branches, const Instruction& instr);
+		void BeginContinue(int startLoopIndex);
+		void EndContinue();
+		int BeginBreak();
+		void PatchBreak(int prevSizeBreak);
 
-	void BeginContinue(int startLoopIndex);
-	void EndContinue();
-	int BeginBreak();
-	void PatchBreak(int prevSizeBreak);
+		void CastWithDeclared(ValueType assignedType, ValueType declared);
+		void GenerateCFGOperand(const Operand& operand, ValueType instrType);
+		void GenerateConstant(const ValueContainer& v);
+		void GenerateBlockInstructions(Block* block);
+		void GenerateCFG(Block* block);
+		void GenerateBytecodeCFG(const CFG& cfg);
+		//void GenerateBytecodeAST(const Node const* node);
+	private:
 
-	void CastWithDeclared(ValueType assignedType, ValueType declared);
-	void GenerateCFGOperand(const Operand& operand, ValueType instrType);
-	void GenerateConstant(const ValueContainer& v);
-	void GenerateBlockInstructions(Block* block);
-	void GenerateCFG(Block* block);
-	void GenerateBytecodeCFG(const CFG& cfg);
-	//void GenerateBytecodeAST(const Node const* node);
-private:
-
-	std::vector<std::string> functionNames;
-	HashTable globalVariables;
-	HashTable globalVariablesTypes;
-
-
-	const std::unordered_map<std::string, CFGFunction>* functionCFG;
-	// function we build or execute
-	Func* currentFunc = nullptr;
-	// entry point
-	Func* mainFunc = nullptr;
-	// to execute global code
-	std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
+		std::vector<std::string> functionNames;
+		HashTable globalVariables;
+		HashTable globalVariablesTypes;
 
 
-	bool m_Panic = false;
-	// if we hit break or continue we should know where to jump
-	// we need stack because there can be loops in loops
-	std::stack<int> m_StartLoopIndexes;
-	// Once we hit break we should remember the index
-	// to come back and  patch it with correct distance
-	// for a jump
-	std::stack<int> m_BreakIndexes;
-	std::stack<int> conditionIndex;
-	ValueType m_FuncReturnType = ValueType::NIL;
-	std::stack<ValueType> lastReturnType;
+		const std::unordered_map<std::string, CFGFunction>* functionCFG;
+		// function we build or execute
+		Func* currentFunc = nullptr;
+		// entry point
+		Func* mainFunc = nullptr;
+		// to execute global code
+		std::unique_ptr<Func> globalFunc = std::make_unique<Func>();
+
+
+		bool m_Panic = false;
+		// if we hit break or continue we should know where to jump
+		// we need stack because there can be loops in loops
+		std::stack<int> m_StartLoopIndexes;
+		// Once we hit break we should remember the index
+		// to come back and  patch it with correct distance
+		// for a jump
+		std::stack<int> m_BreakIndexes;
+		std::stack<int> conditionIndex;
+		ValueType m_FuncReturnType = ValueType::NIL;
+		std::stack<ValueType> lastReturnType;
 
 
 
-};
+	};
+}
