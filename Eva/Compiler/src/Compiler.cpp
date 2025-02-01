@@ -10,6 +10,7 @@
 #include "Serialize.h"
 #include "Debug.h"
 #include "PluginLoader.h"
+#include "Log.h"
 
 #include <fstream>
 namespace Eva
@@ -953,11 +954,25 @@ void DumpToFile(std::ofstream& os, T& archive, Args&... args)
 	}
 }
 
-void Compiler::LoadPlugin(std::string_view name)
+void Compiler::LoadPlugin(std::string_view name, int line)
 {
-	auto fullPath = std::format("./bin/Modules/GLFW/Debug-windows-x86_64/GLFW.dll");
+	auto fullPath = std::format(".\\..\\..\\bin\\Modules\\GLFW\\Debug-windows-x86_64\\GLFW.dll");
 
-	auto handle = ::LoadDll(fullPath);
+	auto opt = LoadDll(fullPath);
+
+	if (opt.has_value()) 
+	{
+		plugins.insert({ name.data(), std::move(opt.value())});
+		auto& c = plugins.at(name.data());
+		auto ptr = reinterpret_cast<HMODULE>(c.hDLL);
+		std::cout << 's';
+	}
+	else
+	{
+		Log::GetLog()->error("Could not import {} at {}", name, line);
+		m_Panic = true;
+	}
+
 }
 
 int Compiler::Compile(const char* line)
@@ -997,8 +1012,12 @@ int Compiler::Compile(const char* line)
 		{
 			continue;
 		}
+
+
 		auto isNative = IsNative(name);
-		if (isNative)
+		auto [isPlugin, _] = IsPlugin(name, plugins);
+
+		if (isNative || isPlugin)
 		{
 			continue;
 		}

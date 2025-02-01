@@ -32,13 +32,13 @@ namespace Eva
 		END,
 
 		// Keywords.
-		AND, CLASS, ELSE, FALSE,
+		AND, IMPORT, CLASS, ELSE, FALSE,
 		CONTINUE, BREAK,
 		FOR, FUN, IF, ELIF, NIL, OR,
 		RETURN, SUPER, THIS,
 		TRUE, VAR, WHILE,
-		STRING_TYPE, FLOAT_TYPE, INT_TYPE, BOOL_TYPE, PTR_TYPE,
-		IMPORT,
+		STRING_TYPE, FLOAT_TYPE, INT_TYPE, PTR_TYPE, BOOL_TYPE,
+		
 
 		// not really a token which lexer produces,
 		// but a way to tell for example that it is a block of expressions

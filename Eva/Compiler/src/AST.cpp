@@ -137,19 +137,28 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	 return nullptr;
  }
 
+
  std::unique_ptr<Node> AST::CallFunc(std::string_view str,Iterator& currentToken, bool isGlobal)
  {
 
-	 bool isNative = IsNative(str);
+	 CallFlags flags = CallFlags::UserFunc;
+		 
+	 if (IsNative(str)) flags |= CallFlags::BuiltIn;
+	 auto [isPlugin, pluginName] = IsPlugin(str, compiler->plugins);
+	 if (isPlugin) 
+	 {
+		 flags |= CallFlags::ExternalDLL;
+	 }
 	 // function call
-	 if (!isGlobal && !isNative)
+	 if (!isGlobal && flags == CallFlags::UserFunc)
 	 {
 		 compiler->unresolvedFuncNames.push_back({ str.data(),(currentToken + 1)->line});
 	 }
 	 // call a function
 	 auto call = std::make_unique<Call>();
 	 call->name = str;
-	 call->isNative = isNative;
+	 call->flags = flags;
+	 call->pluginName = pluginName;
 	 call->type = TokenType::LEFT_PAREN;
 	 currentToken += 2;
 	 while (currentToken->type != TokenType::RIGHT_PAREN)
@@ -1308,8 +1317,13 @@ void Print(const Expression* tree, int level) {
 	 }
 	 else if (currentToken->type == TokenType::IMPORT)
 	 {
+		 auto node = std::make_unique<Node>();
+		 node->type = currentToken->type;
 		 auto libraryName = (currentToken + 1)->value.AsString();
-		 compiler->LoadPlugin(libraryName.data());
+		 auto line = (currentToken + 1)->line;
+		 compiler->LoadPlugin(libraryName.data(),line);
+		 currentToken += 2;
+		 return node;
 	 }
 	 else
 	 {
@@ -1352,6 +1366,11 @@ void AST::Build(Iterator& firstToken)
 
 void AST::TypeCheck()
 {
+	if (tree->type == TokenType::IMPORT)
+	{
+		return;
+	}
+
 	TypeCheck(tree.get());
 }
 
@@ -1416,11 +1435,20 @@ TokenType AST::TypeCheckIfStatement(Node* node)
 TokenType AST::TypeCheckFunctionCall(Node* node)
 {
 	auto call = static_cast<Call*>(node);
-	if (call->isNative)
+	if (call->IsBuiltIn())
 	{
 		return TypeToLiteral(ValueType::NIL);
 		assert(false && "handle native funcs");
 	}
+
+	if (call->IsFromDLL())
+	{
+		auto& data = compiler->plugins.at(call->pluginName);
+		auto type = data.typeMap->at(call->name);
+		return TypeToLiteral(type);
+		assert(false && "handle native funcs");
+	}
+
 	auto& globals = compiler->GetGlobals();
 	auto funcEntry = globals.Get(call->name);
 	if (!funcEntry)

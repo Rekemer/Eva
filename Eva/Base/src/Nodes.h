@@ -5,7 +5,7 @@
 #include <vector>
 #include "HashTable.h"
 
-
+#include <type_traits> 
 namespace Eva
 {
 
@@ -159,11 +159,62 @@ namespace Eva
 		std::string name;
 		std::vector<std::unique_ptr<Node>> arguments;
 	};
+
+	enum class CallFlags : unsigned {
+		UserFunc = 0,
+		BuiltIn = 1 << 0,
+		ExternalDLL = 1 << 1
+	};
+
+	inline CallFlags operator|(CallFlags lhs, CallFlags rhs) {
+		using T = std::underlying_type_t<CallFlags>;
+		return static_cast<CallFlags>(
+			static_cast<T>(lhs) | static_cast<T>(rhs)
+			);
+	}
+
+	inline CallFlags& operator|=(CallFlags& lhs, CallFlags rhs) {
+		lhs = lhs | rhs;
+		return lhs;
+	}
+
+	inline CallFlags operator&(CallFlags lhs, CallFlags rhs) {
+		using T = std::underlying_type_t<CallFlags>;
+		return static_cast<CallFlags>(
+			static_cast<T>(lhs) & static_cast<T>(rhs)
+			);
+	}
+
+	inline CallFlags& operator&=(CallFlags& lhs, CallFlags rhs) {
+		lhs = lhs & rhs;
+		return lhs;
+	}
+
+	inline bool operator==(CallFlags lhs, CallFlags rhs) {
+		using T = std::underlying_type_t<CallFlags>;
+		return static_cast<T>(lhs) == static_cast<T>(rhs);
+	}
+
+	inline bool operator!=(CallFlags lhs, CallFlags rhs) {
+		return !(lhs == rhs);
+	}
+
+
 	struct Call : public Node
 	{
 		// can store return type?
 		std::string name;
 		std::vector<std::unique_ptr<Node>> args;
-		bool isNative = false;
+		CallFlags  flags = CallFlags::UserFunc;
+		// should be different call class
+		std::string pluginName;
+
+		bool isUserFunc()  const { return (flags & CallFlags::UserFunc) == static_cast<CallFlags>(0);
+		};
+
+		bool IsBuiltIn()   const { return (flags & CallFlags::BuiltIn) != static_cast<CallFlags>(0); }
+		bool IsFromDLL()   const { return (flags & CallFlags::ExternalDLL) != static_cast<CallFlags>(0); }
+		bool IsCFunction() const { return (flags & (CallFlags::BuiltIn | CallFlags::ExternalDLL)) != static_cast<CallFlags>(0); }
+
 	};
 }

@@ -6,6 +6,9 @@ SOURCE_HEADER = r'''#include "glfw_wrappers.h"
 #include  <string>
 #include  "Value.h"
 namespace Eva {
+
+#define EXPORT extern "C" __declspec(dllexport)
+
 // We'll define a dummy MyState to show usage:
 struct MyState {
     // In real usage, you'd store a stack of values, or arguments, etc.

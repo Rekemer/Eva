@@ -98,6 +98,7 @@ bool CFG::IsStatement(const Node* node)
 	case TokenType::MINUS_EQUAL:
 	case TokenType::SLASH_EQUAL:
 	case TokenType::STAR_EQUAL:
+	case TokenType::IMPORT:
 		return true;
 	default:
 		break;
@@ -1960,6 +1961,11 @@ void CFG::ConvertStatementAST(const Node* tree)
 	auto expr = tree->As<Expression>();
 	switch (type)
 	{
+
+	case TokenType::IMPORT:
+	{
+		break;
+	}
 	case TokenType::DECLARE:
 	case TokenType::EQUAL:
 	{
@@ -2411,14 +2417,14 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto res = CreateTemp();
 		
 		// 
-		Operand  funcNameOp{ {call->name},call->isNative,SYSTEM_VER };
+		Operand  funcNameOp{ {call->name},call->IsCFunction(),SYSTEM_VER };
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
 
 		// for now we treat all native calls as critical
-		if (isFuncCritical.find(call->name) != isFuncCritical.end() || call->isNative)
+		if (isFuncCritical.find(call->name) != isFuncCritical.end() || call->IsCFunction())
 		{
 			// we have parsed function definition 
-			MarkFuncIfCritical(funcCall, call->isNative);
+			MarkFuncIfCritical(funcCall, call->IsCFunction());
 			isCurrentFuncCritical = true;
 		}
 		else
@@ -2433,14 +2439,14 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		funcCall.argBlock->name = name;
 		funcCall.argBlock->parents = {currentBlock};
 		funcCall.argBlock->markAll = true;
-		GiveType(funcCall, res, compiler->GetGlobalType(call->name, call->isNative));
+		GiveType(funcCall, res, compiler->GetGlobalType(call->name, call->IsCFunction()));
 		currentBlock->instructions.push_back(funcCall);
 		auto prevBlock = currentBlock;
 		auto funcCallIndex = prevBlock->instructions.size() - 1;
 		currentBlock = funcCall.argBlock;
 		
 		
-		auto funcValue = compiler->GetCallable(call->name, call->isNative);
+		auto funcValue = compiler->GetCallable(call->name, call->IsCFunction());
 		getAsParam = true;
 		for (auto i = 0; i < call->args.size(); i++)
 		{

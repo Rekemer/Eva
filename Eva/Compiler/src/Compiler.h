@@ -6,6 +6,7 @@
 #include "Value.h"
 #include "Function.h"
 #include "HashTable.h"
+#include "PluginData.h"
 namespace Eva
 {
 	class CFG;
@@ -35,7 +36,8 @@ namespace Eva
 		// so we can keep track of calls of functions
 		// that defined after call is parsed
 		std::vector<std::pair<std::string, int>> unresolvedFuncNames;
-		void LoadPlugin(std::string_view path);
+		void LoadPlugin(std::string_view path, int line);
+		std::unordered_map<std::string, PluginData> plugins;
 	private:
 		const std::string_view scriptPath;
 		const std::string_view bytecodePath;
@@ -58,7 +60,8 @@ namespace Eva
 		std::vector<std::string> functionNames;
 		HashTable globalVariables;
 		HashTable globalVariablesTypes;
-
+		
+		
 
 		const std::unordered_map<std::string, CFGFunction>* functionCFG;
 		// function we build or execute

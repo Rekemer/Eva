@@ -6,6 +6,9 @@
 #include  <string>
 #include  "Value.h"
 namespace Eva {
+
+#define EXPORT extern "C" __declspec(dllexport)
+
 // We'll define a dummy MyState to show usage:
 struct MyState {
     // In real usage, you'd store a stack of values, or arguments, etc.
@@ -14,7 +17,7 @@ struct MyState {
     
 };
 
-int wrapper_glfwInit(MyState* st) {
+ EXPORT int wrapper_glfwInit(MyState* st) {
     
 
     auto result = glfwInit();
@@ -22,7 +25,7 @@ int wrapper_glfwInit(MyState* st) {
     return 1; // number of values we 'return'
 }
 
-int wrapper_glfwTerminate(MyState* st) {
+ EXPORT int wrapper_glfwTerminate(MyState* st) {
     
 
     glfwTerminate();
@@ -30,7 +33,7 @@ int wrapper_glfwTerminate(MyState* st) {
     return 0; // number of values we 'return'
 }
 
-int wrapper_glfwCreateWindow(MyState* st) {
+ EXPORT int wrapper_glfwCreateWindow(MyState* st) {
     
       auto arg4 = st->stack->back();
 	st->stack->pop_back();
@@ -47,7 +50,7 @@ int wrapper_glfwCreateWindow(MyState* st) {
     return 1; // number of values we 'return'
 }
 
-int wrapper_glfwDestroyWindow(MyState* st) {
+ EXPORT int wrapper_glfwDestroyWindow(MyState* st) {
     
       auto arg0 = st->stack->back();
 	st->stack->pop_back();
@@ -56,7 +59,7 @@ int wrapper_glfwDestroyWindow(MyState* st) {
     return 0; // number of values we 'return'
 }
 
-int wrapper_glfwMakeContextCurrent(MyState* st) {
+ EXPORT int wrapper_glfwMakeContextCurrent(MyState* st) {
     
       auto arg0 = st->stack->back();
 	st->stack->pop_back();
@@ -65,7 +68,7 @@ int wrapper_glfwMakeContextCurrent(MyState* st) {
     return 0; // number of values we 'return'
 }
 
-int wrapper_glfwWindowShouldClose(MyState* st) {
+ EXPORT int wrapper_glfwWindowShouldClose(MyState* st) {
     
       auto arg0 = st->stack->back();
 	st->stack->pop_back();
@@ -74,7 +77,7 @@ int wrapper_glfwWindowShouldClose(MyState* st) {
     return 1; // number of values we 'return'
 }
 
-int wrapper_glfwSetWindowShouldClose(MyState* st) {
+ EXPORT int wrapper_glfwSetWindowShouldClose(MyState* st) {
     
       auto arg1 = st->stack->back();
 	st->stack->pop_back();
@@ -85,7 +88,7 @@ int wrapper_glfwSetWindowShouldClose(MyState* st) {
     return 0; // number of values we 'return'
 }
 
-int wrapper_glfwPollEvents(MyState* st) {
+ EXPORT int wrapper_glfwPollEvents(MyState* st) {
     
 
     glfwPollEvents();
@@ -93,7 +96,7 @@ int wrapper_glfwPollEvents(MyState* st) {
     return 0; // number of values we 'return'
 }
 
-int wrapper_glfwSwapBuffers(MyState* st) {
+ EXPORT int wrapper_glfwSwapBuffers(MyState* st) {
     
       auto arg0 = st->stack->back();
 	st->stack->pop_back();
@@ -102,7 +105,7 @@ int wrapper_glfwSwapBuffers(MyState* st) {
     return 0; // number of values we 'return'
 }
 
-int wrapper_glfwGetKey(MyState* st) {
+ EXPORT int wrapper_glfwGetKey(MyState* st) {
     
       auto arg1 = st->stack->back();
 	st->stack->pop_back();
@@ -113,7 +116,7 @@ int wrapper_glfwGetKey(MyState* st) {
     return 1; // number of values we 'return'
 }
 
-int wrapper_glfwGetTime(MyState* st) {
+ EXPORT int wrapper_glfwGetTime(MyState* st) {
     
 
     auto result = glfwGetTime();
@@ -121,7 +124,7 @@ int wrapper_glfwGetTime(MyState* st) {
     return 1; // number of values we 'return'
 }
 
-int wrapper_glfwWindowHint(MyState* st) {
+ EXPORT int wrapper_glfwWindowHint(MyState* st) {
     
       auto arg1 = st->stack->back();
 	st->stack->pop_back();
@@ -132,7 +135,7 @@ int wrapper_glfwWindowHint(MyState* st) {
     return 0; // number of values we 'return'
 }
 
-int wrapper_glfwSwapInterval(MyState* st) {
+ EXPORT int wrapper_glfwSwapInterval(MyState* st) {
     
       auto arg0 = st->stack->back();
 	st->stack->pop_back();
@@ -158,21 +161,21 @@ GLFWFuncEntry g_glfwFunctionTable[] = {
 };
 
 int g_glfwFunctionCount = sizeof(g_glfwFunctionTable)/sizeof(GLFWFuncEntry);
-std::unordered_map<std::string, ValueType> initModule() {
-    std::unordered_map<std::string, ValueType> typeMap;
-    typeMap["glfwInit"] = ValueType::INT;
-    typeMap["glfwTerminate"] = ValueType::NIL;
-    typeMap["glfwCreateWindow"] = ValueType::PTR;
-    typeMap["glfwDestroyWindow"] = ValueType::NIL;
-    typeMap["glfwMakeContextCurrent"] = ValueType::NIL;
-    typeMap["glfwWindowShouldClose"] = ValueType::INT;
-    typeMap["glfwSetWindowShouldClose"] = ValueType::NIL;
-    typeMap["glfwPollEvents"] = ValueType::NIL;
-    typeMap["glfwSwapBuffers"] = ValueType::NIL;
-    typeMap["glfwGetKey"] = ValueType::INT;
-    typeMap["glfwGetTime"] = ValueType::FLOAT;
-    typeMap["glfwWindowHint"] = ValueType::NIL;
-    typeMap["glfwSwapInterval"] = ValueType::NIL;
+ EXPORT std::unordered_map<std::string, ValueType>* initModule() {
+    std::unordered_map<std::string, ValueType>* typeMap = new std::unordered_map<std::string, ValueType>{} ;
+    (*typeMap)["glfwInit"] = ValueType::INT;
+    (*typeMap)["glfwTerminate"] = ValueType::NIL;
+    (*typeMap)["glfwCreateWindow"] = ValueType::PTR;
+    (*typeMap)["glfwDestroyWindow"] = ValueType::NIL;
+    (*typeMap)["glfwMakeContextCurrent"] = ValueType::NIL;
+    (*typeMap)["glfwWindowShouldClose"] = ValueType::INT;
+    (*typeMap)["glfwSetWindowShouldClose"] = ValueType::NIL;
+    (*typeMap)["glfwPollEvents"] = ValueType::NIL;
+    (*typeMap)["glfwSwapBuffers"] = ValueType::NIL;
+    (*typeMap)["glfwGetKey"] = ValueType::INT;
+    (*typeMap)["glfwGetTime"] = ValueType::FLOAT;
+    (*typeMap)["glfwWindowHint"] = ValueType::NIL;
+    (*typeMap)["glfwSwapInterval"] = ValueType::NIL;
 
     return typeMap;
 }

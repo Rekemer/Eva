@@ -113,7 +113,7 @@ def generate_prototypes_and_wrappers(data):
             ret_push = "assert(false);"
             result_count = "0"
         string6 = '\n'
-        wrapper_def = f"""int {wrapper_name}(MyState* st) {{
+        wrapper_def = f""" EXPORT int {wrapper_name}(MyState* st) {{
     
 {string6.join(parse_lines)}
 {call_line}
@@ -144,11 +144,11 @@ C_TYPE_MAP = {
 def generate_metatable(data):
     
     lines = []
-    lines.append("std::unordered_map<std::string, ValueType> initModule() {")
-    lines.append("    std::unordered_map<std::string, ValueType> typeMap;")
+    lines.append(" EXPORT std::unordered_map<std::string, ValueType>* initModule() {")
+    lines.append("    std::unordered_map<std::string, ValueType>* typeMap = new std::unordered_map<std::string, ValueType>{} ;")
     for func in data["functions"]:
         ret_type = func["return"]
-        line = f'    typeMap["{func["name"]}"] = {C_TYPE_MAP[ret_type]};'
+        line = f'    (*typeMap)["{func["name"]}"] = {C_TYPE_MAP[ret_type]};'
         lines.append(line)
     # For each entry in C_TYPE_MAP, generate code like:
     #    typeMap["int"] = ValueType::INT;
