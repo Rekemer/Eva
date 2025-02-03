@@ -10,10 +10,10 @@ namespace Eva {
 extern "C" {
 #endif
 
-typedef struct MyState MyState;
+struct CallState;
 
 // A single function pointer type for all GLFW wrappers
-typedef int (*GLFW_WrapperFn)(MyState* st);
+typedef int (*GLFW_WrapperFn)(CallState& st);
 
 typedef struct {
     const char* name;       // e.g. "glfwInit"
@@ -21,7 +21,6 @@ typedef struct {
 } GLFWFuncEntry;
 
 extern GLFWFuncEntry g_glfwFunctionTable[];
-extern int g_glfwFunctionCount;
 
 // For demonstration, we declare a "parse" function or macros your real code might use
 // But real code might #include <GLFW/glfw3.h> or do dynamic loading.
@@ -60,7 +59,7 @@ def generate_prototypes_and_wrappers(data):
     data["functions"]: list of { name: str, return: str, args: [{type: str},...] }
     We'll generate:
 
-      int wrapper_<funcName>(MyState* st) {
+      int wrapper_<funcName>(CallState* st) {
          // parse arguments from st
          // call real <funcName>(...)
          // push results
@@ -89,7 +88,7 @@ def generate_prototypes_and_wrappers(data):
         for i, arg in enumerate(arg_list):
             argCType = arg["type"]    # e.g. "int", "pointer", ...
             #parse_lines.append(f"    // {argCType} arg{i} = ??? // parse from st")
-            parse_lines.append(f"      auto arg{size - i} = st->stack->back();\n\tst->stack->pop_back();")
+            parse_lines.append(f"      auto arg{size - i} = st.stack.back();\n\tst.stack.pop_back();")
         
         # Actual call
         # If return is "void", we won't store result
@@ -101,11 +100,11 @@ def generate_prototypes_and_wrappers(data):
             result_count = "0"
         elif ret_type == "int" or ret_type == "float" or ret_type == "double" or ret_type == "bool" :
             call_line = f"    auto result = {fn_name}({call_args});"
-            ret_push = "st->stack->push_back(ValueContainer(result));"
+            ret_push = "st.stack.push_back(ValueContainer(result));"
             result_count = "1"
         elif is_ret_ptr:
             call_line = f"    void* result = {fn_name}({call_args});"
-            ret_push = "st->stack->push_back(ValueContainer(reinterpret_cast<eptr>(result)));"
+            ret_push = "st.stack.push_back(ValueContainer(reinterpret_cast<eptr>(result)));"
             result_count = "1"
         else:
             # fallback
@@ -113,7 +112,7 @@ def generate_prototypes_and_wrappers(data):
             ret_push = "assert(false);"
             result_count = "0"
         string6 = '\n'
-        wrapper_def = f""" EXPORT int {wrapper_name}(MyState* st) {{
+        wrapper_def = f""" EXPORT int {wrapper_name}(CallState& st) {{
     
 {string6.join(parse_lines)}
 {call_line}
@@ -187,7 +186,6 @@ def main():
         for entry in function_table_entries:
             sf.write(entry + "\n")
         sf.write("};\n\n")
-        sf.write("int g_glfwFunctionCount = sizeof(g_glfwFunctionTable)/sizeof(GLFWFuncEntry);\n")
         sf.write("\n".join(lines))
         sf.write("\n}")
     

@@ -1,31 +1,22 @@
 #include "glfw_wrappers.h"
 #include  <stdio.h> // for demo printing
 #include  <glfw3.h> // or your dynamic load approach
-#include  <vector>
 #include  <unordered_map>
 #include  <string>
 #include  "Value.h"
+#include  "CallState.h"
 namespace Eva {
-
 #define EXPORT extern "C" __declspec(dllexport)
 
-// We'll define a dummy MyState to show usage:
-struct MyState {
-    // In real usage, you'd store a stack of values, or arguments, etc.
-    // This is just a placeholder.
-    std::vector<ValueContainer>* stack;
-    
-};
-
- EXPORT int wrapper_glfwInit(MyState* st) {
+ EXPORT int wrapper_glfwInit(CallState& st) {
     
 
     auto result = glfwInit();
-    st->stack->push_back(ValueContainer(result));
+    st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwTerminate(MyState* st) {
+ EXPORT int wrapper_glfwTerminate(CallState& st) {
     
 
     glfwTerminate();
@@ -33,62 +24,62 @@ struct MyState {
     return 0; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwCreateWindow(MyState* st) {
+ EXPORT int wrapper_glfwCreateWindow(CallState& st) {
     
-      auto arg4 = st->stack->back();
-	st->stack->pop_back();
-      auto arg3 = st->stack->back();
-	st->stack->pop_back();
-      auto arg2 = st->stack->back();
-	st->stack->pop_back();
-      auto arg1 = st->stack->back();
-	st->stack->pop_back();
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg4 = st.stack.back();
+	st.stack.pop_back();
+      auto arg3 = st.stack.back();
+	st.stack.pop_back();
+      auto arg2 = st.stack.back();
+	st.stack.pop_back();
+      auto arg1 = st.stack.back();
+	st.stack.pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     void* result = glfwCreateWindow(arg0.As<eint>(), arg1.As<eint>(), reinterpret_cast<const char*>(arg2.AsString().data()), reinterpret_cast<GLFWmonitor*>(arg3.As<eptr>()), reinterpret_cast<GLFWwindow*>(arg4.As<eptr>()));
-    st->stack->push_back(ValueContainer(reinterpret_cast<eptr>(result)));
+    st.stack.push_back(ValueContainer(reinterpret_cast<eptr>(result)));
     return 1; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwDestroyWindow(MyState* st) {
+ EXPORT int wrapper_glfwDestroyWindow(CallState& st) {
     
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
     // no return, so no results to push
     return 0; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwMakeContextCurrent(MyState* st) {
+ EXPORT int wrapper_glfwMakeContextCurrent(CallState& st) {
     
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
     // no return, so no results to push
     return 0; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwWindowShouldClose(MyState* st) {
+ EXPORT int wrapper_glfwWindowShouldClose(CallState& st) {
     
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     auto result = glfwWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
-    st->stack->push_back(ValueContainer(result));
+    st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwSetWindowShouldClose(MyState* st) {
+ EXPORT int wrapper_glfwSetWindowShouldClose(CallState& st) {
     
-      auto arg1 = st->stack->back();
-	st->stack->pop_back();
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg1 = st.stack.back();
+	st.stack.pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     glfwSetWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), arg1.As<eint>());
     // no return, so no results to push
     return 0; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwPollEvents(MyState* st) {
+ EXPORT int wrapper_glfwPollEvents(CallState& st) {
     
 
     glfwPollEvents();
@@ -96,49 +87,49 @@ struct MyState {
     return 0; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwSwapBuffers(MyState* st) {
+ EXPORT int wrapper_glfwSwapBuffers(CallState& st) {
     
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
     // no return, so no results to push
     return 0; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwGetKey(MyState* st) {
+ EXPORT int wrapper_glfwGetKey(CallState& st) {
     
-      auto arg1 = st->stack->back();
-	st->stack->pop_back();
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg1 = st.stack.back();
+	st.stack.pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     auto result = glfwGetKey(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), arg1.As<eint>());
-    st->stack->push_back(ValueContainer(result));
+    st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwGetTime(MyState* st) {
+ EXPORT int wrapper_glfwGetTime(CallState& st) {
     
 
     auto result = glfwGetTime();
-    st->stack->push_back(ValueContainer(result));
+    st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwWindowHint(MyState* st) {
+ EXPORT int wrapper_glfwWindowHint(CallState& st) {
     
-      auto arg1 = st->stack->back();
-	st->stack->pop_back();
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg1 = st.stack.back();
+	st.stack.pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     glfwWindowHint(arg0.As<eint>(), arg1.As<eint>());
     // no return, so no results to push
     return 0; // number of values we 'return'
 }
 
- EXPORT int wrapper_glfwSwapInterval(MyState* st) {
+ EXPORT int wrapper_glfwSwapInterval(CallState& st) {
     
-      auto arg0 = st->stack->back();
-	st->stack->pop_back();
+      auto arg0 = st.stack.back();
+	st.stack.pop_back();
     glfwSwapInterval(arg0.As<eint>());
     // no return, so no results to push
     return 0; // number of values we 'return'
@@ -160,7 +151,6 @@ GLFWFuncEntry g_glfwFunctionTable[] = {
     {"glfwSwapInterval", &wrapper_glfwSwapInterval},
 };
 
-int g_glfwFunctionCount = sizeof(g_glfwFunctionTable)/sizeof(GLFWFuncEntry);
  EXPORT std::unordered_map<std::string, ValueType>* initModule() {
     std::unordered_map<std::string, ValueType>* typeMap = new std::unordered_map<std::string, ValueType>{} ;
     (*typeMap)["glfwInit"] = ValueType::INT;

@@ -120,6 +120,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\Bytecode.h" />
+    <ClInclude Include="src\CallFlags.h" />
+    <ClInclude Include="src\CallFrame.h" />
+    <ClInclude Include="src\CallState.h" />
     <ClInclude Include="src\Debug.h" />
     <ClInclude Include="src\Entry.h" />
     <ClInclude Include="src\Function.h" />
@@ -139,6 +142,7 @@
     <ClInclude Include="src\win_header.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\PluginLoader.cpp" />
     <ClCompile Include="src\PluginData.cpp" />
     <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\Function.cpp" />

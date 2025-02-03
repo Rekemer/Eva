@@ -7,6 +7,7 @@
 #include "Function.h"
 #include "HashTable.h"
 #include "PluginData.h"
+#include "CallFlags.h"
 namespace Eva
 {
 	class CFG;
@@ -30,8 +31,8 @@ namespace Eva
 		int Compile(const char* source);
 		HashTable& GetGlobals() { return globalVariables; };
 		HashTable& GetGlobalsType() { return globalVariablesTypes; };
-		ValueType GetGlobalType(const std::string& str, bool isNative = false);
-		std::shared_ptr<ICallable> GetCallable(std::string_view name, bool isNative);
+		ValueType GetGlobalType(const std::string& str, CallFlags callFlags = CallFlags::BuiltIn);
+		std::shared_ptr<ICallable> GetCallable(std::string_view name, CallFlags flags);
 
 		// so we can keep track of calls of functions
 		// that defined after call is parsed

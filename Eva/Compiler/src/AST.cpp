@@ -9,6 +9,7 @@
 #include "Native.h"
 #include "Tokens.h"
 #include "TokenConversion.h"
+#include "PluginLoader.h"
 
 namespace Eva
 {
@@ -1443,8 +1444,7 @@ TokenType AST::TypeCheckFunctionCall(Node* node)
 
 	if (call->IsFromDLL())
 	{
-		auto& data = compiler->plugins.at(call->pluginName);
-		auto type = data.typeMap->at(call->name);
+		auto type = GetReturnTypeFromPlugin(compiler->plugins,call->pluginName,call->name);
 		return TypeToLiteral(type);
 		assert(false && "handle native funcs");
 	}

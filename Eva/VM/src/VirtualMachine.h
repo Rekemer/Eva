@@ -9,6 +9,7 @@
 #include "HashTable.h"
 #include "Bytecode.h"
 #include "CallFrame.h"
+#include "PluginData.h"
 
  
 
@@ -51,6 +52,7 @@ namespace Eva
 		ValueType GetGlobalType(const std::string& str);
 		~VirtualMachine();
 	private:
+
 		Block* HandleBranch(std::vector<Block*> branches, const Instruction& branch);
 		void GenerateBlockInstructions(Block* block);
 		ValueType GenerateAST(const Node* tree);
@@ -65,7 +67,6 @@ namespace Eva
 		void BeginContinue(int startLoopIndex);
 		int BeginBreak();
 		void EndContinue();
-		size_t CallFunction(Func* func, size_t argumentCount, size_t baseIndex);
 		void PatchBreak(int prevSizeBreak);
 		void SetVariable(std::vector<Bytecode>& opCode,
 			const std::string& name, int depth);
@@ -84,6 +85,8 @@ namespace Eva
 		bool isTest = false;
 		Func* mainFunc = nullptr;
 		std::vector<std::string> functionNames;
+		PluginTable pluginTable;
+		std::vector<ValueContainer> vmStack;
 	private:
 		friend Func;
 		friend NativeFunc;
@@ -91,7 +94,6 @@ namespace Eva
 		Func* currentFunc = nullptr;
 		// entry point
 
-		std::vector<ValueContainer> vmStack;
 		HashTable internalStrings;
 		HashTable globalVariables;
 		HashTable globalVariablesTypes;
@@ -99,7 +101,7 @@ namespace Eva
 		ValueContainer temp;
 
 		std::array<CallFrame, callFrameAmount > callFrames;
-		int nextToCurrentCallFrame = 0;
+		
 		bool m_Panic = false;
 		// if we hit break or continue we should know where to jump
 		// we need stack because there can be loops in loops

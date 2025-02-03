@@ -265,11 +265,15 @@ void Compiler::PatchBreak(int prevSizeBreak)
 		m_BreakIndexes.pop();
 	}
 }
-ValueType Compiler::GetGlobalType(const std::string& str, bool isNative)
+ValueType Compiler::GetGlobalType(const std::string& str, CallFlags callFlags)
 {
-	if (isNative)
+	if (callFlags == CallFlags::BuiltIn)
 	{
 		return GetNativeType(str);
+	}
+	else if (callFlags == CallFlags::ExternalDLL)
+	{
+		return GetReturnTypeDLL(plugins, str);
 	}
 	auto entry = globalVariablesTypes.Get(str);
 	if (!entry->IsInit())
@@ -283,11 +287,15 @@ ValueType Compiler::GetGlobalType(const std::string& str, bool isNative)
 	return entry->value.type;
 }
 
-std::shared_ptr<ICallable> Compiler::GetCallable(std::string_view name, bool isNative)
+std::shared_ptr<ICallable> Compiler::GetCallable(std::string_view name, CallFlags flags)
 {
-	if (isNative)
+	if (flags == CallFlags::BuiltIn)
 	{
-		return GetNative(name);
+		return GetNativeCall(name);
+	}
+	else if (flags == CallFlags::ExternalDLL)
+	{
+
 	}
 	else
 	{
@@ -963,9 +971,6 @@ void Compiler::LoadPlugin(std::string_view name, int line)
 	if (opt.has_value()) 
 	{
 		plugins.insert({ name.data(), std::move(opt.value())});
-		auto& c = plugins.at(name.data());
-		auto ptr = reinterpret_cast<HMODULE>(c.hDLL);
-		std::cout << 's';
 	}
 	else
 	{
@@ -1110,13 +1115,13 @@ int Compiler::Compile(const char* line)
 		{
 			std::ofstream os(bytecodePath.data());
 			cereal::JSONOutputArchive archive(os);
-			DumpToFile(os,archive, *globalFunc,globalVariables, functionNames);
+			DumpToFile(os,archive, *globalFunc,globalVariables, functionNames,plugins);
 		}
 		else
 		{
 			std::ofstream os(bytecodePath.data(),std::ios::binary);
 			cereal::BinaryOutputArchive archive(os);
-			DumpToFile(os,archive, *globalFunc, globalVariables, functionNames);
+			DumpToFile(os,archive, *globalFunc, globalVariables, functionNames,plugins);
 
 		}
 		

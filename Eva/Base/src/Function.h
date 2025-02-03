@@ -6,12 +6,13 @@
 #include <string>
 #include "Bytecode.h"
 #include "Value.h"
+#include "CallFlags.h"
 namespace Eva
 {
 	class Func final : public ICallable
 	{
 	public:
-		size_t Call(VirtualMachine& vm, size_t argumentCount, size_t baseIndex) override;
+		 size_t Call(CallState& callState,  size_t baseIndex) override;
 
 		std::vector<Bytecode> opCode;
 		std::vector<ValueContainer> constants;
@@ -24,6 +25,7 @@ namespace Eva
 		{
 
 		};
-		size_t Call(VirtualMachine& vm, size_t argumentCount, size_t baseIndex) override;
+		CallFlags callFlags;
+		size_t Call(CallState& callState,  size_t baseIndex) override;
 	};
 }

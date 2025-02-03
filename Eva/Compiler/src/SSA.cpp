@@ -2439,14 +2439,14 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		funcCall.argBlock->name = name;
 		funcCall.argBlock->parents = {currentBlock};
 		funcCall.argBlock->markAll = true;
-		GiveType(funcCall, res, compiler->GetGlobalType(call->name, call->IsCFunction()));
+		GiveType(funcCall, res, compiler->GetGlobalType(call->name, call->flags));
 		currentBlock->instructions.push_back(funcCall);
 		auto prevBlock = currentBlock;
 		auto funcCallIndex = prevBlock->instructions.size() - 1;
 		currentBlock = funcCall.argBlock;
 		
 		
-		auto funcValue = compiler->GetCallable(call->name, call->IsCFunction());
+		auto funcValue = compiler->GetCallable(call->name, call->flags);
 		getAsParam = true;
 		for (auto i = 0; i < call->args.size(); i++)
 		{

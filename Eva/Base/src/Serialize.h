@@ -13,6 +13,7 @@
 #include "ICallable.h"
 #include "Entry.h"
 #include "HashTable.h"
+#include "PluginData.h"
 
 
 CEREAL_REGISTER_TYPE(Eva::Func)
@@ -189,4 +190,23 @@ namespace cereal
 			archive(CEREAL_NVP(v.value));
 		}
 	}
+
+	template<class Archive>
+	void serialize(Archive& archive,
+		Eva::PluginData& v)
+	{
+		if constexpr (is_binary_archive_v<Archive>)
+		{
+			archive(v.name);
+			//archive(v.hDLL);
+			archive(v.typeMap);
+		}
+		else
+		{
+			archive(CEREAL_NVP(v.name));
+			//archive(CEREAL_NVP(v.hDLL));
+			archive(CEREAL_NVP(v.typeMap));
+		}
+	}
+
 }

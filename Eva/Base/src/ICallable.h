@@ -5,7 +5,7 @@
 
 namespace Eva
 {
-	class VirtualMachine;
+	struct CallState;
 	class ICallable
 	{
 	public:
@@ -25,8 +25,7 @@ namespace Eva
 		{
 			return argCount == INF_ARGS;
 		}
-
-		virtual size_t Call(VirtualMachine& vm, size_t argumentCount, size_t baseIndex) = 0;
+		virtual size_t Call(CallState& callState,  size_t baseIndex) = 0;
 		int argCount = 0;
 		std::vector<ValueType> argTypes;
 		std::string name;

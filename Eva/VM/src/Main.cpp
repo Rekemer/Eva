@@ -11,7 +11,7 @@ void Execute(T& iarchive, bool isTest)
 {
 	using namespace Eva;
 	VirtualMachine vm;
-	iarchive(*vm.globalFunc, vm.GetGlobals(), vm.functionNames);
+	iarchive(*vm.globalFunc, vm.GetGlobals(), vm.functionNames,vm.pluginTable);
 	auto e = vm.GetGlobals().Get("main");
 	if (e->IsInit())
 	{

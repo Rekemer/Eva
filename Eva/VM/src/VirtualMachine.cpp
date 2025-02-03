@@ -10,6 +10,7 @@
 #include "Local.h"
 #include "ICallable.h"
 #include "Native.h"
+#include "PluginLoader.h"
 
 
 #include <fstream>
@@ -306,16 +307,22 @@ if (child== ValueType::FLOAT)\
 	void VirtualMachine::Execute()
 	{
 		if (m_Panic)return;
+
+
+		
+
 		globalFunc->opCode.push_back((uint8_t)InCode::NIL);
 		globalFunc->opCode.push_back((uint8_t)InCode::RETURN);
+		CallState callState{ vmStack,pluginTable,callFrames,0 };
+
 		if (mainFunc)
 		{
-			callFrames[nextToCurrentCallFrame++].function = mainFunc;
+			callFrames[callState.nextToCurrentCallFrame++].function = mainFunc;
 		}
-		callFrames[nextToCurrentCallFrame].function = globalFunc.get();
-		callFrames[nextToCurrentCallFrame].stackIndex = -1;
-		nextToCurrentCallFrame++;
-		auto frame = &callFrames[nextToCurrentCallFrame - 1];
+		callFrames[callState.nextToCurrentCallFrame].function = globalFunc.get();
+		callFrames[callState.nextToCurrentCallFrame].stackIndex = -1;
+		callState.nextToCurrentCallFrame++;
+		auto frame = &callFrames[callState.nextToCurrentCallFrame - 1];
 		while (true)
 		{
 			// check if there are strings to be freed
@@ -531,20 +538,20 @@ if (child== ValueType::FLOAT)\
 				//{
 				//	return;
 				//}
-				auto prevCallFrameIndex = nextToCurrentCallFrame - 2;
+				auto prevCallFrameIndex = callState.nextToCurrentCallFrame - 2;
 				auto res = vmStack.back();
 				if (prevCallFrameIndex < 0)
 				{
 					return;
 				}
-				if (callFrames[nextToCurrentCallFrame - 1].function == globalFunc.get())
+				if (callFrames[callState.nextToCurrentCallFrame - 1].function == globalFunc.get())
 				{
 					vmStack.resize(0);
 				}
 				else
-					vmStack.resize(callFrames[nextToCurrentCallFrame - 1].stackIndex);
+					vmStack.resize(callFrames[callState.nextToCurrentCallFrame - 1].stackIndex);
 				vmStack.push_back(res);
-				nextToCurrentCallFrame--;
+				callState.nextToCurrentCallFrame--;
 				frame = &callFrames[prevCallFrameIndex];
 				break;
 			}
@@ -606,29 +613,22 @@ if (child== ValueType::FLOAT)\
 			{
 				auto index = frame->function->opCode[frame->ip++];
 				auto name = frame->function->constants[index];
-				auto v = ValueContainer{ GetNative(name.AsString()) };
+				auto v = ValueContainer{ GetNativeCall(name.AsString()) };
 				vmStack.push_back(v);
 				break;
 			}
 			case InCode::CALL:
 			{
-				// up to this point arguments and function are on stack
-				//auto argumentCount = frame->function->opCode[frame->ip++];
-				//auto funcIndex = vmStack.size()  - 1 - argumentCount;
-				//auto func = vmStack[funcIndex].AsFunc();
-				//auto newIndexFrame = CallFunction(func.get(), argumentCount, funcIndex);
-				//// update our call frame 
-				//frame = &callFrames[newIndexFrame];
 
 				// arguments and function are on stack
-				auto argumentCount = frame->function->opCode[frame->ip++];
-				auto funcIndex = vmStack.size() - 1 - argumentCount;
+				callState.argumentCount = frame->function->opCode[frame->ip++];
+				auto funcIndex = vmStack.size() - 1 - callState.argumentCount;
 
 				// Retrieve the ICallable from the stack
 				auto callable = vmStack[funcIndex].AsCallable();
 
 				// "Call" the function
-				size_t newFrameIndex = callable->Call(*this, argumentCount, funcIndex);
+				size_t newFrameIndex = callable->Call(callState, funcIndex);
 
 				// If it's a user function, newFrameIndex is a valid frame
 				// If it's a native function, newFrameIndex might be SIZE_MAX
@@ -668,15 +668,10 @@ if (child== ValueType::FLOAT)\
 
 	}
 
-	size_t VirtualMachine::CallFunction(Func* func, size_t argumentCount, size_t baseIndex)
-	{
-		auto& frame = callFrames[nextToCurrentCallFrame++];
-		frame.function = func;
-		frame.ip = 0;
-		frame.stackIndex = baseIndex;
-		return nextToCurrentCallFrame - 1;
 
-	}
+	
+	
+
 
 }
 

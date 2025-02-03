@@ -4,10 +4,10 @@ namespace Eva {
 extern "C" {
 #endif
 
-typedef struct MyState MyState;
+struct CallState;
 
 // A single function pointer type for all GLFW wrappers
-typedef int (*GLFW_WrapperFn)(MyState* st);
+typedef int (*GLFW_WrapperFn)(CallState& st);
 
 typedef struct {
     const char* name;       // e.g. "glfwInit"
@@ -15,7 +15,6 @@ typedef struct {
 } GLFWFuncEntry;
 
 extern GLFWFuncEntry g_glfwFunctionTable[];
-extern int g_glfwFunctionCount;
 
 // For demonstration, we declare a "parse" function or macros your real code might use
 // But real code might #include <GLFW/glfw3.h> or do dynamic loading.

@@ -2,6 +2,7 @@
 #include "ICallable.h"
 #include "Function.h"
 #include "PluginLoader.h"
+#include "CallState.h"
 namespace Eva
 {
 	void Wrapper_Print(std::vector<ValueContainer> args)
@@ -26,38 +27,23 @@ namespace Eva
 	{
 		{"Print",ValueType::NIL}
 	};
-	NativeWrapper CallNative(std::string_view name)
-	{
-		return native.at(name);
-	}
-
-	std::pair<bool, std::string_view> IsPlugin(std::string_view functionName, std::unordered_map<std::string, PluginData>& plugins)
-	{
-		bool isPlugin = false;
-		std::string wrapperName = "wrapper_" + std::string{ functionName };
-		std::string_view pluginName;
-		for (auto& [name, data] : plugins)
-		{
-			auto hModule = static_cast<HMODULE>(data.hDLL);
-			auto funcAddress = GetProcAddress(hModule, wrapperName.data());
-			if (funcAddress)
-			{
-				isPlugin = true;
-				pluginName = name;
-			}
-		}
-		return { isPlugin, pluginName };
-	}
+	
 
 	bool IsNative(std::string_view str)
 	{
 		return native.find(str) != native.end();
 	}
 
-	std::shared_ptr<ICallable> GetNative(std::string_view name)
+	std::shared_ptr<ICallable> GetNativeCall(std::string_view name)
 	{
 		return nativeCalls.at(name);
 	}
+
+	NativeWrapper GetNative(std::string_view name)
+	{
+		return native.at(name);
+	}
+
 	ValueType GetNativeType(std::string_view name)
 	{
 		return nativeReturnTypes.at(name);

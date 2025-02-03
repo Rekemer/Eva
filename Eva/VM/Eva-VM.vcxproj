@@ -125,7 +125,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\CallFrame.h" />
     <ClInclude Include="src\VirtualMachine.h" />
   </ItemGroup>
   <ItemGroup>

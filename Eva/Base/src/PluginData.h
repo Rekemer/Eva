@@ -6,11 +6,16 @@
 namespace Eva
 {
     using PluginReturn = std::unordered_map<std::string, Eva::ValueType>;
+
+   
     struct PluginData
     {
         std::string name;
         void* hDLL;
         std::unique_ptr<PluginReturn> typeMap;
+
+        // for cereal
+        PluginData() = default;
 
         PluginData(const std::string& name, void* hDLL, std::unique_ptr<PluginReturn> typeMap)
         {
@@ -41,4 +46,5 @@ namespace Eva
 
         ~PluginData();
     };
+    using PluginTable = std::unordered_map <std::string , PluginData > ;
 }
