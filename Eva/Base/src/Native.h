@@ -12,8 +12,8 @@ namespace Eva
 	class ICallable;
 
 	// should not copy?
-	using NativeWrapper = std::function<void(std::vector<ValueContainer>)>;
-	
+	using NativeWrapper = int(*)(CallState&);
+	//using DllWrapper = int(*)(CallState&);
 
 
 	// checks built in
@@ -22,6 +22,5 @@ namespace Eva
 	
 
 	std::shared_ptr<ICallable> GetNativeCall(std::string_view name);
-	NativeWrapper GetNative(std::string_view name);
 	ValueType GetNativeType(std::string_view name);
 }

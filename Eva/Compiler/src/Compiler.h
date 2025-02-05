@@ -31,8 +31,9 @@ namespace Eva
 		int Compile(const char* source);
 		HashTable& GetGlobals() { return globalVariables; };
 		HashTable& GetGlobalsType() { return globalVariablesTypes; };
-		ValueType GetGlobalType(const std::string& str, CallFlags callFlags = CallFlags::BuiltIn);
-		std::shared_ptr<ICallable> GetCallable(std::string_view name, CallFlags flags);
+		// used also on variables, not just functions
+		ValueType GetGlobalType(const std::string& str, CallFlags callFlags = CallFlags::UserFunc);
+		std::shared_ptr<ICallable> GetCallable( const Call* call);
 
 		// so we can keep track of calls of functions
 		// that defined after call is parsed

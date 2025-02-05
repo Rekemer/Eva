@@ -5,29 +5,13 @@ from state import *
 # so each generated wrapper is "int wrapper_xyz(MyState* st)".
 
 HEADER_TEMPLATE = r'''#pragma once
+#include "ICallable.h"
+#include "Function.h"
 namespace Eva {
-#ifdef __cplusplus
 extern "C" {
-#endif
-
 struct CallState;
 
-// A single function pointer type for all GLFW wrappers
-typedef int (*GLFW_WrapperFn)(CallState& st);
 
-typedef struct {
-    const char* name;       // e.g. "glfwInit"
-    GLFW_WrapperFn wrapper; // e.g. pointer to wrapper_glfwInit
-} GLFWFuncEntry;
-
-extern GLFWFuncEntry g_glfwFunctionTable[];
-
-// For demonstration, we declare a "parse" function or macros your real code might use
-// But real code might #include <GLFW/glfw3.h> or do dynamic loading.
-
-#ifdef __cplusplus
-}
-#endif
 '''
 
 
@@ -140,6 +124,44 @@ C_TYPE_MAP = {
     "void" : "ValueType::NIL"
 }
 
+def generate_calltable(data):
+    
+    lines = []
+    lines.append("std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {")
+    
+    for func in data["functions"]:
+        name = func["name"]
+        # Build a vector of ValueType for each argument.
+        arg_types = []
+        for arg in func["args"]:
+            ctype = arg["type"]
+            if ctype in C_TYPE_MAP:
+                arg_types.append(C_TYPE_MAP[ctype])
+            else:
+                # Fallback if type is unknown.
+                arg_types.append("ValueType::NIL")
+        if arg_types:
+            vec_literal = "std::vector<ValueType>{" + ", ".join(arg_types) + "}"
+            arg_kind = "ICallable::INF_ARGS"
+        else:
+            vec_literal = "std::vector<ValueType>{}"
+            arg_kind = "ICallable::INF_ARGS"
+        
+        # The wrapper function is assumed to be named "wrapper_<name>"
+        wrapper_name = f"wrapper_{name}"
+        # Generate a table entry line.
+        line = f'    {{"{name}", std::make_shared<NativeFunc>({vec_literal}, {wrapper_name}, {arg_kind}, "{name}")}},'
+        lines.append(line)
+    
+    lines.append("};")
+    return lines
+def generate_callgetter(data):
+    lines = []
+    lines.append("\n")
+    lines.append(" EXPORT NativeFunc GetCallable(const char* name) {")
+    lines.append(" return   *nativeCalls.at(name);")
+    lines.append("}")
+    return lines
 def generate_metatable(data):
     
     lines = []
@@ -153,7 +175,6 @@ def generate_metatable(data):
     #    typeMap["int"] = ValueType::INT;
         #for ctype, valtype in C_TYPE_MAP.items():
             
-
     lines.append("")
     lines.append("    return typeMap;")
     lines.append("}")
@@ -166,12 +187,18 @@ def main():
 
     # Generate the code
     wrapper_defs, function_table_entries = generate_prototypes_and_wrappers(data)
-    lines = generate_metatable(data)
     # Build the .h output
+    lines = generate_metatable(data)
     with open("./src/glfw_wrappers.h", "w+") as hf:
         hf.write(HEADER_TEMPLATE)
+        #hf.write("\n".join(lines))
+        # for namespace
+        hf.write('\n}')
+        # for extern 
         hf.write('\n}')
 
+    lines_calls = generate_calltable(data)
+    lines_getter = generate_callgetter(data)
     # Build the .cpp output
     with open("./src/glfw_wrappers.cpp", "w+") as sf:
         sf.write(SOURCE_HEADER)
@@ -182,11 +209,9 @@ def main():
             sf.write("\n\n")
 
         # define function table
-        sf.write("GLFWFuncEntry g_glfwFunctionTable[] = {\n")
-        for entry in function_table_entries:
-            sf.write(entry + "\n")
-        sf.write("};\n\n")
         sf.write("\n".join(lines))
+        sf.write("\n".join(lines_calls))
+        sf.write("\n".join(lines_getter))
         sf.write("\n}")
     
 

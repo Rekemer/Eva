@@ -287,15 +287,22 @@ ValueType Compiler::GetGlobalType(const std::string& str, CallFlags callFlags)
 	return entry->value.type;
 }
 
-std::shared_ptr<ICallable> Compiler::GetCallable(std::string_view name, CallFlags flags)
+std::shared_ptr<ICallable> Compiler::GetCallable(const Call* call)
 {
+	std::string_view name = call->name;
+	CallFlags flags = call->flags;
 	if (flags == CallFlags::BuiltIn)
 	{
 		return GetNativeCall(name);
 	}
 	else if (flags == CallFlags::ExternalDLL)
 	{
+		auto pluginName = call->pluginName;
 
+		assert(false);
+		using GetCallSign = std::shared_ptr<ICallable>(*)(const char* name);
+		std::shared_ptr < ICallable>  callable = LoadFunc<GetCallSign>(CastToModule(plugins.at(pluginName).hDLL), name);
+		return callable;
 	}
 	else
 	{

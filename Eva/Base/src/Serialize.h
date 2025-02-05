@@ -14,6 +14,7 @@
 #include "Entry.h"
 #include "HashTable.h"
 #include "PluginData.h"
+#include "PluginLoader.h"
 
 
 CEREAL_REGISTER_TYPE(Eva::Func)
@@ -150,14 +151,8 @@ namespace cereal
 		if constexpr (is_binary_archive_v<Archive>) {
 			// Binary input
 			archive(v.m_EntriesAmount, v.m_Size);
-
-			// Allocate array for entries
 			v.m_Data = std::make_unique<Eva::Entry[]>(v.m_Size);
 			loadEntry(archive, v);
-			// Load entries
-			//for (int i = 0; i < v.m_Size; ++i) {
-			//	archive(v.m_Data[i]);
-			//}
 		}
 		else {
 			// JSON (or other text-based)
@@ -168,9 +163,6 @@ namespace cereal
 			v.m_Data = std::make_unique<Eva::Entry[]>(v.m_Size);
 			loadEntry(archive, v);
 
-			//for (int i = 0; i < v.m_Size; ++i) {
-			//	archive(cereal::make_nvp("Entry_" + std::to_string(i), v.m_Data[i]));
-			//}
 		}
 	}
 
@@ -191,9 +183,10 @@ namespace cereal
 		}
 	}
 
-	template<class Archive>
-	void serialize(Archive& archive,
-		Eva::PluginData& v)
+
+
+	template <class Archive>
+	void save(Archive& archive, const Eva::PluginData& v)
 	{
 		if constexpr (is_binary_archive_v<Archive>)
 		{
@@ -207,6 +200,23 @@ namespace cereal
 			//archive(CEREAL_NVP(v.hDLL));
 			archive(CEREAL_NVP(v.typeMap));
 		}
+	}
+
+	template <class Archive>
+	void load(Archive& archive, Eva::PluginData& v)
+	{
+
+		if constexpr (is_binary_archive_v<Archive>)
+		{
+			archive(v.name);
+			archive(v.typeMap);
+		}
+		else
+		{
+			archive(CEREAL_NVP(v.name));
+			archive(CEREAL_NVP(v.typeMap));
+		}
+		v.hDLL = Eva::LoadDll(v.name).value().hDLL;
 	}
 
 }

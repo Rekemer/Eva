@@ -7,6 +7,7 @@
 #include "Bytecode.h"
 #include "Value.h"
 #include "CallFlags.h"
+#include "Native.h"
 namespace Eva
 {
 	class Func final : public ICallable
@@ -20,11 +21,13 @@ namespace Eva
 	class NativeFunc final : public ICallable
 	{
 	public:
-		NativeFunc(std::vector<ValueType> args, int argAmount, std::string_view name) :
+		NativeFunc(std::vector<ValueType> args,NativeWrapper func, int argAmount, std::string_view name) :
+			func{func},
 			ICallable{ args,argAmount,name }
 		{
 
 		};
+		NativeWrapper func;
 		CallFlags callFlags;
 		size_t Call(CallState& callState,  size_t baseIndex) override;
 	};

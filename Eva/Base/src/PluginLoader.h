@@ -14,7 +14,9 @@
 namespace Eva
 {
     using DLLHandle = HMODULE;
-    using DllWrapper =int(*)(CallState&);
+   
+
+
     std::pair<bool, std::string_view> IsPlugin(std::string_view functionName, std::unordered_map<std::string, PluginData>& plugins);
     DLLHandle CastToModule(void* ptr);
     inline ValueType GetReturnTypeFromPlugin(std::unordered_map<std::string, PluginData>& plugins, std::string_view pluginName, std::string_view name)
@@ -35,6 +37,7 @@ namespace Eva
         }
         assert(false);
     }
+    
     template<typename T>
     T LoadFunc(DLLHandle libHandle, std::string_view funcName)
     {

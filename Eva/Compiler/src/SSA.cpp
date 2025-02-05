@@ -2446,7 +2446,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		currentBlock = funcCall.argBlock;
 		
 		
-		auto funcValue = compiler->GetCallable(call->name, call->flags);
+		auto funcValue = compiler->GetCallable(call);
 		getAsParam = true;
 		for (auto i = 0; i < call->args.size(); i++)
 		{

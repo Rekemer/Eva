@@ -5,45 +5,45 @@
 #include "CallState.h"
 namespace Eva
 {
-	void Wrapper_Print(std::vector<ValueContainer> args)
+	int Wrapper_Print(CallState& callState)
 	{
-		for (auto& arg : args)
+		std::vector<ValueContainer> args;
+
+		for (auto i = 0; i < callState.argumentCount; i++)
 		{
-			std::cout << arg << " ";
+			args.push_back(callState.stack.back());
+		}
+		for (auto i = args.end();  i!= args.begin(); i--)
+		{
+			std::cout << *i<< " ";
+		}
+		for (auto i = 0; i < callState.argumentCount; i++)
+		{
+			callState.stack.pop_back();
 		}
 		std::cout << std::endl;
+		return 0;
 	}
 
-	std::unordered_map<std::string_view, NativeWrapper> native
-	{
-		{"Print",Wrapper_Print}
-	};
 
 	std::unordered_map<std::string_view, std::shared_ptr<NativeFunc>> nativeCalls
 	{
-		{"Print",std::make_shared<NativeFunc>(std::vector<ValueType>{}, ICallable::INF_ARGS, "Print")}
+		{"Print",std::make_shared<NativeFunc>(std::vector<ValueType>{},
+			Wrapper_Print,ICallable::INF_ARGS, "Print")}
 	};
 	std::unordered_map<std::string_view, ValueType> nativeReturnTypes
 	{
 		{"Print",ValueType::NIL}
 	};
 	
-
 	bool IsNative(std::string_view str)
 	{
-		return native.find(str) != native.end();
+		return nativeCalls.find(str) != nativeCalls.end();
 	}
-
 	std::shared_ptr<ICallable> GetNativeCall(std::string_view name)
 	{
 		return nativeCalls.at(name);
 	}
-
-	NativeWrapper GetNative(std::string_view name)
-	{
-		return native.at(name);
-	}
-
 	ValueType GetNativeType(std::string_view name)
 	{
 		return nativeReturnTypes.at(name);

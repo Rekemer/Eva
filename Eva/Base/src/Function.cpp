@@ -6,21 +6,20 @@
 //#include "../../VM/src/VirtualMachine.h"
 namespace Eva
 {
-	void CallNative(CallState& callState, std::string_view name)
+	void CallNative(CallState& callState, NativeWrapper& func, std::string_view name)
 	{
 		auto& stack = callState.stack;
 
 		std::vector<ValueContainer> args;
 		auto argumentCount = callState.argumentCount;
 		assert(argumentCount != -1);
-		args.reserve(argumentCount);
-
-		for (auto i = stack.size() - 1; i > stack.size() - 1 - argumentCount; i--)
-		{
-			args.insert(args.begin(), stack[i]);
-		}
-
-		return GetNative(name)(args);
+		//args.reserve(argumentCount);
+		//
+		//for (auto i = stack.size() - 1; i > stack.size() - 1 - argumentCount; i--)
+		//{
+		//	args.insert(args.begin(), stack[i]);
+		//}
+		func(callState);
 	}
 	DLLHandle GetPluginHandle(PluginTable& plugins, std::string_view pluginName)
 	{
@@ -39,7 +38,7 @@ namespace Eva
 
 
 		//
-		auto func = LoadFunc<DllWrapper>(handle, funcName);
+		auto func = LoadFunc<NativeWrapper>(handle, funcName);
 		func(callState);
 
 	}
@@ -61,7 +60,7 @@ namespace Eva
 
 		if (callFlags == CallFlags::BuiltIn)
 		{
-			CallNative(callState, name);
+			CallNative(callState, func, name);
 		}
 		else
 		{

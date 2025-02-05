@@ -46,5 +46,5 @@ namespace Eva
 
         ~PluginData();
     };
-    using PluginTable = std::unordered_map <std::string , PluginData > ;
+    using PluginTable = std::unordered_map <std::string, PluginData > ;
 }

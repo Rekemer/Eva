@@ -617,6 +617,16 @@ if (child== ValueType::FLOAT)\
 				vmStack.push_back(v);
 				break;
 			}
+			case InCode::GET_PLUGIN_NAME:
+			{
+				auto index = frame->function->opCode[frame->ip++];
+				auto name = frame->function->constants[index];
+				auto pluginName = frame->function->opCode[frame->ip++];
+
+				auto v = ValueContainer{ GetNativeCall(name.AsString()) };
+				vmStack.push_back(v);
+				break;
+			}
 			case InCode::CALL:
 			{
 
