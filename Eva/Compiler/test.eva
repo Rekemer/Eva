@@ -38,18 +38,30 @@
 
 
 
-import "GLFW.dll"
+//import "GLFW.dll"
+////
+////Print ("Invoke GLFW");
+//status := glfwInit();
+//////Print (status);
+////
+////
+////if status != 0 {
+////	Print("Success: ",status,  "GFLW Terminated");
+////	glfwTerminate();
+////}
+//
+//a: pointer  = nullptr;
+//
+//window : pointer = glfwCreateWindow(640, 480, "My Title", nullptr, nullptr);
+//
+//if  a== nullptr 
+//{	
+//	Print(window);
+//}
 
-Print ("Invoke GLFW");
-status := glfwInit();
-//Print (status);
 
-
-if status != 0 {
-	Print("Success: ",status,  "GFLW Terminated");
-	glfwTerminate();
-}
-
+a : float = 100;
+a--;
 
 
 

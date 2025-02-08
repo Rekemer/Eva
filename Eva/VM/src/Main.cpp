@@ -7,7 +7,7 @@
 
 
 template <typename T>
-void Execute(T& iarchive, bool isTest)
+void Execute(T& iarchive, bool isTest, std::string_view filepath)
 {
 	using namespace Eva;
 	VirtualMachine vm;
@@ -25,6 +25,20 @@ void Execute(T& iarchive, bool isTest)
 	{
 		//vm.GetGlobals().Print();
 		vm.DumpGlobalToFile(".\\dumpGlobal.json");
+
+
+
+		if (vm.vmStack.size() > 1)
+		{
+			std::ofstream os("stack_check.txt", std::ios::app); // Open file in append mode
+			if (!os) {
+				std::cerr << "Failed to open file for appending." << std::endl;
+				return;
+			}
+			std::string msg = std::format("{} has {} elements on stack after execution\n", filepath, vm.vmStack.size());
+			os << msg; 
+		}
+		
 	}
 	
 }
@@ -49,7 +63,7 @@ int main(int argc, const char* argv[])
 			return -1;
 		}
 		cereal::JSONInputArchive iarchive{ os };
-		Execute(iarchive, isTest);
+		Execute(iarchive, isTest, binaryPath);
 		os.close();
 	}
 	else
@@ -61,7 +75,7 @@ int main(int argc, const char* argv[])
 			return -1;
 		}
 		cereal::BinaryInputArchive iarchive{ os };
-		Execute(iarchive, isTest);
+		Execute(iarchive, isTest, binaryPath);
 		os.close();
 	}
 	return 0;

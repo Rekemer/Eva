@@ -108,8 +108,9 @@ namespace Eva
 		case TokenType::FLOAT_TYPE:
 			return strSize == 5 && AreEqual(str, strSize, "float", 5);
 		case TokenType::PTR_TYPE:
-			return strSize == 7 && AreEqual(str, strSize, "pointer", 5);
-
+			return strSize == 7 && AreEqual(str, strSize, "pointer", 7);
+		case TokenType::NULLPTR:
+			return strSize == 7 && AreEqual(str, strSize, "nullptr", 7);
 		case TokenType::BOOL_TYPE:
 			return strSize == 4 && AreEqual(str, strSize, "bool", 4);
 		default:

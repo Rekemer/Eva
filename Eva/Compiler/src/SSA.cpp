@@ -2548,6 +2548,15 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		return op;
 		break;
 	}
+	case TokenType::NULLPTR:
+	{
+		auto number = expr->value.As<eptr>();
+		Operand op{ number,true,0 };
+		op.type = ValueType::PTR;
+		op.depth = currentScope != nullptr ? currentScope->depth : 0;
+		return op;
+		break;
+	}
 	case TokenType::TRUE:
 	case TokenType::FALSE:
 	{
@@ -2742,18 +2751,6 @@ void CFG::ConvertAST(const Node* tree)
 	
 	
 	Block::counterStraight++;
-	if (IsStatement(tree))
-	{
-		ConvertStatementAST(tree);
-	}
-	else
-	{
-		auto oper = ConvertExpressionAST(tree);
-		auto instr = Instruction{ TokenType::PUSH,{},{},oper };
-		currentBlock->instructions.push_back(instr);
-		//assert(false && "We are not supposed to have non statement at this level?");
-	}
-	
-	
+	ConvertStatementAST(tree);
 }
 }

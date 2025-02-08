@@ -185,6 +185,10 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 	{
 		node->value = std::move(currentToken->value);
 	}
+	else if (currentToken->type == TokenType::NULLPTR)
+	{
+		node->value = static_cast<eptr>(0);
+	}
 	else if (currentToken->type == TokenType::FLOAT_LITERAL)
 	{
 		node->value = std::move(currentToken->value);

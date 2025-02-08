@@ -22,6 +22,8 @@ namespace Eva
 		case ValueType::DEDUCE:
 			return TokenType::DEDUCE;
 			break;
+		case ValueType::PTR:
+			return TokenType::PTR_TYPE;
 		case ValueType::NIL:
 			return TokenType::NIL;
 			break;
@@ -46,6 +48,10 @@ namespace Eva
 		case TokenType::STRING_LITERAL:
 		case TokenType::STRING_TYPE:
 			return ValueType::STRING;
+			break;
+		case TokenType::NULLPTR:
+		case TokenType::PTR_TYPE:
+			return ValueType::PTR;
 			break;
 		case TokenType::FALSE:
 		case TokenType::TRUE:

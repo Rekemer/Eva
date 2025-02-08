@@ -99,6 +99,7 @@ namespace Eva
 			else if constexpr (std::is_same_v<T, eint>) {
 				type = ValueType::INT;
 			}
+			// for glfw init
 			else if constexpr (std::is_same_v<T, int>) {
 				type = ValueType::INT;
 			}
@@ -124,12 +125,6 @@ namespace Eva
 		ValueContainer(const ValueContainer& v);
 
 
-		ValueContainer& operator = (bool v)
-		{
-			type = ValueType::BOOL;
-			as = v;
-			return *this;
-		}
 		void UpdateType(ValueType type);
 
 		ValueContainer& operator = (const ValueContainer& v);

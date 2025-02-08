@@ -289,6 +289,12 @@ do {                                                           \
 			os << str;
 			break;
 		}
+		case  ValueType::PTR:
+		{
+			auto ptr = v.As<eptr>();
+			os << "0x" << std::hex << ptr << std::dec;
+			break;
+		}
 		case  ValueType::FUNCTION:
 		{
 			auto name = v.AsCallable()->name;

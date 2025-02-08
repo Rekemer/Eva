@@ -12,3 +12,5 @@ Tests/dumpGlobal.json
 Tests/test.evc
 Eva/VM/dumpGlobal.json
 Modules/glfw/__pycache__/
+Tests/tests_bin/
+Tests/stack_check.txt

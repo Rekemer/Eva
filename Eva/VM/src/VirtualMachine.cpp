@@ -293,6 +293,10 @@ if (child== ValueType::FLOAT)\
 			auto str2 = b.AsString();
 			return str == str2;
 		}
+		else if (a.type == b.type && a.type == ValueType::PTR)
+		{
+			return a.As<eptr>() == b.As<eptr>();
+		}
 		assert(false && "cannot compare the values of different type");
 		return false;
 	}

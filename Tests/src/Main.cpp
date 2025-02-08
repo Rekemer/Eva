@@ -28,6 +28,7 @@ struct TestCase {
 const std::string_view COMPILER_PATH = ".\\..\\bin\\Eva-Compiler\\Debug-windows-x86_64\\Eva-Compiler.exe";
 const std::string_view VM_PATH = ".\\..\\bin\\Eva-VM\\Debug-windows-x86_64\\Eva-VM.exe";
 const std::string_view TEST_CASES_DIR = ".\\tests\\";
+const std::string_view TEST_CASES_BIN_DIR = ".\\tests_bin";
 // Function to discover all test cases
 std::vector<TestCase> DiscoverTestCases(const std::string_view testDirectory) {
     std::vector<TestCase> testCases;
@@ -172,23 +173,38 @@ int GetExpectedData(TestCase& test)
     return 0;
 }
 
+const 
+
 int main()
 {
     using namespace Eva;
+    // so we don't create folder when we want to run tests
+    if (!std::filesystem::exists(TEST_CASES_BIN_DIR)) {
+        if (!std::filesystem::create_directories(TEST_CASES_BIN_DIR)) {
+            std::cerr << "Failed to create directories: " << TEST_CASES_BIN_DIR << std::endl;
+            return -1;
+        }
+    }
+    // cleaning 
+    std::ofstream os("./stack_check.txt", std::ios::trunc);
+    os.close();
+
     auto cases = DiscoverTestCases(TEST_CASES_DIR);
     auto str = std::filesystem::current_path();
     TestCase t;
     t.filePath = "./tests/functions/call_function_assign_parametr.eva";
+    // Ensure the directory exists
+
     //cases = { t };
     for (auto& caseTest : cases)
     {
         // preproccess test data
         GetExpectedData(caseTest);
-
+        auto binaryName = std::format("tests_bin/{}.evc", caseTest.name);
         // compile
         {
             auto currentPath = std::filesystem::current_path();
-            std::string command = std::format("{} -spath=\"{}\" -bpath=\"{}\" > error_log_cmp.txt 2>&1", COMPILER_PATH, caseTest.filePath, "./test.evc");
+            std::string command = std::format("{} -spath=\"{}\" -bpath=\"{}\" > error_log_cmp.txt 2>&1", COMPILER_PATH, caseTest.filePath, binaryName);
             int result = system(command.c_str());
             if (result != 0)
             {
@@ -198,7 +214,7 @@ int main()
         }
         // run 
         {
-            std::string command = std::format("{} -test {} > error_log_vm.txt 2>&1", VM_PATH, "./test.evc");
+            std::string command = std::format("{} -test {} > error_log_vm.txt 2>&1", VM_PATH, binaryName);
             int result = system(command.c_str());
             if (result != 0)
             {
