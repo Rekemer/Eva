@@ -11,7 +11,7 @@ namespace Eva {
  EXPORT int wrapper_glfwInit(CallState& st) {
     
 
-    auto result = glfwInit();
+    int result = glfwInit();
     st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
@@ -63,7 +63,7 @@ namespace Eva {
     
       auto arg0 = st.stack.back();
 	st.stack.pop_back();
-    auto result = glfwWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+    int result = glfwWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
     st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
@@ -102,7 +102,7 @@ namespace Eva {
 	st.stack.pop_back();
       auto arg0 = st.stack.back();
 	st.stack.pop_back();
-    auto result = glfwGetKey(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), arg1.As<eint>());
+    int result = glfwGetKey(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), arg1.As<eint>());
     st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
@@ -110,7 +110,7 @@ namespace Eva {
  EXPORT int wrapper_glfwGetTime(CallState& st) {
     
 
-    auto result = glfwGetTime();
+    float result = glfwGetTime();
     st.stack.push_back(ValueContainer(result));
     return 1; // number of values we 'return'
 }
@@ -153,22 +153,22 @@ namespace Eva {
 
     return typeMap;
 }std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
-    {"glfwInit", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwInit, ICallable::INF_ARGS, "glfwInit")},
-    {"glfwTerminate", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwTerminate, ICallable::INF_ARGS, "glfwTerminate")},
-    {"glfwCreateWindow", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT, ValueType::STRING, ValueType::PTR, ValueType::PTR}, wrapper_glfwCreateWindow, ICallable::INF_ARGS, "glfwCreateWindow")},
-    {"glfwDestroyWindow", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwDestroyWindow, ICallable::INF_ARGS, "glfwDestroyWindow")},
-    {"glfwMakeContextCurrent", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwMakeContextCurrent, ICallable::INF_ARGS, "glfwMakeContextCurrent")},
-    {"glfwWindowShouldClose", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwWindowShouldClose, ICallable::INF_ARGS, "glfwWindowShouldClose")},
-    {"glfwSetWindowShouldClose", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::INT}, wrapper_glfwSetWindowShouldClose, ICallable::INF_ARGS, "glfwSetWindowShouldClose")},
-    {"glfwPollEvents", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwPollEvents, ICallable::INF_ARGS, "glfwPollEvents")},
-    {"glfwSwapBuffers", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwSwapBuffers, ICallable::INF_ARGS, "glfwSwapBuffers")},
-    {"glfwGetKey", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::INT}, wrapper_glfwGetKey, ICallable::INF_ARGS, "glfwGetKey")},
-    {"glfwGetTime", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwGetTime, ICallable::INF_ARGS, "glfwGetTime")},
-    {"glfwWindowHint", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT}, wrapper_glfwWindowHint, ICallable::INF_ARGS, "glfwWindowHint")},
-    {"glfwSwapInterval", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glfwSwapInterval, ICallable::INF_ARGS, "glfwSwapInterval")},
+    {"glfwInit", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwInit, ICallable::INF_ARGS, "glfwInit", CallFlags::ExternalDLL)},
+    {"glfwTerminate", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwTerminate, ICallable::INF_ARGS, "glfwTerminate", CallFlags::ExternalDLL)},
+    {"glfwCreateWindow", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT, ValueType::STRING, ValueType::PTR, ValueType::PTR}, wrapper_glfwCreateWindow, ICallable::INF_ARGS, "glfwCreateWindow", CallFlags::ExternalDLL)},
+    {"glfwDestroyWindow", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwDestroyWindow, ICallable::INF_ARGS, "glfwDestroyWindow", CallFlags::ExternalDLL)},
+    {"glfwMakeContextCurrent", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwMakeContextCurrent, ICallable::INF_ARGS, "glfwMakeContextCurrent", CallFlags::ExternalDLL)},
+    {"glfwWindowShouldClose", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwWindowShouldClose, ICallable::INF_ARGS, "glfwWindowShouldClose", CallFlags::ExternalDLL)},
+    {"glfwSetWindowShouldClose", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::INT}, wrapper_glfwSetWindowShouldClose, ICallable::INF_ARGS, "glfwSetWindowShouldClose", CallFlags::ExternalDLL)},
+    {"glfwPollEvents", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwPollEvents, ICallable::INF_ARGS, "glfwPollEvents", CallFlags::ExternalDLL)},
+    {"glfwSwapBuffers", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwSwapBuffers, ICallable::INF_ARGS, "glfwSwapBuffers", CallFlags::ExternalDLL)},
+    {"glfwGetKey", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::INT}, wrapper_glfwGetKey, ICallable::INF_ARGS, "glfwGetKey", CallFlags::ExternalDLL)},
+    {"glfwGetTime", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwGetTime, ICallable::INF_ARGS, "glfwGetTime", CallFlags::ExternalDLL)},
+    {"glfwWindowHint", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT}, wrapper_glfwWindowHint, ICallable::INF_ARGS, "glfwWindowHint", CallFlags::ExternalDLL)},
+    {"glfwSwapInterval", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glfwSwapInterval, ICallable::INF_ARGS, "glfwSwapInterval", CallFlags::ExternalDLL)},
 };
 
- EXPORT NativeFunc GetCallable(const char* name) {
- return   *nativeCalls.at(name);
+ EXPORT std::shared_ptr<ICallable> GetCallable(const char* name) {
+ return   nativeCalls.at(name);
 }
 }

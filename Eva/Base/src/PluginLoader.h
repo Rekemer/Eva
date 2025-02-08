@@ -37,7 +37,8 @@ namespace Eva
         }
         assert(false);
     }
-    
+  
+
     template<typename T>
     T LoadFunc(DLLHandle libHandle, std::string_view funcName)
     {
@@ -49,24 +50,37 @@ namespace Eva
         return func;
 
     }
+
+    inline std::shared_ptr<ICallable> GetCall(std::string_view name, HMODULE mod)
+    {
+        using GetCallSign = std::shared_ptr<ICallable>(*)(const char* name);
+        auto getCall = LoadFunc<GetCallSign>(mod, "GetCallable");
+        return getCall(name.data());
+    }
+
+
+
+  
+    inline DLLHandle LoadDllPtr(std::string_view path)
+    {
+        auto wStr = std::wstring(path.begin(), path.end());
+        // Load the DLL
+        DLLHandle hDLL = LoadLibrary(wStr.data());
+        return hDLL;
+    }
     using InitSignature = std::unordered_map<std::string, Eva::ValueType>*(*)();
 
     inline std::optional<PluginData> LoadDll(std::string_view path)
     {
-        auto wStr = std::wstring(path.begin(), path.end());
-        auto check = std::filesystem::exists(wStr);
         // Load the DLL
-        DLLHandle hDLL = LoadLibrary(wStr.data());
-        if (!hDLL) {
-            std::cerr << "Failed to load DLL!" << std::endl;
-            return {};
-        }
-
+        auto  hDLL = LoadDllPtr(path);
         auto init = LoadFunc<InitSignature>(hDLL, "initModule");
         auto map = init();
         auto data  = PluginData{ path.data(),hDLL,std::unique_ptr<PluginReturn>{ map }};
         return data;
     }
+
+
     inline void FreeLib(DLLHandle handle)
     {
         FreeLibrary(handle);

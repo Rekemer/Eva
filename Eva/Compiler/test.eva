@@ -43,6 +43,11 @@ import "GLFW.dll"
 Print ("Invoke GLFW");
 status := glfwInit();
 
+Print ("status");
+Print (status);
+glfwTerminate();
+
+
 //Print 2;
 //Print ("{} \n {} \n Hello \n {} \n ", "Ilia", "Says", "Cate");
 

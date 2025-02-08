@@ -37,6 +37,30 @@ def check_cast(cType,arg):
         return f"reinterpret_cast<{cType}>({callArg})"
     else:
         return callArg
+# Suppose we have a dictionary describing how each C type maps to ValueType
+# In real usage, you could parse a YAML or JSON file. Here we just define inline.
+C_TYPE_MAP = {
+    "bool":       "ValueType::BOOL",
+    "int":        "ValueType::INT",
+    "float":      "ValueType::FLOAT",
+    "double":     "ValueType::FLOAT",   # or a separate ValueType::DOUBLE if you prefer
+    "GLFWwindow*":  "ValueType::PTR",
+    "GLFWmonitor*": "ValueType::PTR",
+    "const char*":  "ValueType::STRING",
+    "void" : "ValueType::NIL"
+}
+C_EVA_MAP = {
+    "bool":       "bool",
+    "int":        "int",
+    "float":      "float",
+    "double":     "float",   # or a separate ValueType::DOUBLE if you prefer
+    "GLFWwindow*":  "pointer",
+    "GLFWmonitor*": "pointer",
+    "const char*":  "String",
+    "void" : "ValueType::NIL"
+}
+def put_mapped_type(cType):
+    return C_EVA_MAP[cType]
 def generate_prototypes_and_wrappers(data):
     """
     data is the parsed YAML with keys:
@@ -83,7 +107,7 @@ def generate_prototypes_and_wrappers(data):
             ret_push = "// no return, so no results to push"
             result_count = "0"
         elif ret_type == "int" or ret_type == "float" or ret_type == "double" or ret_type == "bool" :
-            call_line = f"    auto result = {fn_name}({call_args});"
+            call_line = f"    {put_mapped_type(ret_type)} result = {fn_name}({call_args});"
             ret_push = "st.stack.push_back(ValueContainer(result));"
             result_count = "1"
         elif is_ret_ptr:
@@ -111,18 +135,7 @@ def generate_prototypes_and_wrappers(data):
 
     return wrapper_defs, function_table_entries
 
-# Suppose we have a dictionary describing how each C type maps to ValueType
-# In real usage, you could parse a YAML or JSON file. Here we just define inline.
-C_TYPE_MAP = {
-    "bool":       "ValueType::BOOL",
-    "int":        "ValueType::INT",
-    "float":      "ValueType::FLOAT",
-    "double":     "ValueType::FLOAT",   # or a separate ValueType::DOUBLE if you prefer
-    "GLFWwindow*":  "ValueType::PTR",
-    "GLFWmonitor*": "ValueType::PTR",
-    "const char*":  "ValueType::STRING",
-    "void" : "ValueType::NIL"
-}
+
 
 def generate_calltable(data):
     
@@ -150,7 +163,7 @@ def generate_calltable(data):
         # The wrapper function is assumed to be named "wrapper_<name>"
         wrapper_name = f"wrapper_{name}"
         # Generate a table entry line.
-        line = f'    {{"{name}", std::make_shared<NativeFunc>({vec_literal}, {wrapper_name}, {arg_kind}, "{name}")}},'
+        line = f'    {{"{name}", std::make_shared<NativeFunc>({vec_literal}, {wrapper_name}, {arg_kind}, "{name}", CallFlags::ExternalDLL)}},'
         lines.append(line)
     
     lines.append("};")
@@ -158,8 +171,8 @@ def generate_calltable(data):
 def generate_callgetter(data):
     lines = []
     lines.append("\n")
-    lines.append(" EXPORT NativeFunc GetCallable(const char* name) {")
-    lines.append(" return   *nativeCalls.at(name);")
+    lines.append(" EXPORT std::shared_ptr<ICallable> GetCallable(const char* name) {")
+    lines.append(" return   nativeCalls.at(name);")
     lines.append("}")
     return lines
 def generate_metatable(data):

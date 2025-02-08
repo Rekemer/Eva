@@ -43,6 +43,7 @@ namespace Eva
         }
 
         PluginData(PluginData&) = delete;
+        PluginData& operator=(const PluginData& other) = delete;
 
         ~PluginData();
     };

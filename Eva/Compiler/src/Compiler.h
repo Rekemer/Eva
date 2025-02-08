@@ -13,6 +13,7 @@ namespace Eva
 	class CFG;
 	class ICallable;
 	struct Node;
+	struct Call;
 	struct Func;
 	struct Block;
 	struct Operand;

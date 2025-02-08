@@ -37,7 +37,7 @@ namespace Eva
                 std::cout << "[" << ipIndex - 1 << "] " << static_cast<int>(argumentCount) << std::endl;
 
             }
-            else if (instr == InCode::SET_GLOBAL_VAR || instr == InCode::GET_NATIVE_NAME || instr == InCode::GET_GLOBAL_VAR ||
+            else if (instr == InCode::SET_GLOBAL_VAR || instr == InCode::GET_PLUGIN_NAME|| instr == InCode::GET_NATIVE_NAME || instr == InCode::GET_GLOBAL_VAR ||
                 isLocal)
             {
                 std::cout << "[" << ipIndex - 1 << "] " << str << std::endl;
@@ -53,7 +53,14 @@ namespace Eva
                     auto nameOfVariable = constants[indexOfVariableName];
                     std::cout << "[" << ipIndex - 1 << "] " << constants[indexOfVariableName] << std::endl;
                 }
+                if (instr == InCode::GET_PLUGIN_NAME)
+                {
+                    // show plugin name 
+                    auto indexOfVariableName = (int)bytecode[ipIndex++];
+                    auto pluginName = constants[indexOfVariableName];
+                    std::cout << "[" << ipIndex - 1 << "] " << pluginName << std::endl;
 
+                }
             }
             else
             {
@@ -97,6 +104,7 @@ namespace Eva
         case InCode::SET_GLOBAL_VAR: return "SET_GLOBAL_VAR";
         case InCode::GET_GLOBAL_VAR: return "GET_GLOBAL_VAR";
         case InCode::GET_NATIVE_NAME: return "GET_NATIVE_NAME";
+        case InCode::GET_PLUGIN_NAME: return "GET_PLUGIN_NAME";
         case InCode::SET_LOCAL_VAR: return "SET_LOCAL_VAR";
         case InCode::GET_LOCAL_VAR: return "GET_LOCAL_VAR";
 

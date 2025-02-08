@@ -934,7 +934,7 @@ void Print(const Expression* tree, int level) {
 
  void AST::Fold()
  {
-	 
+	 if (tree->type == TokenType::IMPORT) return;
 	 if (tree->type == TokenType::BLOCK)
 	 {
 		 auto block = static_cast<Scope*>(tree.get());

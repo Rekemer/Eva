@@ -2409,6 +2409,8 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	
 	switch (type)
 	{
+		// right operand function name
+		// left argument count
 	case TokenType::LEFT_PAREN:
 	{
 		auto call = static_cast<const Call*>(tree);
@@ -2416,9 +2418,12 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		args.reserve(call->args.size());
 		auto res = CreateTemp();
 		
-		// 
-		Operand  funcNameOp{ {call->name},call->IsCFunction(),SYSTEM_VER };
+		Operand  funcNameOp{ {call->name},call->IsCFunction() ,SYSTEM_VER};
+		
+
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
+		funcCall.callFlags = call->flags;
+		funcCall.pluginName = call->pluginName;
 
 		// for now we treat all native calls as critical
 		if (isFuncCritical.find(call->name) != isFuncCritical.end() || call->IsCFunction())

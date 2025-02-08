@@ -27,23 +27,6 @@ namespace Eva
 		return CastToModule(pluginData.hDLL);
 	}
 
-	void CallPlugin(CallState& callState,
-		std::string_view funcName)
-	{
-		//
-		std::string pluginName;
-		auto handle = GetPluginHandle(callState.pluginTable, pluginName);
-
-		// cache load funcs
-
-
-		//
-		auto func = LoadFunc<NativeWrapper>(handle, funcName);
-		func(callState);
-
-	}
-
-
 	size_t Func::Call(CallState& callState, size_t baseIndex)
 	{
 		auto& frame = callState.callFrames[callState.nextToCurrentCallFrame++];
@@ -62,9 +45,9 @@ namespace Eva
 		{
 			CallNative(callState, func, name);
 		}
-		else
+		else if (callFlags == CallFlags::ExternalDLL)
 		{
-			CallPlugin(callState, name);
+			CallNative(callState, func,name);
 		}
 		return SIZE_MAX;
 	}

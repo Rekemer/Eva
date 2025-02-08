@@ -20,6 +20,7 @@ namespace Eva
 	{
 		BOOL,
 		INT,
+		UINT,
 		FLOAT,
 
 		PTR,
@@ -77,11 +78,12 @@ namespace Eva
 
 	using ebool = bool;
 	using eint = long;
+	using euint = unsigned;
 	using efloat = double;
 	using estring = std::string;
 	using eCallable = std::shared_ptr<ICallable>;
 	using eptr = uintptr_t;
-	using AsType = std::variant<ebool, efloat, eint, estring, eCallable, eptr >;
+	using AsType = std::variant<ebool, efloat, eint,euint, estring, eCallable, eptr >;
 	class ValueContainer
 	{
 	public:
@@ -97,6 +99,9 @@ namespace Eva
 			else if constexpr (std::is_same_v<T, eint>) {
 				type = ValueType::INT;
 			}
+			else if constexpr (std::is_same_v<T, int>) {
+				type = ValueType::INT;
+			}
 			else if constexpr (std::is_same_v<T, efloat>) {
 				type = ValueType::FLOAT;
 			}
@@ -106,6 +111,9 @@ namespace Eva
 			}
 			else if constexpr (std::is_same_v<T, ebool>) {
 				type = ValueType::BOOL;
+			}
+			else if constexpr (std::is_same_v<T, euint>) {
+				type = ValueType::UINT;
 			}
 			else {
 				//assert(false);
@@ -141,6 +149,7 @@ namespace Eva
 		void Negate();
 		void InverseBool();
 		std::string ToString();
+
 		explicit ValueContainer(ValueContainer&& v)
 		{
 			type = v.type;

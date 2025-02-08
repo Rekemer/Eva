@@ -216,7 +216,7 @@ namespace cereal
 			archive(CEREAL_NVP(v.name));
 			archive(CEREAL_NVP(v.typeMap));
 		}
-		v.hDLL = Eva::LoadDll(v.name).value().hDLL;
+		v.hDLL = Eva::LoadDllPtr(v.name);
 	}
 
 }

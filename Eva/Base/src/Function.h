@@ -13,7 +13,7 @@ namespace Eva
 	class Func final : public ICallable
 	{
 	public:
-		 size_t Call(CallState& callState,  size_t baseIndex) override;
+		size_t Call(CallState& callState,  size_t baseIndex) override;
 
 		std::vector<Bytecode> opCode;
 		std::vector<ValueContainer> constants;
@@ -21,14 +21,16 @@ namespace Eva
 	class NativeFunc final : public ICallable
 	{
 	public:
-		NativeFunc(std::vector<ValueType> args,NativeWrapper func, int argAmount, std::string_view name) :
+		NativeFunc(std::vector<ValueType> args,NativeWrapper func,
+			int argAmount, std::string_view name,
+			CallFlags callFlags) :
 			func{func},
-			ICallable{ args,argAmount,name }
+			ICallable{ args,argAmount,name, callFlags }
 		{
 
 		};
 		NativeWrapper func;
-		CallFlags callFlags;
+		
 		size_t Call(CallState& callState,  size_t baseIndex) override;
 	};
 }

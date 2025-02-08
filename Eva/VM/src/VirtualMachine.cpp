@@ -621,10 +621,14 @@ if (child== ValueType::FLOAT)\
 			{
 				auto index = frame->function->opCode[frame->ip++];
 				auto name = frame->function->constants[index];
-				auto pluginName = frame->function->opCode[frame->ip++];
+				auto index2 = frame->function->opCode[frame->ip++];
+				auto pluginName = frame->function->constants[index2];
 
-				auto v = ValueContainer{ GetNativeCall(name.AsString()) };
-				vmStack.push_back(v);
+				auto mod = CastToModule(pluginTable.at(pluginName.AsString()).hDLL);
+				// we may want to cache, so we don't go to DLL all the time
+				auto callable = GetCall(name.AsString(), mod);
+				vmStack.push_back(callable);
+				
 				break;
 			}
 			case InCode::CALL:

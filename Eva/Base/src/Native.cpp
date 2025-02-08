@@ -13,7 +13,7 @@ namespace Eva
 		{
 			args.push_back(callState.stack.back());
 		}
-		for (auto i = args.end();  i!= args.begin(); i--)
+		for (auto i = args.rbegin() ;  i!= args.rend(); i++)
 		{
 			std::cout << *i<< " ";
 		}
@@ -29,7 +29,7 @@ namespace Eva
 	std::unordered_map<std::string_view, std::shared_ptr<NativeFunc>> nativeCalls
 	{
 		{"Print",std::make_shared<NativeFunc>(std::vector<ValueType>{},
-			Wrapper_Print,ICallable::INF_ARGS, "Print")}
+			Wrapper_Print,ICallable::INF_ARGS, "Print", CallFlags::BuiltIn)}
 	};
 	std::unordered_map<std::string_view, ValueType> nativeReturnTypes
 	{

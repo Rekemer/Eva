@@ -12,6 +12,7 @@
 #include <stack>
 #include <format>
 #include "Value.h"
+#include "CallFlags.h"
 namespace Eva
 {
 	// should we perhaps use bit logic?
@@ -87,6 +88,8 @@ namespace Eva
 		Operand result;
 		bool isMarked = false;
 		bool isCritical = false;
+		CallFlags callFlags;
+		std::string pluginName;
 		Instruction() = default;
 		Instruction(TokenType instr, Operand left, Operand right, Operand res) :
 			instrType{ instr },

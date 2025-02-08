@@ -298,10 +298,8 @@ std::shared_ptr<ICallable> Compiler::GetCallable(const Call* call)
 	else if (flags == CallFlags::ExternalDLL)
 	{
 		auto pluginName = call->pluginName;
-
-		assert(false);
-		using GetCallSign = std::shared_ptr<ICallable>(*)(const char* name);
-		std::shared_ptr < ICallable>  callable = LoadFunc<GetCallSign>(CastToModule(plugins.at(pluginName).hDLL), name);
+		auto mod = CastToModule(plugins.at(pluginName).hDLL);
+		auto callable = GetCall(name,mod);
 		return callable;
 	}
 	else
@@ -438,17 +436,30 @@ void Compiler::GenerateBlockInstructions(Block* block)
 		}
 		case TokenType::LEFT_PAREN:
 		{
-			auto isNative = instr.operRight.isConstant;
+
+			auto callFlags = instr.callFlags;
 
 			auto callName = instr.operRight.value.AsString();
 
-			if (isNative)
+			if (callFlags == CallFlags::BuiltIn)
 			currentFunc->opCode.push_back((Bytecode)InCode::GET_NATIVE_NAME);
+			else if (callFlags == CallFlags::ExternalDLL)
+			{
+				currentFunc->opCode.push_back((Bytecode)InCode::GET_PLUGIN_NAME);
+
+			}
 			else
 			currentFunc->opCode.push_back((Bytecode)InCode::GET_GLOBAL_VAR);
 
 			currentFunc->constants.emplace_back(callName);
 			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+
+			if (callFlags == CallFlags::ExternalDLL)
+			{
+				currentFunc->constants.emplace_back(instr.pluginName);
+				currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
+			}
+
 			auto argBlock = instr.argBlock;
 
 			GenerateCFG(argBlock);

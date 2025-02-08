@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include "Value.h"
-
+#include "CallFlags.h"
 namespace Eva
 {
 	struct CallState;
@@ -13,10 +13,11 @@ namespace Eva
 
 		ICallable() = default;
 
-		ICallable(std::vector<ValueType> argTypes, int argCount, std::string_view name)
+		ICallable(std::vector<ValueType> argTypes, int argCount, std::string_view name, CallFlags callFlags)
 			:argTypes{ argTypes },
 			argCount{ argCount },
-			name{ name.data() }
+			name{ name.data() },
+			callFlags{ callFlags }
 		{
 
 		}
@@ -29,6 +30,7 @@ namespace Eva
 		int argCount = 0;
 		std::vector<ValueType> argTypes;
 		std::string name;
+		CallFlags callFlags = CallFlags::BuiltIn;
 		virtual ~ICallable()
 		{
 
