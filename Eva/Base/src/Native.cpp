@@ -5,6 +5,7 @@
 #include "CallState.h"
 namespace Eva
 {
+	// potentally add parsing of args to emulate pritnf()
 	int Wrapper_Print(CallState& callState)
 	{
 		std::vector<ValueContainer> args;
@@ -12,14 +13,11 @@ namespace Eva
 		for (auto i = 0; i < callState.argumentCount; i++)
 		{
 			args.push_back(callState.stack.back());
+			callState.stack.pop_back();
 		}
 		for (auto i = args.rbegin() ;  i!= args.rend(); i++)
 		{
 			std::cout << *i<< " ";
-		}
-		for (auto i = 0; i < callState.argumentCount; i++)
-		{
-			callState.stack.pop_back();
 		}
 		std::cout << std::endl;
 		return 0;

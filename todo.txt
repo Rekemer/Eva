@@ -118,5 +118,7 @@ and then delete ones we processed?)
 
 
 
+add suppport of if !glfwInit() {
+}
 
 

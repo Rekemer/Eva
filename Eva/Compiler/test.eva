@@ -42,10 +42,15 @@ import "GLFW.dll"
 
 Print ("Invoke GLFW");
 status := glfwInit();
+//Print (status);
 
-Print ("status");
-Print (status);
-glfwTerminate();
+
+if status != 0 {
+	Print("Success: ",status,  "GFLW Terminated");
+	glfwTerminate();
+}
+
+
 
 
 //Print 2;
