@@ -38,32 +38,57 @@
 
 
 
-//import "GLFW.dll"
-////
-////Print ("Invoke GLFW");
+import "GLFW.dll"
+//
+//Print ("Invoke GLFW");
 //status := glfwInit();
-//////Print (status);
-////
-////
-////if status != 0 {
-////	Print("Success: ",status,  "GFLW Terminated");
-////	glfwTerminate();
-////}
+////Print (status);
 //
-//a: pointer  = nullptr;
 //
-//window : pointer = glfwCreateWindow(640, 480, "My Title", nullptr, nullptr);
+
+
+
+
+//a:= nullptr;
+//a: pointer= nullptr;
 //
-//if  a== nullptr 
-//{	
-//	Print(window);
+if !glfwInit() {
+	//Print("Success: ", status,  "GFLW Terminated");
+	Print("Fail: ", "GFLW Terminated");
+}
+else
+{
+	
+	Print("Success: ", "GFLW initialized");
+}
+
+window := glfwCreateWindow(640, 480, "My Title", nullptr, nullptr);
+
+if  !window
+{	
+	Print ("Window is not init", window);
+}
+else
+{
+	Print ("Window is init", window);
+}
+//
+//glfwMakeContextCurrent(window);
+//
+//
+//if !glfwWindowShouldClose(window)
+//{
+//	Print ("Don't close");
+//}
+//else
+//{
+//	Print ("Close");
 //}
 
-
-a : float = 100;
-a--;
-
-
+while (!glfwWindowShouldClose(window))
+{
+    Print("Loop runs");
+}
 
 //Print 2;
 //Print ("{} \n {} \n Hello \n {} \n ", "Ilia", "Says", "Cate");

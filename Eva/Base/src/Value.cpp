@@ -70,7 +70,14 @@ namespace Eva
 	// later on it causes exception at runtime
 #define OP(v1, v2, op)                                         \
 do {                                                           \
-    bool isNumber = AreBothNumeric(v1.type, v2.type);           \
+    														   \
+	if (v1.type == v2.type && v1.type == ValueType::PTR)       \
+	{														   \
+		return ValueContainer{ v1.As<eptr>() op v2.As<eptr>() };\
+	}														   \
+															   \
+															   \
+	bool isNumber = AreBothNumeric(v1.type, v2.type);           \
     assert(v1.type == v2.type || isNumber);                    \
     switch (v1.type)                                           \
     {                                                          \

@@ -1710,8 +1710,34 @@ TokenType AST::TypeCheckUnaryOperation(Expression* expr, TokenType operandType)
 		ErrorTypeCheck(expr->line, "Unary operator missing operand");
 		return TokenType::NIL;
 	}
+	auto isBang = expr->type == TokenType::BANG;
+	auto type = LiteralToType(operandType);
+	if (isBang)
+	{
+		if (type == ValueType::INT || type == ValueType::PTR)
+		{
+			expr->type = TokenType::EQUAL_EQUAL;
 
-	expr->value.type = LiteralToType(operandType);
+			auto node = std::make_unique<Expression>();
+			if (type == ValueType::INT)
+			{
+
+				node->value = static_cast<eint>(0);
+				node->type = TokenType::INT_LITERAL;
+			}
+			else
+			{
+				node->value = static_cast<eptr>(0);
+				node->type = TokenType::NULLPTR;
+			}
+			expr->right = std::move(node);
+		}
+		expr->value.type = ValueType::BOOL;
+		return TokenType::BOOL_TYPE;
+	}
+	else
+	expr->value.type = type;
+	
 	return operandType;
 }
 

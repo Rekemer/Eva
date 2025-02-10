@@ -1,0 +1,14 @@
+/*
+    #test
+    a = 111,
+*/
+
+n:=nullptr;
+a:= 1;
+if !n {
+	a = 112;
+}
+n1 : pointer = nullptr;
+if !n1 {
+	a--;
+}
