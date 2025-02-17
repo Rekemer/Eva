@@ -241,9 +241,19 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 				}
 				else
 				{
-					m_Panic = true;
-					std::cout << "ERROR[" << (currentToken)->line << "]: " <<
-						"The name " << str << " is used but not declared " << std::endl;
+					// might be external const
+					auto extConst = compiler->GetExternalConst(str.data());
+					if (!extConst.has_value())
+					{
+						m_Panic = true;
+						std::cout << "ERROR[" << (currentToken)->line << "]: " <<
+							"The name " << str << " is used but not declared " << std::endl;
+						return node;
+					}
+					// just only ints for external constants
+					node->type = TokenType::INT_LITERAL;
+					node->value = extConst.value();
+					node->depth = 0;
 				}
 			}
 			// if scope == 0 then can read only global

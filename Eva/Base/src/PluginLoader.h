@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <string>
 #include <optional>
+#include <memory>
 #include <string_view>
 #include "Value.h"
 #include "PluginData.h"
@@ -68,15 +69,19 @@ namespace Eva
         DLLHandle hDLL = LoadLibrary(wStr.data());
         return hDLL;
     }
-    using InitSignature = std::unordered_map<std::string, Eva::ValueType>*(*)();
 
     inline std::optional<PluginData> LoadDll(std::string_view path)
     {
+        using TypeTableSignature = TypeTable*(*)();
+        using ConstTableSignature = ConstTable*(*)();
         // Load the DLL
         auto  hDLL = LoadDllPtr(path);
-        auto init = LoadFunc<InitSignature>(hDLL, "initModule");
-        auto map = init();
-        auto data  = PluginData{ path.data(),hDLL,std::unique_ptr<PluginReturn>{ map }};
+        auto getTypeTable = LoadFunc<TypeTableSignature>(hDLL, "getTypeTable");
+        auto getConstTable = LoadFunc<ConstTableSignature>(hDLL, "getConstTable");
+        auto typeTable = std::unique_ptr<TypeTable>{ getTypeTable() };
+        auto constTable = getConstTable();
+        auto data = PluginData{ path.data(),hDLL,  std::move(typeTable)};
+        data.constMap = constTable;
         return data;
     }
 

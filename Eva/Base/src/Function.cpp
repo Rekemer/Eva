@@ -41,14 +41,14 @@ namespace Eva
 		
 		assert(callFlags != CallFlags::UserFunc);
 
-		if (callFlags == CallFlags::BuiltIn)
-		{
+		//if (callFlags == CallFlags::BuiltIn)
+		//{
 			CallNative(callState, func, name);
-		}
-		else if (callFlags == CallFlags::ExternalDLL)
-		{
-			CallNative(callState, func,name);
-		}
+		//}
+		//else if (callFlags == CallFlags::ExternalDLL)
+		//{
+			//CallNative(callState, func,name);
+		//}
 		return SIZE_MAX;
 	}
 }

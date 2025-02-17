@@ -5,30 +5,32 @@
 #include <unordered_map>
 namespace Eva
 {
-    using PluginReturn = std::unordered_map<std::string, Eva::ValueType>;
-
+    using TypeTable = std::unordered_map<std::string, Eva::ValueType>;
+    // might be not integers potentially
+    using ConstTable = std::unordered_map<std::string, eint>;
    
     struct PluginData
     {
         std::string name;
         void* hDLL;
-        std::unique_ptr<PluginReturn> typeMap;
-
+        std::unique_ptr<TypeTable> typeMap;
+        ConstTable* constMap = nullptr;
         // for cereal
         PluginData() = default;
 
-        PluginData(const std::string& name, void* hDLL, std::unique_ptr<PluginReturn> typeMap)
+        PluginData(const std::string& name, void* hDLL, std::unique_ptr<TypeTable> typeMap)
         {
             this->name = name;
             this->hDLL = hDLL;
             this->typeMap = std::move(typeMap);
         }
 
-        PluginData(PluginData&& other) : typeMap(std::move(other.typeMap)) 
+        PluginData(PluginData&& other) : typeMap(std::move(other.typeMap))
         {
             name = std::move(other.name);
             hDLL = other.hDLL;
-            other.hDLL = nullptr;
+            constMap = other.constMap;
+            other.hDLL  = other.constMap = nullptr;
         }
 
         PluginData& operator=(PluginData&& other) {
@@ -38,6 +40,8 @@ namespace Eva
                 hDLL = other.hDLL;
                 other.hDLL = nullptr;
                 typeMap = std::move(other.typeMap);
+                constMap = other.constMap;
+                other.constMap = nullptr;
             }
             return *this;
         }

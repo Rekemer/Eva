@@ -118,7 +118,11 @@ and then delete ones we processed?)
 
 
 
-add suppport of if !glfwInit() {
-}
+look up external functions and constants by specific module
+external consts are only ints for now
+
+support if single statement without curly braces
+
+support implicit conversion of bool to int glfwSetWindowShouldClose(window,1 ) and glfwSetWindowShouldClose(window,true)
 
 

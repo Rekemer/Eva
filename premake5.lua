@@ -34,6 +34,7 @@ workspace "Eva"
 	
 	group "Plugins"
 	include "Modules/glfw"
+	include "Modules/opengl-legacy"
 	group ""
 	
 

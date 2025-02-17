@@ -2,6 +2,8 @@
 #include <memory>
 #include <stack>
 #include <string>
+#include <optional>
+#include <string_view>
 #include <unordered_map>
 #include "Value.h"
 #include "Function.h"
@@ -40,6 +42,7 @@ namespace Eva
 		// that defined after call is parsed
 		std::vector<std::pair<std::string, int>> unresolvedFuncNames;
 		void LoadPlugin(std::string_view path, int line);
+		std::optional<ValueContainer> GetExternalConst(std::string_view name);
 		std::unordered_map<std::string, PluginData> plugins;
 	private:
 		const std::string_view scriptPath;

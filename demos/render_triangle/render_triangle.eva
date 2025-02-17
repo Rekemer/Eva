@@ -1,5 +1,3 @@
-
-
 import "GLFW"
 import "OpenGL-Legacy"
 if !glfwInit() {

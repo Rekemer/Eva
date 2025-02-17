@@ -2,6 +2,10 @@
 # now storing more accurate C types in "type:" for each argument
 # and the return.
 
+
+moduleName: "glfw"
+includes:
+  - <glfw3.h>
 functions:
   # GLFW Initialization and Termination
   - name: glfwInit
@@ -82,3 +86,10 @@ functions:
     return: void
     args:
       - type: int   # interval
+
+# test
+constants:
+  - name: GLFW_KEY_ESCAPE
+    value: 256
+  - name: GLFW_PRESS
+    value: 1

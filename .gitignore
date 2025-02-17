@@ -15,3 +15,4 @@ Modules/glfw/__pycache__/
 Tests/tests_bin/
 Tests/stack_check.txt
 Eva/VM/stack_check.txt
+.vscode/

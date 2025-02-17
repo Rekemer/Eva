@@ -184,7 +184,6 @@ namespace cereal
 	}
 
 
-
 	template <class Archive>
 	void save(Archive& archive, const Eva::PluginData& v)
 	{

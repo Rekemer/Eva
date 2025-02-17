@@ -1,0 +1,101 @@
+
+moduleName: "opengl-legacy"
+includes:
+  - <windows.h>
+  - <GL/gl.h>
+
+
+functions:
+  # Set OpenGL clear color
+  - name: glClearColor
+    return: void
+    args:
+      - type: GLfloat  # Red
+      - type: GLfloat  # Green
+      - type: GLfloat  # Blue
+      - type: GLfloat  # Alpha
+
+  # Clear buffers
+  - name: glClear
+    return: void
+    args:
+      - type: GLbitfield  # Buffer mask (e.g., GL_COLOR_BUFFER_BIT)
+
+  # Begin defining a shape
+  - name: glBegin
+    return: void
+    args:
+      - type: GLenum  # e.g., GL_TRIANGLES, GL_LINES, etc.
+
+  # Define a vertex
+  - name: glVertex2f
+    return: void
+    args:
+      - type: GLfloat  # X coordinate
+      - type: GLfloat  # Y coordinate
+
+  # Define a 3D vertex
+  - name: glVertex3f
+    return: void
+    args:
+      - type: GLfloat  # X coordinate
+      - type: GLfloat  # Y coordinate
+      - type: GLfloat  # Z coordinate
+
+  # Set vertex color
+  - name: glColor3f
+    return: void
+    args:
+      - type: GLfloat  # Red
+      - type: GLfloat  # Green
+      - type: GLfloat  # Blue
+
+  # End shape definition
+  - name: glEnd
+    return: void
+    args: []
+     # (Commented in your snippet) Resets the current matrix to identity
+  - name: glLoadIdentity
+    return: void
+    args: []
+
+  # (Commented in your snippet) Pushes the current matrix stack
+  - name: glPushMatrix
+    return: void
+    args: []
+
+  # (Commented in your snippet) Pops the top matrix stack
+  - name: glPopMatrix
+    return: void
+    args: []
+
+  # (Commented in your snippet) Translate the current matrix
+  - name: glTranslatef
+    return: void
+    args:
+      - type: GLfloat  # x
+      - type: GLfloat  # y
+      - type: GLfloat  # z
+
+  # (Commented in your snippet) Rotate the current matrix
+  - name: glRotatef
+    return: void
+    args:
+      - type: GLfloat  # angle
+      - type: GLfloat  # x
+      - type: GLfloat  # y
+      - type: GLfloat  # z
+
+constants:
+  - name: GL_COLOR_BUFFER_BIT
+    value: 0x00004000
+  - name: GL_DEPTH_BUFFER_BIT
+    value: 0x00000100
+  - name: GL_TRIANGLES
+    value: 0x0004
+  - name: GL_LINES
+    value: 0x0001
+  - name: GL_POINTS
+    value: 0x0000
+  - name: GL_QUADS
+    value: 0x0007

@@ -979,10 +979,24 @@ void DumpToFile(std::ofstream& os, T& archive, Args&... args)
 		std::cerr << "bytecode path was not specified correctly\n";
 	}
 }
-
+std::optional<ValueContainer> Compiler::GetExternalConst(std::string_view name)
+{
+	for (auto& plugin : plugins)
+	{
+		auto constMap = plugin.second.constMap;
+		if (constMap->size() > 0)
+		{
+			if (constMap->find(name.data()) != constMap->end())
+			{
+				return constMap->at(name.data());
+			}
+		}
+	}
+	return {};
+}
 void Compiler::LoadPlugin(std::string_view name, int line)
 {
-	auto fullPath = std::format(".\\..\\..\\bin\\Modules\\GLFW\\Debug-windows-x86_64\\GLFW.dll");
+	auto fullPath = std::format(".\\..\\..\\bin\\Modules\\{}\\Debug-windows-x86_64\\{}.dll",name,name);
 
 	auto opt = LoadDll(fullPath);
 
