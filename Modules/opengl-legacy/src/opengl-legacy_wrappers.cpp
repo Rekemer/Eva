@@ -131,18 +131,18 @@ std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
 };
 
 std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
-    {"glClearColor", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glClearColor, ICallable::INF_ARGS, "glClearColor", CallFlags::ExternalDLL)},
-    {"glClear", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::NIL}, wrapper_glClear, ICallable::INF_ARGS, "glClear", CallFlags::ExternalDLL)},
-    {"glBegin", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glBegin, ICallable::INF_ARGS, "glBegin", CallFlags::ExternalDLL)},
-    {"glVertex2f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT}, wrapper_glVertex2f, ICallable::INF_ARGS, "glVertex2f", CallFlags::ExternalDLL)},
-    {"glVertex3f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glVertex3f, ICallable::INF_ARGS, "glVertex3f", CallFlags::ExternalDLL)},
-    {"glColor3f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glColor3f, ICallable::INF_ARGS, "glColor3f", CallFlags::ExternalDLL)},
-    {"glEnd", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glEnd, ICallable::INF_ARGS, "glEnd", CallFlags::ExternalDLL)},
-    {"glLoadIdentity", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glLoadIdentity, ICallable::INF_ARGS, "glLoadIdentity", CallFlags::ExternalDLL)},
-    {"glPushMatrix", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glPushMatrix, ICallable::INF_ARGS, "glPushMatrix", CallFlags::ExternalDLL)},
-    {"glPopMatrix", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glPopMatrix, ICallable::INF_ARGS, "glPopMatrix", CallFlags::ExternalDLL)},
-    {"glTranslatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glTranslatef, ICallable::INF_ARGS, "glTranslatef", CallFlags::ExternalDLL)},
-    {"glRotatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glRotatef, ICallable::INF_ARGS, "glRotatef", CallFlags::ExternalDLL)},
+    {"glClearColor", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glClearColor, ICallable::INF_ARGS, "glClearColor", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glClear", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::NIL}, wrapper_glClear, ICallable::INF_ARGS, "glClear", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glBegin", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glBegin, ICallable::INF_ARGS, "glBegin", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glVertex2f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT}, wrapper_glVertex2f, ICallable::INF_ARGS, "glVertex2f", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glVertex3f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glVertex3f, ICallable::INF_ARGS, "glVertex3f", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glColor3f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glColor3f, ICallable::INF_ARGS, "glColor3f", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glEnd", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glEnd, ICallable::INF_ARGS, "glEnd", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glLoadIdentity", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glLoadIdentity, ICallable::INF_ARGS, "glLoadIdentity", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glPushMatrix", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glPushMatrix, ICallable::INF_ARGS, "glPushMatrix", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glPopMatrix", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glPopMatrix, ICallable::INF_ARGS, "glPopMatrix", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glTranslatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glTranslatef, ICallable::INF_ARGS, "glTranslatef", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glRotatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glRotatef, ICallable::INF_ARGS, "glRotatef", CallFlags::ExternalDLL | CallFlags::VoidCall)},
 };
 
 

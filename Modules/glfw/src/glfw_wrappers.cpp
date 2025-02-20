@@ -134,18 +134,18 @@ std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
 
 std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
     {"glfwInit", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwInit, ICallable::INF_ARGS, "glfwInit", CallFlags::ExternalDLL)},
-    {"glfwTerminate", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwTerminate, ICallable::INF_ARGS, "glfwTerminate", CallFlags::ExternalDLL)},
+    {"glfwTerminate", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwTerminate, ICallable::INF_ARGS, "glfwTerminate", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glfwCreateWindow", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT, ValueType::STRING, ValueType::PTR, ValueType::PTR}, wrapper_glfwCreateWindow, ICallable::INF_ARGS, "glfwCreateWindow", CallFlags::ExternalDLL)},
-    {"glfwDestroyWindow", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwDestroyWindow, ICallable::INF_ARGS, "glfwDestroyWindow", CallFlags::ExternalDLL)},
-    {"glfwMakeContextCurrent", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwMakeContextCurrent, ICallable::INF_ARGS, "glfwMakeContextCurrent", CallFlags::ExternalDLL)},
+    {"glfwDestroyWindow", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwDestroyWindow, ICallable::INF_ARGS, "glfwDestroyWindow", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glfwMakeContextCurrent", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwMakeContextCurrent, ICallable::INF_ARGS, "glfwMakeContextCurrent", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glfwWindowShouldClose", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwWindowShouldClose, ICallable::INF_ARGS, "glfwWindowShouldClose", CallFlags::ExternalDLL)},
-    {"glfwSetWindowShouldClose", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::INT}, wrapper_glfwSetWindowShouldClose, ICallable::INF_ARGS, "glfwSetWindowShouldClose", CallFlags::ExternalDLL)},
-    {"glfwPollEvents", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwPollEvents, ICallable::INF_ARGS, "glfwPollEvents", CallFlags::ExternalDLL)},
-    {"glfwSwapBuffers", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwSwapBuffers, ICallable::INF_ARGS, "glfwSwapBuffers", CallFlags::ExternalDLL)},
+    {"glfwSetWindowShouldClose", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::INT}, wrapper_glfwSetWindowShouldClose, ICallable::INF_ARGS, "glfwSetWindowShouldClose", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glfwPollEvents", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwPollEvents, ICallable::INF_ARGS, "glfwPollEvents", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glfwSwapBuffers", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR}, wrapper_glfwSwapBuffers, ICallable::INF_ARGS, "glfwSwapBuffers", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glfwGetKey", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::INT}, wrapper_glfwGetKey, ICallable::INF_ARGS, "glfwGetKey", CallFlags::ExternalDLL)},
     {"glfwGetTime", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwGetTime, ICallable::INF_ARGS, "glfwGetTime", CallFlags::ExternalDLL)},
-    {"glfwWindowHint", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT}, wrapper_glfwWindowHint, ICallable::INF_ARGS, "glfwWindowHint", CallFlags::ExternalDLL)},
-    {"glfwSwapInterval", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glfwSwapInterval, ICallable::INF_ARGS, "glfwSwapInterval", CallFlags::ExternalDLL)},
+    {"glfwWindowHint", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT}, wrapper_glfwWindowHint, ICallable::INF_ARGS, "glfwWindowHint", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glfwSwapInterval", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glfwSwapInterval, ICallable::INF_ARGS, "glfwSwapInterval", CallFlags::ExternalDLL | CallFlags::VoidCall)},
 };
 
 

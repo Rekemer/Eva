@@ -27,7 +27,7 @@ namespace Eva
 	std::unordered_map<std::string_view, std::shared_ptr<NativeFunc>> nativeCalls
 	{
 		{"Print",std::make_shared<NativeFunc>(std::vector<ValueType>{},
-			Wrapper_Print,ICallable::INF_ARGS, "Print", CallFlags::BuiltIn)}
+			Wrapper_Print,ICallable::INF_ARGS, "Print", CallFlags::BuiltIn | CallFlags::VoidCall)}
 	};
 	std::unordered_map<std::string_view, ValueType> nativeReturnTypes
 	{
@@ -38,7 +38,7 @@ namespace Eva
 	{
 		return nativeCalls.find(str) != nativeCalls.end();
 	}
-	std::shared_ptr<ICallable> GetNativeCall(std::string_view name)
+	eCallable GetNativeCall(std::string_view name)
 	{
 		return nativeCalls.at(name);
 	}

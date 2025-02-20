@@ -1,47 +1,25 @@
 #pragma once
-enum class CallFlags : unsigned {
-	UserFunc = 0,
-	BuiltIn = 1 << 0,
-	ExternalDLL = 1 << 1
-};
 
-inline std::underlying_type_t<CallFlags> CallFlagsToInt(CallFlags flags) {
-	return static_cast<std::underlying_type_t<CallFlags>>(flags);
-}
+namespace Eva
+{
+	enum class CallFlags : unsigned {
+		UserFunc = 1,
+		BuiltIn = 1 << 1,
+		ExternalDLL = 1 << 2,
+		VoidCall = 1 << 3
+	};
 
-inline CallFlags IntToCallFlags(std::underlying_type_t<CallFlags> value) {
-	return static_cast<CallFlags>(value);
-}
 
-inline CallFlags operator|(CallFlags lhs, CallFlags rhs) {
-	using T = std::underlying_type_t<CallFlags>;
-	return static_cast<CallFlags>(
-		static_cast<T>(lhs) | static_cast<T>(rhs)
-		);
-}
 
-inline CallFlags& operator|=(CallFlags& lhs, CallFlags rhs) {
-	lhs = lhs | rhs;
-	return lhs;
-}
 
-inline CallFlags operator&(CallFlags lhs, CallFlags rhs) {
-	using T = std::underlying_type_t<CallFlags>;
-	return static_cast<CallFlags>(
-		static_cast<T>(lhs) & static_cast<T>(rhs)
-		);
-}
+	CallFlags operator|(CallFlags lhs, CallFlags rhs);
 
-inline CallFlags& operator&=(CallFlags& lhs, CallFlags rhs) {
-	lhs = lhs & rhs;
-	return lhs;
-}
+	CallFlags& operator|=(CallFlags& lhs, CallFlags rhs);
 
-inline bool operator==(CallFlags lhs, CallFlags rhs) {
-	using T = std::underlying_type_t<CallFlags>;
-	return static_cast<T>(lhs) == static_cast<T>(rhs);
-}
+	CallFlags operator&(CallFlags lhs, CallFlags rhs);
 
-inline bool operator!=(CallFlags lhs, CallFlags rhs) {
-	return !(lhs == rhs);
+	CallFlags& operator&=(CallFlags& lhs, CallFlags rhs);
+
+
+	bool HasFlag(CallFlags flags, CallFlags test);
 }

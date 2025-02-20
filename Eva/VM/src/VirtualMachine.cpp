@@ -630,7 +630,7 @@ if (child== ValueType::FLOAT)\
 
 				auto mod = CastToModule(pluginTable.at(pluginName.AsString()).hDLL);
 				// we may want to cache, so we don't go to DLL all the time
-				auto callable = GetCall(name.AsString(), mod);
+				auto callable = GetExternalCall(name.AsString(), mod);
 				vmStack.push_back(callable);
 				
 				break;

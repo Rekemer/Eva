@@ -183,7 +183,8 @@ def generateCallTable(data):
             vec_literal = "std::vector<ValueType>{}"
             arg_kind = "ICallable::INF_ARGS"
         wrapper = f"wrapper_{fnName}"
-        lines.append(f'    {{"{fnName}", std::make_shared<NativeFunc>({vec_literal}, {wrapper}, {arg_kind}, "{fnName}", CallFlags::ExternalDLL)}},')
+        is_void = func["return"] == "void"
+        lines.append(f'    {{"{fnName}", std::make_shared<NativeFunc>({vec_literal}, {wrapper}, {arg_kind}, "{fnName}", {"CallFlags::ExternalDLL | CallFlags::VoidCall" if is_void else "CallFlags::ExternalDLL"})}},')
     lines.append("};")
     return lines
 

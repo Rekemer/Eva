@@ -126,3 +126,6 @@ support if single statement without curly braces
 support implicit conversion of bool to int glfwSetWindowShouldClose(window,1 ) and glfwSetWindowShouldClose(window,true)
 
 
+we pass predefined function to setCallback and this function invokes user defined function which moves to new callframe 
+
+

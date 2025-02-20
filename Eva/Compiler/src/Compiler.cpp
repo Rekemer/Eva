@@ -267,11 +267,11 @@ void Compiler::PatchBreak(int prevSizeBreak)
 }
 ValueType Compiler::GetGlobalType(const std::string& str, CallFlags callFlags)
 {
-	if (callFlags == CallFlags::BuiltIn)
+	if (HasFlag(callFlags, CallFlags::BuiltIn))
 	{
 		return GetNativeType(str);
 	}
-	else if (callFlags == CallFlags::ExternalDLL)
+	else if (HasFlag(callFlags, CallFlags::ExternalDLL))
 	{
 		return GetReturnTypeDLL(plugins, str);
 	}
@@ -287,19 +287,19 @@ ValueType Compiler::GetGlobalType(const std::string& str, CallFlags callFlags)
 	return entry->value.type;
 }
 
-std::shared_ptr<ICallable> Compiler::GetCallable(const Call* call)
+eCallable Compiler::GetCallable(const Call* call)
 {
 	std::string_view name = call->name;
-	CallFlags flags = call->flags;
-	if (flags == CallFlags::BuiltIn)
+	CallFlags callFlags = call->flags;
+	if (HasFlag(callFlags, CallFlags::BuiltIn))
 	{
 		return GetNativeCall(name);
 	}
-	else if (flags == CallFlags::ExternalDLL)
+	else if (HasFlag(callFlags, CallFlags::ExternalDLL))
 	{
 		auto pluginName = call->pluginName;
 		auto mod = CastToModule(plugins.at(pluginName).hDLL);
-		auto callable = GetCall(name,mod);
+		auto callable = GetExternalCall(name,mod);
 		return callable;
 	}
 	else
@@ -441,9 +441,9 @@ void Compiler::GenerateBlockInstructions(Block* block)
 
 			auto callName = instr.operRight.value.AsString();
 
-			if (callFlags == CallFlags::BuiltIn)
+			if (HasFlag(callFlags, CallFlags::BuiltIn))
 			currentFunc->opCode.push_back((Bytecode)InCode::GET_NATIVE_NAME);
-			else if (callFlags == CallFlags::ExternalDLL)
+			else if (HasFlag(callFlags, CallFlags::ExternalDLL))
 			{
 				currentFunc->opCode.push_back((Bytecode)InCode::GET_PLUGIN_NAME);
 
@@ -454,7 +454,7 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			currentFunc->constants.emplace_back(callName);
 			currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
 
-			if (callFlags == CallFlags::ExternalDLL)
+			if (HasFlag(callFlags, CallFlags::ExternalDLL))
 			{
 				currentFunc->constants.emplace_back(instr.pluginName);
 				currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
@@ -471,6 +471,9 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			//}
 			currentFunc->opCode.push_back((Bytecode)InCode::CALL);
 			currentFunc->opCode.push_back(instr.operLeft.value.As<eint>());
+			
+			// return always returns a value, even if function is a void
+			// we must remove empty value from stack
 			if (instr.returnType == ValueType::NIL)
 			{
 				EmitPop(currentFunc->opCode);
@@ -782,7 +785,7 @@ void Compiler::GenerateBlockInstructions(Block* block)
 
 				GenerateCFGOperand(instr.operRight, m_FuncReturnType);
 				currentFunc->opCode.push_back((Bytecode)InCode::STORE_TEMP);
-				currentFunc->opCode.push_back((Bytecode)InCode::POP);
+				EmitPop(currentFunc->opCode);
 				for (int i = 0; i < popAmount; i++)
 					EmitPop(currentFunc->opCode);
 				currentFunc->opCode.push_back((Bytecode)InCode::LOAD_TEMP);
@@ -812,7 +815,7 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			auto popAmmount = instr.operRight.value.As<eint>();
 			for (int i = 0; i < popAmmount; i++)
 			{
-				currentFunc->opCode.push_back((Bytecode)InCode::POP);
+				EmitPop(currentFunc->opCode);
 			}
 		}
 		break;

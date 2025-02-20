@@ -143,6 +143,7 @@
     <ClInclude Include="src\win_header.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\CallFlags.cpp" />
     <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\Function.cpp" />
     <ClCompile Include="src\HashTable.cpp" />

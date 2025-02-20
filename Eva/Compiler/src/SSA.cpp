@@ -1931,6 +1931,8 @@ Block* CFG::CreateConditionBlock(const std::string& name,  Block* currentBlock) 
 }
 void CFG::EmitPop(Block* currentBlock,int popAmount)
 {	
+	assert(popAmount > -1);
+	if (popAmount == 0) return;
 	auto pops = Operand{ popAmount,false,NOT_INIT_VERSION };
 	pops.depth = currentScope->depth;
 	Instruction instr{ TokenType::BLOCK,{},pops,{} };
@@ -2071,7 +2073,6 @@ void CFG::ConvertStatementAST(const Node* tree)
 		parseLoop.pop();
 
 		
-		assert(currentBlock->instructions.back().instrType == TokenType::BLOCK);
 
 		auto jumpBack = Instruction{ TokenType::JUMP_BACK,{},{},{} };
 		jumpBack.targets.push_back(body);
@@ -2419,10 +2420,10 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		auto res = CreateTemp();
 		
 		Operand  funcNameOp{ {call->name},call->IsCFunction() ,SYSTEM_VER};
-		
+		auto callFlags = call->flags;
 
 		auto funcCall = Instruction{ TokenType::LEFT_PAREN,{},funcNameOp,res };
-		funcCall.callFlags = call->flags;
+		funcCall.callFlags = callFlags;
 		funcCall.pluginName = call->pluginName;
 
 		// for now we treat all native calls as critical
@@ -2444,7 +2445,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		funcCall.argBlock->name = name;
 		funcCall.argBlock->parents = {currentBlock};
 		funcCall.argBlock->markAll = true;
-		GiveType(funcCall, res, compiler->GetGlobalType(call->name, call->flags));
+		GiveType(funcCall, res, compiler->GetGlobalType(call->name, callFlags));
 		currentBlock->instructions.push_back(funcCall);
 		auto prevBlock = currentBlock;
 		auto funcCallIndex = prevBlock->instructions.size() - 1;
@@ -2468,7 +2469,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		}
 		getAsParam = false;
 		prevBlock->instructions[funcCallIndex].operLeft = Operand{ ValueContainer{(int)call->args.size()},true,SYSTEM_VER };
-		if (!writeToVariable && !(isReturn.size() > 0) && parseFunc.size() > 0)
+		if (!HasFlag(callFlags, CallFlags::VoidCall) && !writeToVariable && !(isReturn.size() > 0) && parseFunc.size() > 0)
 		{
 			Instruction instr{ TokenType::BLOCK,{}, Operand{1,true,IS_TEMP},{} };
 			MakeCritical(instr);
@@ -2574,7 +2575,10 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::LESS_EQUAL:
 	case TokenType::LESS:
 	{
-		return BinaryInstr(tree->As<Expression>(), type);
+		//writeToVariable = true;
+		auto res =  BinaryInstr(tree->As<Expression>(), type);
+		//writeToVariable = false;
+		return res;
 		break;
 	}
 	// short-circuit optimization for SSA

@@ -144,11 +144,15 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 
 	 CallFlags flags = CallFlags::UserFunc;
 		 
-	 if (IsNative(str)) flags |= CallFlags::BuiltIn;
 	 auto [isPlugin, pluginName] = IsPlugin(str, compiler->plugins);
-	 if (isPlugin) 
+	 if (IsNative(str))
 	 {
-		 flags |= CallFlags::ExternalDLL;
+		flags = GetNativeCall(str)->callFlags;
+	 }
+	 else if(isPlugin)
+	 {
+		 auto mod = CastToModule(compiler->plugins.at(pluginName.data()).hDLL);
+		 flags = GetExternalCall(str, mod)->callFlags;
 	 }
 	 // function call
 	 if (!isGlobal && flags == CallFlags::UserFunc)
@@ -1497,12 +1501,17 @@ TokenType AST::TypeCheckFunctionCall(Node* node)
 
 	// Return the function's return type
 	auto funcTypeEntry = compiler->GetGlobalsType().Get(call->name);
+	// check if we don't know return type yet
 	if (!funcTypeEntry || !funcTypeEntry->IsInit())
 	{
 		ErrorTypeCheck(call->line, "Function type information missing for '" + call->name + "'");
 		return TokenType::NIL;
 	}
-
+	
+	if (funcTypeEntry->value.type == ValueType::NIL)
+	{
+		call->flags |= CallFlags::VoidCall;
+	}
 	return TypeToLiteral(funcTypeEntry->value.type);
 }
 

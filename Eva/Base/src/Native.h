@@ -21,6 +21,6 @@ namespace Eva
 
 	
 
-	std::shared_ptr<ICallable> GetNativeCall(std::string_view name);
+	eCallable GetNativeCall(std::string_view name);
 	ValueType GetNativeType(std::string_view name);
 }

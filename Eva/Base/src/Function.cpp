@@ -38,17 +38,8 @@ namespace Eva
 
 	size_t NativeFunc::Call(CallState& callState, size_t baseIndex)
 	{
-		
-		assert(callFlags != CallFlags::UserFunc);
-
-		//if (callFlags == CallFlags::BuiltIn)
-		//{
-			CallNative(callState, func, name);
-		//}
-		//else if (callFlags == CallFlags::ExternalDLL)
-		//{
-			//CallNative(callState, func,name);
-		//}
+		assert(!HasFlag(callFlags, CallFlags::UserFunc));
+		CallNative(callState, func, name);
 		return SIZE_MAX;
 	}
 }

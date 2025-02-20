@@ -52,7 +52,7 @@ namespace Eva
 
     }
 
-    inline std::shared_ptr<ICallable> GetCall(std::string_view name, HMODULE mod)
+    inline eCallable GetExternalCall(std::string_view name, HMODULE mod)
     {
         using GetCallSign = std::shared_ptr<ICallable>(*)(const char* name);
         auto getCall = LoadFunc<GetCallSign>(mod, "GetCallable");
