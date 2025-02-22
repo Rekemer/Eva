@@ -12,6 +12,7 @@ namespace Eva {
 EXPORT int wrapper_glfwInit(CallState& st) {
 
    eint result = glfwInit();
+	st.stack.pop_back();
    st.stack.push_back(result);
     return 1;
 }
@@ -19,6 +20,7 @@ EXPORT int wrapper_glfwInit(CallState& st) {
 EXPORT int wrapper_glfwTerminate(CallState& st) {
 
     glfwTerminate();
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -31,6 +33,7 @@ EXPORT int wrapper_glfwCreateWindow(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
    void* result = glfwCreateWindow(static_cast<int>(arg0.As<eint>()), static_cast<int>(arg1.As<eint>()), arg2.AsString().data(), reinterpret_cast<GLFWmonitor*>(arg3.As<eptr>()), reinterpret_cast<GLFWwindow*>(arg4.As<eptr>()));
+	st.stack.pop_back();
  st.stack.push_back(reinterpret_cast<eptr>(result));
     return 1;
 }
@@ -39,6 +42,7 @@ EXPORT int wrapper_glfwDestroyWindow(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
     glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -47,6 +51,7 @@ EXPORT int wrapper_glfwMakeContextCurrent(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
     glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -55,6 +60,7 @@ EXPORT int wrapper_glfwWindowShouldClose(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
    eint result = glfwWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+	st.stack.pop_back();
    st.stack.push_back(result);
     return 1;
 }
@@ -64,6 +70,7 @@ EXPORT int wrapper_glfwSetWindowShouldClose(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glfwSetWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), static_cast<int>(arg1.As<eint>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -71,6 +78,7 @@ EXPORT int wrapper_glfwSetWindowShouldClose(CallState& st) {
 EXPORT int wrapper_glfwPollEvents(CallState& st) {
 
     glfwPollEvents();
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -79,6 +87,7 @@ EXPORT int wrapper_glfwSwapBuffers(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
     glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -88,6 +97,7 @@ EXPORT int wrapper_glfwGetKey(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
    eint result = glfwGetKey(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), static_cast<int>(arg1.As<eint>()));
+	st.stack.pop_back();
    st.stack.push_back(result);
     return 1;
 }
@@ -95,6 +105,7 @@ EXPORT int wrapper_glfwGetKey(CallState& st) {
 EXPORT int wrapper_glfwGetTime(CallState& st) {
 
    efloat result = glfwGetTime();
+	st.stack.pop_back();
    st.stack.push_back(result);
     return 1;
 }
@@ -104,6 +115,7 @@ EXPORT int wrapper_glfwWindowHint(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glfwWindowHint(static_cast<int>(arg0.As<eint>()), static_cast<int>(arg1.As<eint>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -112,6 +124,7 @@ EXPORT int wrapper_glfwSwapInterval(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
     glfwSwapInterval(static_cast<int>(arg0.As<eint>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }

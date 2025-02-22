@@ -262,8 +262,28 @@ void CFG::Rename(Block* b)
 		auto& instr = b->instructions[i];
 		if (instr.instrType == TokenType::PHI || instr.instrType == TokenType::JUMP ||
 			instr.instrType == TokenType::JUMP_BACK || instr.instrType == TokenType::JUMP_FOR
-			|| instr.instrType == TokenType::LEFT_PAREN || instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN || instr.instrType == TokenType::PUSH) continue;
+			|| instr.instrType == TokenType::CALL|| instr.instrType == TokenType::FUN || instr.instrType == TokenType::PUSH) continue;
 
+
+		if (instr.instrType == TokenType::LEFT_PAREN)
+		{
+			if(instr.argBlock)
+			for (int ii = 0; ii < instr.argBlock->instructions.size(); ii++)
+			{
+				auto& iinstr = instr.argBlock->instructions[ii];
+				if (iinstr.instrType == TokenType::VAR)
+				{
+					if (iinstr.result.IsVariable())
+					{
+						iinstr.result.version = variableStack[iinstr.result.value.AsString()].top().first;
+						AddUse(iinstr.result.depth, iinstr.result.GetVariableVerName(),
+							ii - instr.argBlock->offsetPhi, instr.argBlock);
+					}
+					continue;
+				}
+			}
+			continue;
+		}
 		if (instr.instrType == TokenType::BLOCK)
 		{
 
@@ -575,7 +595,6 @@ bool isBranchType(TokenType instrType)
 auto findDef = [](Block* block, int depth, const std::string& name)-> std::vector<int>
 {
 	auto b = block;
-	std::unordered_map<Block*, std::vector<int>> defs;
 	auto iter = b->defs.find(std::pair{ depth,name });
 	return  iter != b->defs.end() ? iter->second : std::vector<int>{};
 };
@@ -600,6 +619,7 @@ void  CFG::MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*,
 					}
 					visited.insert(b);
 					auto defs = findDef(b, oper.depth, name);
+					
 					for (auto i : defs)
 					{
 						if (!b->instructions[i].isMarked)
@@ -708,6 +728,49 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 					workList.push({ block,&branch });
 				}
 			}
+
+
+			// we want to mark reading of marked variables too?
+			if (instr->result.IsVariable() or instr->result.IsTemp())
+			{
+				auto name = instr->result.IsTemp() ? instr->result.GetTempName() : instr->result.GetVariableVerName();
+				auto it = localUses.find(name);
+				if (it != localUses.end())
+				{
+					const auto& bs = it->second;
+					for (const auto& b : bs)
+					{
+						if (b->markAll) continue;
+						auto indexes = b->uses.at(name);
+						for (auto i : indexes)
+						{
+							if (b->instructions[i].result.IsTemp())
+							{
+								// we mught have already propagated constants in that 
+								// case we don't need to mark code which treats it
+								// as computation we need to perform
+								// dec must be able to remove operations that otherwise would happen
+								// if we didn't propagate constants
+								auto tempName = b->instructions[i].result.GetTempName();
+								auto key = std::pair{ b->instructions[i].result.depth,tempName };
+								auto isValueReplaced = value.find(key) != value.end();
+								if (isValueReplaced && value.at(key).type == LatticeValueType::CONSTANT)
+								{
+									continue;
+								}
+							}
+							if (!b->instructions[i].isMarked)
+							{
+								MarkInstruction(b->instructions[i], b);
+								workList.push({ b,&b->instructions[i] });
+							}
+						}
+					}
+				}
+			}
+			
+			//
+
 		}
 		for (auto f : funcCalls)
 		{
@@ -1371,7 +1434,7 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 				bool isNotLoopDef = false;
 				for (auto b : localAssigned.at(origName))
 				{
-					if (!b->isLoop )
+					if (!b->isLoop && !b->isFuncArgBlock )
 					{
 						auto index = b->defs.find(std::pair{ varKey.first,origName });
 						if (index != b->defs.end())
@@ -2104,6 +2167,7 @@ void CFG::ConvertStatementAST(const Node* tree)
 		currentFunc = func->name;
 		auto funcBlock = CreateBlock(currentFunc,func->name, {currentBlock});
 		funcBlock->markAll = true;
+		funcBlock->isFuncArgBlock = true;
 		auto bodyName = "[" + func->name + "_body" + "]";
 		auto bodyBlock = CreateBlock(currentFunc, bodyName,{ funcBlock });
 		
@@ -2469,7 +2533,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		}
 		getAsParam = false;
 		prevBlock->instructions[funcCallIndex].operLeft = Operand{ ValueContainer{(int)call->args.size()},true,SYSTEM_VER };
-		if (!HasFlag(callFlags, CallFlags::VoidCall) && !writeToVariable && !(isReturn.size() > 0) && parseFunc.size() > 0)
+		if (!HasFlag(callFlags, CallFlags::VoidCall) && !writeToVariable && !(isReturn.size() > 0))
 		{
 			Instruction instr{ TokenType::BLOCK,{}, Operand{1,true,IS_TEMP},{} };
 			MakeCritical(instr);
@@ -2575,9 +2639,10 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 	case TokenType::LESS_EQUAL:
 	case TokenType::LESS:
 	{
-		//writeToVariable = true;
+		writeToVariable = true;
 		auto res =  BinaryInstr(tree->As<Expression>(), type);
-		//writeToVariable = false;
+		writeToVariable = false;
+		isVariableCritical = false;
 		return res;
 		break;
 	}

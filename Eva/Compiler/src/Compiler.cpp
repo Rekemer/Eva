@@ -474,7 +474,7 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			
 			// return always returns a value, even if function is a void
 			// we must remove empty value from stack
-			if (instr.returnType == ValueType::NIL)
+			if (HasFlag(callFlags, CallFlags::UserFunc) && instr.returnType == ValueType::NIL)
 			{
 				EmitPop(currentFunc->opCode);
 			}

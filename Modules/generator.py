@@ -139,6 +139,7 @@ def generateWrappers(data):
         wdef = f"""EXPORT int {wrapperName}(CallState& st) {{
 {''.join(parse_lines)}
 {call_line}
+\tst.stack.pop_back();
 {ret_push}
     return {ret_count};
 }}"""

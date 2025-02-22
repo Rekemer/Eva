@@ -188,6 +188,7 @@ namespace Eva
 		bool updateIndex = false;
 		int offsetPhi = 0;
 		bool isLoop = false;
+		bool isFuncArgBlock = false;
 	};
 
 

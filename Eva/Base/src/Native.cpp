@@ -20,6 +20,7 @@ namespace Eva
 			std::cout << *i<< " ";
 		}
 		std::cout << std::endl;
+		callState.stack.pop_back();
 		return 0;
 	}
 

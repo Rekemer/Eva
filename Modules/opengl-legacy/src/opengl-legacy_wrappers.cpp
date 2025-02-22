@@ -17,6 +17,7 @@ EXPORT int wrapper_glClearColor(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glClearColor(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()), static_cast<GLfloat>(arg3.As<efloat>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -25,6 +26,7 @@ EXPORT int wrapper_glClear(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
     glClear(static_cast<GLbitfield>(arg0.As<eint>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -33,6 +35,7 @@ EXPORT int wrapper_glBegin(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
     glBegin(static_cast<GLenum>(arg0.As<eint>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -42,6 +45,7 @@ EXPORT int wrapper_glVertex2f(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glVertex2f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -52,6 +56,7 @@ EXPORT int wrapper_glVertex3f(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glVertex3f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -62,6 +67,7 @@ EXPORT int wrapper_glColor3f(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glColor3f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -69,6 +75,7 @@ EXPORT int wrapper_glColor3f(CallState& st) {
 EXPORT int wrapper_glEnd(CallState& st) {
 
     glEnd();
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -76,6 +83,7 @@ EXPORT int wrapper_glEnd(CallState& st) {
 EXPORT int wrapper_glLoadIdentity(CallState& st) {
 
     glLoadIdentity();
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -83,6 +91,7 @@ EXPORT int wrapper_glLoadIdentity(CallState& st) {
 EXPORT int wrapper_glPushMatrix(CallState& st) {
 
     glPushMatrix();
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -90,6 +99,7 @@ EXPORT int wrapper_glPushMatrix(CallState& st) {
 EXPORT int wrapper_glPopMatrix(CallState& st) {
 
     glPopMatrix();
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -100,6 +110,7 @@ EXPORT int wrapper_glTranslatef(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glTranslatef(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
@@ -111,6 +122,7 @@ EXPORT int wrapper_glRotatef(CallState& st) {
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
     glRotatef(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()), static_cast<GLfloat>(arg3.As<efloat>()));
+	st.stack.pop_back();
 // no return
     return 0;
 }
