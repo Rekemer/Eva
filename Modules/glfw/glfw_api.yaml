@@ -64,11 +64,7 @@ functions:
       - type: "GLFWwindow*"
       - type: int     # key (GLFW_KEY_XXX)
 
-  # - name: glfwSetFramebufferSizeCallback
-  #   return: void
-  #   args:
-  #     - type: "GLFWwindow*"
-  #     - type: "GLFWframebuffersizefun"  # function pointer for the callback
+
 
   # Time
   - name: glfwGetTime
@@ -87,6 +83,20 @@ functions:
     args:
       - type: int   # interval
 
+  #- name: glfwSetWindowSizeCallback
+  #  return: "GLFWwindowsizefun"  # Returns the previous callback function
+  #  args:
+  #    - type: "GLFWwindow*"  # Window handle
+  #    - type: "GLFWwindowsizefun" # Function pointer
+
+callbacks:
+  # Defines the GLFW window resize callback function type
+  - name: GLFWwindowsizefun
+    return: void
+    args:
+      - type: "GLFWwindow*"  # Window handle
+      - type: int            # New width
+      - type: int            # New height
 # test
 constants:
   - name: GLFW_KEY_ESCAPE

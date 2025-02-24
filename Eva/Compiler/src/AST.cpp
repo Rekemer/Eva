@@ -155,7 +155,7 @@ Expression::Expression(Expression&& e) : Node(std::move(e))
 		 flags = GetExternalCall(str, mod)->callFlags;
 	 }
 	 // function call
-	 if (!isGlobal && flags == CallFlags::UserFunc)
+	 if (!isGlobal && HasFlag(flags,CallFlags::UserFunc))
 	 {
 		 compiler->unresolvedFuncNames.push_back({ str.data(),(currentToken + 1)->line});
 	 }

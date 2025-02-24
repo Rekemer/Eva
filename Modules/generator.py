@@ -17,7 +17,6 @@ C_TYPE_MAP = {
     "GLenum": "ValueType::INT",
     "GLfloat": "ValueType::FLOAT",
     "GLint": "ValueType::INT",
-    
 }
 
 
@@ -74,9 +73,7 @@ def generate_metatable(data):
         ret_type = func["return"]
         line = f'    (*typeMap)["{func["name"]}"] = {C_TYPE_MAP[ret_type]};'
         lines.append(line)
-    # For each entry in C_TYPE_MAP, generate code like:
-    #    typeMap["int"] = ValueType::INT;
-        #for ctype, valtype in C_TYPE_MAP.items():
+
             
     lines.append("")
     lines.append("    return typeMap;")
@@ -100,6 +97,28 @@ def generateWrappers(data):
     wrapper_defs = []
     table_entries = []
 
+
+      # Defines the GLFW window resize callback function type
+#   - name: GLFWwindowsizefun
+#     return: void
+#     args:
+#       - type: "GLFWwindow*"  # Window handle
+#       - type: int            # New width
+#       - type: int            # New height
+# typedef void (* GLFWwindowsizefun)(GLFWwindow* window, int width, int height);
+    callbacks = data.get("callbacks", [])
+    callback_lines = []
+    for callback in callbacks:
+        callback_lines .append("\n")
+        fn = callback["name"]
+        ret = callback["return"]
+        a = callback.get("args", [])
+        args_line = ", ".join(arg["type"] for arg in a) if a else "void"
+        callback_lines.append(f"typedef {ret} (*{fn})({args_line});")
+        C_EVA_MAP[fn] = "eCallable" 
+        C_TYPE_MAP[fn] = "ValueType::FUNCTION" 
+    #print(C_EVA_MAP)
+    wrapper_defs.append("".join(callback_lines))
     functions = data.get("functions", [])
     for func in functions:
         fn = func["name"]

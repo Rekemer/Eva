@@ -334,10 +334,19 @@ void CFG::Rename(Block* b)
 			}
 		}
 		
+		if (instr.operLeft.IsTemp())
+		{
+			AddUse(instr.operLeft.depth, instr.operLeft.GetTempName(),  i - offset, b);
+		}
+		if (instr.operRight.IsTemp())
+		{
+			AddUse(instr.operRight.depth, instr.operRight.GetTempName(), i - offset, b);
+		}
 		// versioning of temporary variables is not handled by stack
 		if (!instr.result.IsTemp())
 		{
 			instr.result.version = NewName(instr.result.value.AsString(),b);
+			
 			if (instr.result.depth > 0)
 			{
 				auto insertIndex = var.size();
@@ -733,36 +742,37 @@ void CFG::Mark (Block* b, std::queue<std::pair<Block*, Instruction*>>& workList)
 			// we want to mark reading of marked variables too?
 			if (instr->result.IsVariable() or instr->result.IsTemp())
 			{
-				auto name = instr->result.IsTemp() ? instr->result.GetTempName() : instr->result.GetVariableVerName();
+				auto name = instr->result.IsVariable() ? instr->result.GetVariableVerName() 
+					: instr->result.GetTempName();
 				auto it = localUses.find(name);
 				if (it != localUses.end())
 				{
 					const auto& bs = it->second;
-					for (const auto& b : bs)
+					for (const auto& bb : bs)
 					{
-						if (b->markAll) continue;
-						auto indexes = b->uses.at(name);
+						if (bb->markAll) continue;
+						auto indexes = bb->uses.at(name);
 						for (auto i : indexes)
 						{
-							if (b->instructions[i].result.IsTemp())
+							if (bb->instructions[i].result.IsTemp())
 							{
 								// we mught have already propagated constants in that 
 								// case we don't need to mark code which treats it
 								// as computation we need to perform
 								// dec must be able to remove operations that otherwise would happen
 								// if we didn't propagate constants
-								auto tempName = b->instructions[i].result.GetTempName();
-								auto key = std::pair{ b->instructions[i].result.depth,tempName };
+								auto tempName = bb->instructions[i].result.GetTempName();
+								auto key = std::pair{ bb->instructions[i].result.depth,tempName };
 								auto isValueReplaced = value.find(key) != value.end();
 								if (isValueReplaced && value.at(key).type == LatticeValueType::CONSTANT)
 								{
 									continue;
 								}
 							}
-							if (!b->instructions[i].isMarked)
+							if (!bb->instructions[i].isMarked)
 							{
-								MarkInstruction(b->instructions[i], b);
-								workList.push({ b,&b->instructions[i] });
+								MarkInstruction(bb->instructions[i], bb);
+								workList.push({ bb,&bb->instructions[i] });
 							}
 						}
 					}

@@ -9,6 +9,9 @@ namespace Eva {
 
 #define EXPORT extern "C" __declspec(dllexport)
 
+
+typedef void (*GLFWwindowsizefun)(GLFWwindow*, int, int);
+
 EXPORT int wrapper_glfwInit(CallState& st) {
 
    eint result = glfwInit();
