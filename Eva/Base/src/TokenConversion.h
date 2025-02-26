@@ -24,6 +24,9 @@ namespace Eva
 			break;
 		case ValueType::PTR:
 			return TokenType::PTR_TYPE;
+		case ValueType::FUNCTION:
+			return TokenType::LEFT_PAREN;
+			break;
 		case ValueType::NIL:
 			return TokenType::NIL;
 			break;

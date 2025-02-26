@@ -15,9 +15,9 @@ namespace Eva
 			args.push_back(callState.stack.back());
 			callState.stack.pop_back();
 		}
-		for (auto i = args.rbegin() ;  i!= args.rend(); i++)
+		for (auto i = args.rbegin(); i != args.rend(); i++)
 		{
-			std::cout << *i<< " ";
+			std::cout << *i << " ";
 		}
 		std::cout << std::endl;
 		callState.stack.pop_back();
@@ -34,7 +34,7 @@ namespace Eva
 	{
 		{"Print",ValueType::NIL}
 	};
-	
+
 	bool IsNative(std::string_view str)
 	{
 		return nativeCalls.find(str) != nativeCalls.end();
@@ -46,6 +46,20 @@ namespace Eva
 	ValueType GetNativeType(std::string_view name)
 	{
 		return nativeReturnTypes.at(name);
+	}
+
+	void CallUserCallback(eCallable call, size_t startIndex, CallState* st, const std::vector<ValueContainer>& args)
+	{
+		auto argAmount = call->argCount;
+		assert(st != nullptr);
+		std::cout << "Call callback\n";
+		for (auto& arg : args)
+		{
+			st->stack.push_back(arg);
+		}
+		call->Call(*st, startIndex);
+		
+
 	}
 }
 

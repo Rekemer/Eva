@@ -640,7 +640,7 @@ if (child== ValueType::FLOAT)\
 
 				// arguments and function are on stack
 				callState.argumentCount = frame->function->opCode[frame->ip++];
-				auto funcIndex = vmStack.size() - 1 - callState.argumentCount;
+				auto funcIndex = callState.GetStartIndex(); ;
 
 				// Retrieve the ICallable from the stack
 				auto callable = vmStack[funcIndex].AsCallable();
@@ -658,6 +658,10 @@ if (child== ValueType::FLOAT)\
 					// It's a native function, we stay in the current frame
 					// Possibly pop the function and its arguments from the stack
 					// if that's your calling convention
+					if (frame != &callFrames[callState.nextToCurrentCallFrame - 1])
+					{
+						frame = &callFrames[callState.nextToCurrentCallFrame - 1];
+					}
 				}
 
 

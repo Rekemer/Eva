@@ -14,16 +14,18 @@ typedef void (*GLFWwindowsizefun)(GLFWwindow*, int, int);
 
 EXPORT int wrapper_glfwInit(CallState& st) {
 
-   eint result = glfwInit();
+// remove callable
 	st.stack.pop_back();
+   eint result = glfwInit();
    st.stack.push_back(result);
     return 1;
 }
 
 EXPORT int wrapper_glfwTerminate(CallState& st) {
 
-    glfwTerminate();
+// remove callable
 	st.stack.pop_back();
+    glfwTerminate();
 // no return
     return 0;
 }
@@ -35,8 +37,9 @@ EXPORT int wrapper_glfwCreateWindow(CallState& st) {
     st.stack.pop_back();    auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-   void* result = glfwCreateWindow(static_cast<int>(arg0.As<eint>()), static_cast<int>(arg1.As<eint>()), arg2.AsString().data(), reinterpret_cast<GLFWmonitor*>(arg3.As<eptr>()), reinterpret_cast<GLFWwindow*>(arg4.As<eptr>()));
+// remove callable
 	st.stack.pop_back();
+   void* result = glfwCreateWindow(static_cast<int>(arg0.As<eint>()), static_cast<int>(arg1.As<eint>()), arg2.AsString().data(), reinterpret_cast<GLFWmonitor*>(arg3.As<eptr>()), reinterpret_cast<GLFWwindow*>(arg4.As<eptr>()));
  st.stack.push_back(reinterpret_cast<eptr>(result));
     return 1;
 }
@@ -44,8 +47,9 @@ EXPORT int wrapper_glfwCreateWindow(CallState& st) {
 EXPORT int wrapper_glfwDestroyWindow(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+// remove callable
 	st.stack.pop_back();
+    glfwDestroyWindow(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
 // no return
     return 0;
 }
@@ -53,8 +57,9 @@ EXPORT int wrapper_glfwDestroyWindow(CallState& st) {
 EXPORT int wrapper_glfwMakeContextCurrent(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+// remove callable
 	st.stack.pop_back();
+    glfwMakeContextCurrent(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
 // no return
     return 0;
 }
@@ -62,8 +67,9 @@ EXPORT int wrapper_glfwMakeContextCurrent(CallState& st) {
 EXPORT int wrapper_glfwWindowShouldClose(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
-   eint result = glfwWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+// remove callable
 	st.stack.pop_back();
+   eint result = glfwWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
    st.stack.push_back(result);
     return 1;
 }
@@ -72,16 +78,18 @@ EXPORT int wrapper_glfwSetWindowShouldClose(CallState& st) {
     auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glfwSetWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), static_cast<int>(arg1.As<eint>()));
+// remove callable
 	st.stack.pop_back();
+    glfwSetWindowShouldClose(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), static_cast<int>(arg1.As<eint>()));
 // no return
     return 0;
 }
 
 EXPORT int wrapper_glfwPollEvents(CallState& st) {
 
-    glfwPollEvents();
+// remove callable
 	st.stack.pop_back();
+    glfwPollEvents();
 // no return
     return 0;
 }
@@ -89,8 +97,9 @@ EXPORT int wrapper_glfwPollEvents(CallState& st) {
 EXPORT int wrapper_glfwSwapBuffers(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
+// remove callable
 	st.stack.pop_back();
+    glfwSwapBuffers(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()));
 // no return
     return 0;
 }
@@ -99,16 +108,18 @@ EXPORT int wrapper_glfwGetKey(CallState& st) {
     auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-   eint result = glfwGetKey(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), static_cast<int>(arg1.As<eint>()));
+// remove callable
 	st.stack.pop_back();
+   eint result = glfwGetKey(reinterpret_cast<GLFWwindow*>(arg0.As<eptr>()), static_cast<int>(arg1.As<eint>()));
    st.stack.push_back(result);
     return 1;
 }
 
 EXPORT int wrapper_glfwGetTime(CallState& st) {
 
-   efloat result = glfwGetTime();
+// remove callable
 	st.stack.pop_back();
+   efloat result = glfwGetTime();
    st.stack.push_back(result);
     return 1;
 }
@@ -117,8 +128,9 @@ EXPORT int wrapper_glfwWindowHint(CallState& st) {
     auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glfwWindowHint(static_cast<int>(arg0.As<eint>()), static_cast<int>(arg1.As<eint>()));
+// remove callable
 	st.stack.pop_back();
+    glfwWindowHint(static_cast<int>(arg0.As<eint>()), static_cast<int>(arg1.As<eint>()));
 // no return
     return 0;
 }
@@ -126,10 +138,45 @@ EXPORT int wrapper_glfwWindowHint(CallState& st) {
 EXPORT int wrapper_glfwSwapInterval(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glfwSwapInterval(static_cast<int>(arg0.As<eint>()));
+// remove callable
 	st.stack.pop_back();
+    glfwSwapInterval(static_cast<int>(arg0.As<eint>()));
 // no return
     return 0;
+}
+
+
+CallState* callState = nullptr;
+
+std::unordered_map<GLFWwindow*,eCallable> windowCallbacks;
+
+void bridging_GLFWwindowsizefun(GLFWwindow* arg0, int arg1, int arg2) {
+    auto it = windowCallbacks.find(arg0);
+    if (it != windowCallbacks.end()) {
+        
+        auto userCallback = it->second;
+        CallUserCallback(userCallback, callState->GetStartIndex(), callState, std::vector<ValueContainer>{ValueContainer(reinterpret_cast<eptr>(arg0)), ValueContainer(static_cast<eint>(arg1)), ValueContainer(static_cast<eint>(arg2))});
+    }
+}
+
+EXPORT int wrapper_glfwSetWindowSizeCallback(CallState& st) {
+    // Extract user-defined callback (function in bytecode)
+    auto arg2 = st.stack.back(); st.stack.pop_back();
+    auto userCallback = arg2.AsCallable();
+    
+
+    // Extract window handle
+    auto arg1 = st.stack.back(); st.stack.pop_back();
+    auto window = reinterpret_cast<GLFWwindow*>(arg1.As<eptr>());
+    
+    // Store callback in our mapping
+    windowCallbacks[window] = userCallback;
+
+    callState = &st;
+
+    // Register the bridging function in GLFW
+    glfwSetWindowSizeCallback(window, bridging_GLFWwindowsizefun);
+    return 0; // No return values
 }
 
 std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
@@ -162,6 +209,7 @@ std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
     {"glfwGetTime", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glfwGetTime, ICallable::INF_ARGS, "glfwGetTime", CallFlags::ExternalDLL)},
     {"glfwWindowHint", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT}, wrapper_glfwWindowHint, ICallable::INF_ARGS, "glfwWindowHint", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glfwSwapInterval", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glfwSwapInterval, ICallable::INF_ARGS, "glfwSwapInterval", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glfwSetWindowSizeCallback", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::FUNCTION}, wrapper_glfwSetWindowSizeCallback, ICallable::INF_ARGS, "glfwSetWindowSizeCallback", CallFlags::ExternalDLL)},
 };
 
 
@@ -188,6 +236,7 @@ std::unordered_map<std::string, eint> constants = {
     (*typeMap)["glfwGetTime"] = ValueType::FLOAT;
     (*typeMap)["glfwWindowHint"] = ValueType::NIL;
     (*typeMap)["glfwSwapInterval"] = ValueType::NIL;
+    (*typeMap)["glfwSetWindowSizeCallback"] = ValueType::FUNCTION;
 
     return typeMap;
 }

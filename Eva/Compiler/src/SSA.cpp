@@ -275,9 +275,13 @@ void CFG::Rename(Block* b)
 				{
 					if (iinstr.result.IsVariable())
 					{
-						iinstr.result.version = variableStack[iinstr.result.value.AsString()].top().first;
-						AddUse(iinstr.result.depth, iinstr.result.GetVariableVerName(),
-							ii - instr.argBlock->offsetPhi, instr.argBlock);
+						// can be callable
+						if (variableStack[iinstr.result.value.AsString()].size() > 0)
+						{
+							iinstr.result.version = variableStack[iinstr.result.value.AsString()].top().first;
+							AddUse(iinstr.result.depth, iinstr.result.GetVariableVerName(),
+								ii - instr.argBlock->offsetPhi, instr.argBlock);
+						}
 					}
 					continue;
 				}
@@ -2536,7 +2540,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 			Operand actual = Operand{ ValueContainer{argOp.type},false,SYSTEM_VER };
 			auto declType = funcValue->IsArgUnlimited() ? argOp.type : funcValue -> argTypes[i];
 			Operand decl = Operand{ ValueContainer{declType},false,SYSTEM_VER };
-			Instruction instr{ TokenType::VAR,actual,decl,argOp };
+			Instruction instr{ TokenType::VAR,actual,decl, argOp };
 			currentBlock->instructions.push_back(instr);
 
 			args.push_back(argOp);

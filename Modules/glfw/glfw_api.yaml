@@ -83,11 +83,12 @@ functions:
     args:
       - type: int   # interval
 
-  #- name: glfwSetWindowSizeCallback
-  #  return: "GLFWwindowsizefun"  # Returns the previous callback function
-  #  args:
-  #    - type: "GLFWwindow*"  # Window handle
-  #    - type: "GLFWwindowsizefun" # Function pointer
+  - name: glfwSetWindowSizeCallback
+    return: "GLFWwindowsizefun"  # Returns the previous callback function
+    is_callback: "true"
+    args:
+      - type: "GLFWwindow*"  # Window handle
+      - type: "GLFWwindowsizefun" # Function pointer
 
 callbacks:
   # Defines the GLFW window resize callback function type
@@ -103,3 +104,7 @@ constants:
     value: 256
   - name: GLFW_PRESS
     value: 1
+tables:
+  - name: "windowCallbacks"
+    key: "GLFWwindow*"
+    value : "eCallable" 

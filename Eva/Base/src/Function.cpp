@@ -13,12 +13,6 @@ namespace Eva
 		std::vector<ValueContainer> args;
 		auto argumentCount = callState.argumentCount;
 		assert(argumentCount != -1);
-		//args.reserve(argumentCount);
-		//
-		//for (auto i = stack.size() - 1; i > stack.size() - 1 - argumentCount; i--)
-		//{
-		//	args.insert(args.begin(), stack[i]);
-		//}
 		func(callState);
 	}
 	DLLHandle GetPluginHandle(PluginTable& plugins, std::string_view pluginName)

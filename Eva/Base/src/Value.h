@@ -90,7 +90,8 @@ namespace Eva
 		ValueType type{ ValueType::NIL };
 		ValueContainer() = default;
 		explicit ValueContainer(ValueType v);
-		template <typename T>
+
+		template<typename T>
 		ValueContainer(T v)
 		{
 			if constexpr (std::is_same_v<T, eptr>) {
@@ -122,6 +123,7 @@ namespace Eva
 			}
 			as = v;
 		}
+		
 		ValueContainer(const ValueContainer& v);
 
 

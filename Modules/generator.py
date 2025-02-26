@@ -36,7 +36,24 @@ C_EVA_MAP = {
 def put_mapped_type(cType):
     return C_EVA_MAP[cType]
 
-
+def castArgEva(cType, argName):
+    """
+    Return code that casts from 'argName.As<xyz>()' to the real cType.
+    E.g. if cType = "int", -> static_cast<int>(argName.As<eint>()).
+    If pointer, reinterpret.
+    """
+    isChar = 'char' in cType
+    if "*" in cType and not isChar:
+        return f"reinterpret_cast<{put_mapped_type(cType)}>({argName})"
+    elif isChar:
+        return f"{argName}"
+    else:
+        return f"static_cast<{put_mapped_type(cType)}>({argName})"
+    #elif cType in ["float","double","GLfloat"]:
+    #    return f"static_cast<{cType}>({put_mapped_type(cType)}.As<efloat>())"
+    #elif cType in ["int","GLint","GLenum","bool"]:
+    #    return f"static_cast<{cType}>({argName}.As<eint>())"
+    return argName
 
 def castArg(cType, argName):
     """
@@ -87,6 +104,77 @@ def generate_metatable(data):
     return lines
 
 
+def generate_callback_wrappers(data):
+    """
+    Generate C++ wrapper functions for GLFW callbacks
+    """
+    wrapper_functions = []
+    bridging_functions = []
+    bridging_functions.append("CallState* callState = nullptr;")
+    for table in data["tables"]:
+        name = table["name"]
+        key = table["key"]
+        value = table["value"]
+        bridging_functions.append(f"std::unordered_map<{key},{value}> {name};")
+    
+    for func in data["functions"]:
+        fn_name = func["name"]  # Function name, e.g., glfwSetWindowSizeCallback
+        ret_type = func["return"]
+        args = func["args"]
+
+        # Detect if any argument is a function pointer
+        callback_arg = next((arg for arg in args if "fun" in arg["type"]), None)
+
+        if callback_arg:
+            callback_type = callback_arg["type"]  # Extract function pointer type
+            callback_name = callback_type  # Same name as function pointer type
+            
+            # Generate Wrapper Function
+            wrapper_fn = f"""EXPORT int wrapper_{fn_name}(CallState& st) {{
+    // Extract user-defined callback (function in bytecode)
+    auto arg2 = st.stack.back(); st.stack.pop_back();
+    auto userCallback = arg2.AsCallable();
+    
+
+    // Extract window handle
+    auto arg1 = st.stack.back(); st.stack.pop_back();
+    auto window = reinterpret_cast<GLFWwindow*>(arg1.As<eptr>());
+    
+    // Store callback in our mapping
+    windowCallbacks[window] = userCallback;
+
+    callState = &st;
+    // Register the bridging function in GLFW
+    {fn_name}(window, bridging_{callback_name});
+    return 0; // No return values
+}}"""
+            wrapper_functions.append(wrapper_fn)
+            
+            # Generate Bridging Function
+            callback_def = next(c for c in data["callbacks"] if c["name"] == callback_name)
+            callback_args = callback_def["args"]
+
+            # Generate parameter list for bridging function
+            bridging_args = ", ".join(f"{arg['type']} arg{i}" for i, arg in enumerate(callback_args))
+            #bridging_call_args = ", ".join(f"ValueContainer({castArg(arg['type'],f'arg{i}')} )" for i, arg in enumerate(callback_args))
+            bridging_call_args = ", ".join(f"ValueContainer({castArgEva(arg['type'], f'arg{i}')})" for i, arg in enumerate(callback_args))
+
+
+            bridging_fn = f"""void bridging_{callback_name}({bridging_args}) {{
+    auto it = windowCallbacks.find(arg0);
+    if (it != windowCallbacks.end()) {{
+        
+        auto userCallback = it->second;
+        CallUserCallback(userCallback, callState->GetStartIndex(), std::vector<ValueContainer>{{{bridging_call_args}}});
+    }}
+}}"""
+            bridging_functions.append(bridging_fn)
+    
+    return wrapper_functions, bridging_functions
+
+
+
+
 def generateWrappers(data):
     """
     data["functions"] -> list of function definitions
@@ -123,8 +211,12 @@ def generateWrappers(data):
     for func in functions:
         fn = func["name"]
         ret = func["return"]
-        is_ret_ptr = "*" in ret
 
+        is_callback = func.get("is_callback")  # Returns None if key is missing
+        if is_callback == "true":
+            continue
+
+        is_ret_ptr = "*" in ret
         args = func.get("args", [])
         wrapperName = f"wrapper_{fn}"
 
@@ -157,8 +249,9 @@ def generateWrappers(data):
 
         wdef = f"""EXPORT int {wrapperName}(CallState& st) {{
 {''.join(parse_lines)}
-{call_line}
+// remove callable
 \tst.stack.pop_back();
+{call_line}
 {ret_push}
     return {ret_count};
 }}"""
@@ -227,14 +320,14 @@ def main():
     const_table = generateConstants(data)
     call_table = generateCallTable(data)
     meta_table = generate_metatable(data)
-
+    callback_wrappers, bridging_functions = generate_callback_wrappers(data)
     # produce filenames
     hFile = f"./{moduleName}/src/{moduleName}_wrappers.h"
     cFile = f"./{moduleName}/src/{moduleName}_wrappers.cpp"
 
     # Write the header
     with open(hFile,"w") as hf:
-        hf.write(f"#pragma once\n#include \"ICallable.h\"\n#include \"Function.h\"\n#include <unordered_map>\n#include <string>\nnamespace Eva {{\nextern \"C\" {{\nstruct CallState;\n}}\n}}\n")
+        hf.write(f"#pragma once\n #include <vector>\n #include \"Native.h\"\n#include \"ICallable.h\"\n#include \"Function.h\"\n#include <unordered_map>\n#include <string>\nnamespace Eva {{\nextern \"C\" {{\nstruct CallState;\n}}\n}}\n")
 
     # write the source
     with open(cFile,"w") as sf:
@@ -248,6 +341,16 @@ def main():
         # wrapper defs
         for wd in wrapper_defs:
             sf.write(wd+"\n\n")
+        # Write bridging functions
+        for bridge in bridging_functions:
+            sf.write(bridge)
+            sf.write("\n\n")
+
+         # Write callback wrappers
+        for cb_wrapper in callback_wrappers:
+            sf.write(cb_wrapper)
+            sf.write("\n\n")
+
 
         # function pointer table
         sf.write("std::unordered_map<std::string, int(*)(CallState&)> functionTable = {\n")

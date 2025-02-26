@@ -5,70 +5,71 @@ import "OpenGL-Legacy"
 
 
 
-fun RenderTriangle(angle : float)
-{
-     glLoadIdentity();
-
-    // Rotate the triangle
-    glPushMatrix();
-    glTranslatef(0.0, 0.0, 0.0);
-    glRotatef(angle, 0.0, 0.0, 1.0);
-
-    // Draw a triangle
-    glBegin(GL_TRIANGLES);
-    glColor3f(1.0, 0.0, 0.0);
-    glVertex2f(0.0,  0.5);
-    glColor3f(0.0, 1.0, 0.0);
-    glVertex2f(-0.5, -0.5);
-    glColor3f(0.0, 0.0, 1.0);
-    glVertex2f(0.5, -0.5);
-    glEnd();
-
-    glPopMatrix();
-}
-//fun my_callback(window : pointer, width: int, height: int) {
-//    Print("Window resized: " + width + " x " + height);
+//fun RenderTriangle(angle : float)
+//{
+//     glLoadIdentity();
+//
+//    // Rotate the triangle
+//    glPushMatrix();
+//    glTranslatef(0.0, 0.0, 0.0);
+//    glRotatef(angle, 0.0, 0.0, 1.0);
+//
+//    // Draw a triangle
+//    glBegin(GL_TRIANGLES);
+//    glColor3f(1.0, 0.0, 0.0);
+//    glVertex2f(0.0,  0.5);
+//    glColor3f(0.0, 1.0, 0.0);
+//    glVertex2f(-0.5, -0.5);
+//    glColor3f(0.0, 0.0, 1.0);
+//    glVertex2f(0.5, -0.5);
+//    glEnd();
+//
+//    glPopMatrix();
 //}
+fun my_callback(window : pointer, width: int, height: int) {
+    Print("Window resized:");
+}
 
 fun main() : int 
 {
-  if !glfwInit() {
-  	Print("Fail: ", "GFLW init failed");
-  }
+glfwInit();
+  //if !glfwInit() {
+  //	Print("Fail: ", "GFLW init failed");
+  //}
   window := glfwCreateWindow(640, 480, "My Title", nullptr, nullptr);
-  Print (window);
-   if !window
-   {	
-   	Print ("Window is not init", window);
-   }
-  else
-  {
-  	Print ("Window is init", window);
-  } 
-   //glfwSetWindowSizeCallback(window, my_callback);
+  //Print (window);
+  // if !window
+  // {	
+  // 	Print ("Window is not init", window);
+  // }
+  //else
+  //{
+  //	Print ("Window is init", window);
+  //} 
+   glfwSetWindowSizeCallback(window, my_callback);
    glfwMakeContextCurrent(window);
    angle := 0.0;
    unuesed_c:= 2;
    while !glfwWindowShouldClose(window)
    {
-       Print("Loop runs");
-      if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-   {
-              glfwSetWindowShouldClose(window, 1);
-   }
+  //    Print("Loop runs");
+  //   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+  //{
+  //           glfwSetWindowShouldClose(window, 1);
+  //}
    // Clear the screen
-   glClear(GL_COLOR_BUFFER_BIT);
-        
-    unuesed_c = 5;
-    RenderTriangle(angle);
-    glPopMatrix();
-    
-    
-    
-    unuesed_c++;
-        
-    angle += 1.0;
-    if (angle > 360.0) {angle -= 360.0;}
+   //glClear(GL_COLOR_BUFFER_BIT);
+   //     
+   // unuesed_c = 5;
+   // //RenderTriangle(angle);
+   // //glPopMatrix();
+   // 
+   // 
+   // 
+   // unuesed_c++;
+   //     
+   // angle += 1.0;
+   // if (angle > 360.0) {angle -= 360.0;}
     glfwSwapBuffers(window)
   	glfwPollEvents();
    }

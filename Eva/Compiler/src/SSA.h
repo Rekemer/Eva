@@ -58,7 +58,7 @@ namespace Eva
 
 		bool IsVariable() const
 		{
-			return depth != -1 && value.type == ValueType::STRING && isConstant == false && isTemp == false;
+			return type != ValueType::FUNCTION && depth != -1 && value.type == ValueType::STRING && isConstant == false && isTemp == false;
 		}
 		bool IsTemp()  const
 		{

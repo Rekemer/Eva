@@ -14,7 +14,6 @@ namespace Eva
         int nextToCurrentCallFrame = -1;
         int argumentCount = -1;
 
-
         CallState(std::vector<ValueContainer>& stack,
             PluginTable& pluginTable,
             std::array<CallFrame, callFrameAmount>& callFrames,
@@ -26,6 +25,10 @@ namespace Eva
             argumentCount(-1)  // add it
         {
 
+        }
+        size_t GetStartIndex()
+        {
+            return stack.size() - 1 - argumentCount;
         }
 
     };
