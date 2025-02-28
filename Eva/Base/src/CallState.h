@@ -4,6 +4,7 @@
 #include  "CallFrame.h"
 #include  <vector>
 #include  <stack>
+#include  <queue>
 #include  <array>
 namespace Eva
 {
@@ -13,7 +14,7 @@ namespace Eva
         std::array<CallFrame, callFrameAmount >& callFrames;
         int nextToCurrentCallFrame = -1;
         int argumentCount = -1;
-
+        std::queue<std::function<void()>> deferredCallbacks;
         CallState(std::vector<ValueContainer>& stack,
             PluginTable& pluginTable,
             std::array<CallFrame, callFrameAmount>& callFrames,
@@ -26,6 +27,7 @@ namespace Eva
         {
 
         }
+        // at this point arguments must  be on the stack
         size_t GetStartIndex()
         {
             return stack.size() - 1 - argumentCount;

@@ -94,6 +94,8 @@ namespace Eva
 		Func* currentFunc = nullptr;
 		// entry point
 
+
+
 		HashTable internalStrings;
 		HashTable globalVariables;
 		HashTable globalVariablesTypes;

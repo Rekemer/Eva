@@ -5,29 +5,37 @@ import "OpenGL-Legacy"
 
 
 
-//fun RenderTriangle(angle : float)
-//{
-//     glLoadIdentity();
-//
-//    // Rotate the triangle
-//    glPushMatrix();
-//    glTranslatef(0.0, 0.0, 0.0);
-//    glRotatef(angle, 0.0, 0.0, 1.0);
-//
-//    // Draw a triangle
-//    glBegin(GL_TRIANGLES);
-//    glColor3f(1.0, 0.0, 0.0);
-//    glVertex2f(0.0,  0.5);
-//    glColor3f(0.0, 1.0, 0.0);
-//    glVertex2f(-0.5, -0.5);
-//    glColor3f(0.0, 0.0, 1.0);
-//    glVertex2f(0.5, -0.5);
-//    glEnd();
-//
-//    glPopMatrix();
-//}
+fun RenderTriangle(angle : float)
+{
+     glLoadIdentity();
+
+    // Rotate the triangle
+    glPushMatrix();
+    glTranslatef(0.0, 0.0, 0.0);
+    glRotatef(angle, 0.0, 0.0, 1.0);
+
+    // Draw a triangle
+    glBegin(GL_TRIANGLES);
+    glColor3f(1.0, 0.0, 0.0);
+    glVertex2f(0.0,  0.5);
+    glColor3f(0.0, 1.0, 0.0);
+    glVertex2f(-0.5, -0.5);
+    glColor3f(0.0, 0.0, 1.0);
+    glVertex2f(0.5, -0.5);
+    glEnd();
+
+    glPopMatrix();
+}
 fun my_callback(window : pointer, width: int, height: int) {
-    Print("Window resized:");
+    Print("Window resized:" , width, " x ", height);
+    glViewport(0,0,width,height);
+}
+fun my_callback2(window : pointer, width: int, height: int) {
+    Print("Window resized2:" , width, " x ", height);
+    glViewport(0,0,width,height);
+}
+fun close_callback(window : pointer) {
+    Print("Window closed!:");
 }
 
 fun main() : int 
@@ -47,29 +55,34 @@ glfwInit();
   //	Print ("Window is init", window);
   //} 
    glfwSetWindowSizeCallback(window, my_callback);
+   glfwSetWindowCloseCallback(window, close_callback);
    glfwMakeContextCurrent(window);
    angle := 0.0;
    unuesed_c:= 2;
    while !glfwWindowShouldClose(window)
    {
   //    Print("Loop runs");
-  //   if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-  //{
-  //           glfwSetWindowShouldClose(window, 1);
-  //}
+     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+  {
+             glfwSetWindowShouldClose(window, 1);
+  }
+   if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+  {
+             glfwSetWindowSizeCallback(window, my_callback2);
+  }
    // Clear the screen
-   //glClear(GL_COLOR_BUFFER_BIT);
-   //     
-   // unuesed_c = 5;
-   // //RenderTriangle(angle);
-   // //glPopMatrix();
-   // 
-   // 
-   // 
-   // unuesed_c++;
-   //     
-   // angle += 1.0;
-   // if (angle > 360.0) {angle -= 360.0;}
+   glClear(GL_COLOR_BUFFER_BIT);
+        
+    unuesed_c = 5;
+    RenderTriangle(angle);
+    glPopMatrix();
+    
+    
+    
+    unuesed_c++;
+        
+    angle += 1.0;
+    if (angle > 360.0) {angle -= 360.0;}
     glfwSwapBuffers(window)
   	glfwPollEvents();
    }
@@ -81,49 +94,8 @@ glfwInit();
 }
 
 
-//ha := 0.0;
-//for i := 0; i < 5; i++; {
-//    h := ha + i * 0.5; // Should fold to 5.0
-//}
-
-
-//fun foo(n : int) : int
-//{
-//    return n + 2;
-//}
-//
-//a := 2;
-//
-//c0 := foo(2.0 + 3.5) + a + 3 + 3;
 
 
 
 
 
-///*
-//    #test
-//    g = 10
-//*/
-//
-//g := 0;
-//a := 0;
-//unused1 := 100; // Unused variable
-//while a < 5
-//{
-//    a++;
-//    sd1 := "even";
-//    sd := "sd"; // Potentially unused depending on the branches
-//    if (a % 2 == 1) == true
-//    {
-//        sd := "odd";
-//        unused2 := "test"; // Another unused variable inside a conditional
-//        if (a > 3)
-//       {
-//            unused3 := a * 10; // Unused variable in nested if
-//            continue;
-//        }
-//    }
-//    sd1 = "even";
-//    g += a;
-//    unused4 := g * 2; // Unused variable after update
-//}

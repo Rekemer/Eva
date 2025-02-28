@@ -10,14 +10,17 @@ namespace Eva {
 
 #define EXPORT extern "C" __declspec(dllexport)
 
+
+
 EXPORT int wrapper_glClearColor(CallState& st) {
     auto arg3 = st.stack.back();
     st.stack.pop_back();    auto arg2 = st.stack.back();
     st.stack.pop_back();    auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glClearColor(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()), static_cast<GLfloat>(arg3.As<efloat>()));
+// remove callable
 	st.stack.pop_back();
+    glClearColor(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()), static_cast<GLfloat>(arg3.As<efloat>()));
 // no return
     return 0;
 }
@@ -25,8 +28,9 @@ EXPORT int wrapper_glClearColor(CallState& st) {
 EXPORT int wrapper_glClear(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glClear(static_cast<GLbitfield>(arg0.As<eint>()));
+// remove callable
 	st.stack.pop_back();
+    glClear(static_cast<GLbitfield>(arg0.As<eint>()));
 // no return
     return 0;
 }
@@ -34,8 +38,9 @@ EXPORT int wrapper_glClear(CallState& st) {
 EXPORT int wrapper_glBegin(CallState& st) {
     auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glBegin(static_cast<GLenum>(arg0.As<eint>()));
+// remove callable
 	st.stack.pop_back();
+    glBegin(static_cast<GLenum>(arg0.As<eint>()));
 // no return
     return 0;
 }
@@ -44,8 +49,9 @@ EXPORT int wrapper_glVertex2f(CallState& st) {
     auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glVertex2f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()));
+// remove callable
 	st.stack.pop_back();
+    glVertex2f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()));
 // no return
     return 0;
 }
@@ -55,8 +61,9 @@ EXPORT int wrapper_glVertex3f(CallState& st) {
     st.stack.pop_back();    auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glVertex3f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
+// remove callable
 	st.stack.pop_back();
+    glVertex3f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
 // no return
     return 0;
 }
@@ -66,40 +73,45 @@ EXPORT int wrapper_glColor3f(CallState& st) {
     st.stack.pop_back();    auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glColor3f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
+// remove callable
 	st.stack.pop_back();
+    glColor3f(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
 // no return
     return 0;
 }
 
 EXPORT int wrapper_glEnd(CallState& st) {
 
-    glEnd();
+// remove callable
 	st.stack.pop_back();
+    glEnd();
 // no return
     return 0;
 }
 
 EXPORT int wrapper_glLoadIdentity(CallState& st) {
 
-    glLoadIdentity();
+// remove callable
 	st.stack.pop_back();
+    glLoadIdentity();
 // no return
     return 0;
 }
 
 EXPORT int wrapper_glPushMatrix(CallState& st) {
 
-    glPushMatrix();
+// remove callable
 	st.stack.pop_back();
+    glPushMatrix();
 // no return
     return 0;
 }
 
 EXPORT int wrapper_glPopMatrix(CallState& st) {
 
-    glPopMatrix();
+// remove callable
 	st.stack.pop_back();
+    glPopMatrix();
 // no return
     return 0;
 }
@@ -109,8 +121,9 @@ EXPORT int wrapper_glTranslatef(CallState& st) {
     st.stack.pop_back();    auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glTranslatef(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
+// remove callable
 	st.stack.pop_back();
+    glTranslatef(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()));
 // no return
     return 0;
 }
@@ -121,11 +134,27 @@ EXPORT int wrapper_glRotatef(CallState& st) {
     st.stack.pop_back();    auto arg1 = st.stack.back();
     st.stack.pop_back();    auto arg0 = st.stack.back();
     st.stack.pop_back();
-    glRotatef(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()), static_cast<GLfloat>(arg3.As<efloat>()));
+// remove callable
 	st.stack.pop_back();
+    glRotatef(static_cast<GLfloat>(arg0.As<efloat>()), static_cast<GLfloat>(arg1.As<efloat>()), static_cast<GLfloat>(arg2.As<efloat>()), static_cast<GLfloat>(arg3.As<efloat>()));
 // no return
     return 0;
 }
+
+EXPORT int wrapper_glViewport(CallState& st) {
+    auto arg3 = st.stack.back();
+    st.stack.pop_back();    auto arg2 = st.stack.back();
+    st.stack.pop_back();    auto arg1 = st.stack.back();
+    st.stack.pop_back();    auto arg0 = st.stack.back();
+    st.stack.pop_back();
+// remove callable
+	st.stack.pop_back();
+    glViewport(static_cast<GLint>(arg0.As<eint>()), static_cast<GLint>(arg1.As<eint>()), static_cast<GLint>(arg2.As<eint>()), static_cast<GLint>(arg3.As<eint>()));
+// no return
+    return 0;
+}
+
+CallState* callState = nullptr;
 
 std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
     {"glClearColor", &wrapper_glClearColor},
@@ -140,6 +169,7 @@ std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
     {"glPopMatrix", &wrapper_glPopMatrix},
     {"glTranslatef", &wrapper_glTranslatef},
     {"glRotatef", &wrapper_glRotatef},
+    {"glViewport", &wrapper_glViewport},
 };
 
 std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
@@ -155,6 +185,7 @@ std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
     {"glPopMatrix", std::make_shared<NativeFunc>(std::vector<ValueType>{}, wrapper_glPopMatrix, ICallable::INF_ARGS, "glPopMatrix", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glTranslatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glTranslatef, ICallable::INF_ARGS, "glTranslatef", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glRotatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glRotatef, ICallable::INF_ARGS, "glRotatef", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glViewport", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT, ValueType::INT, ValueType::INT}, wrapper_glViewport, ICallable::INF_ARGS, "glViewport", CallFlags::ExternalDLL | CallFlags::VoidCall)},
 };
 
 
@@ -184,6 +215,7 @@ std::unordered_map<std::string, eint> constants = {
     (*typeMap)["glPopMatrix"] = ValueType::NIL;
     (*typeMap)["glTranslatef"] = ValueType::NIL;
     (*typeMap)["glRotatef"] = ValueType::NIL;
+    (*typeMap)["glViewport"] = ValueType::NIL;
 
     return typeMap;
 }

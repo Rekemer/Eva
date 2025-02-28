@@ -11,6 +11,7 @@ namespace Eva {
 
 
 typedef void (*GLFWwindowsizefun)(GLFWwindow*, int, int);
+typedef void (*GLFWwindowclosefun)(GLFWwindow*);
 
 EXPORT int wrapper_glfwInit(CallState& st) {
 
@@ -145,17 +146,31 @@ EXPORT int wrapper_glfwSwapInterval(CallState& st) {
     return 0;
 }
 
-
 CallState* callState = nullptr;
 
-std::unordered_map<GLFWwindow*,eCallable> windowCallbacks;
+std::unordered_map<std::string_view,eCallable> windowCallbacks;
 
 void bridging_GLFWwindowsizefun(GLFWwindow* arg0, int arg1, int arg2) {
-    auto it = windowCallbacks.find(arg0);
+    auto it = windowCallbacks.find("bridging_GLFWwindowsizefun");
     if (it != windowCallbacks.end()) {
         
         auto userCallback = it->second;
-        CallUserCallback(userCallback, callState->GetStartIndex(), callState, std::vector<ValueContainer>{ValueContainer(reinterpret_cast<eptr>(arg0)), ValueContainer(static_cast<eint>(arg1)), ValueContainer(static_cast<eint>(arg2))});
+         callState->deferredCallbacks.push([=]() {
+             CallUserCallback(userCallback, callState, std::vector<ValueContainer>{ValueContainer(reinterpret_cast<eptr>(arg0)), ValueContainer(static_cast<eint>(arg1)), ValueContainer(static_cast<eint>(arg2))});
+        });
+       
+    }
+}
+
+void bridging_GLFWwindowclosefun(GLFWwindow* arg0) {
+    auto it = windowCallbacks.find("bridging_GLFWwindowclosefun");
+    if (it != windowCallbacks.end()) {
+        
+        auto userCallback = it->second;
+         callState->deferredCallbacks.push([=]() {
+             CallUserCallback(userCallback, callState, std::vector<ValueContainer>{ValueContainer(reinterpret_cast<eptr>(arg0))});
+        });
+       
     }
 }
 
@@ -169,13 +184,29 @@ EXPORT int wrapper_glfwSetWindowSizeCallback(CallState& st) {
     auto arg1 = st.stack.back(); st.stack.pop_back();
     auto window = reinterpret_cast<GLFWwindow*>(arg1.As<eptr>());
     
-    // Store callback in our mapping
-    windowCallbacks[window] = userCallback;
 
     callState = &st;
-
     // Register the bridging function in GLFW
+    windowCallbacks["bridging_GLFWwindowsizefun"] = userCallback;
     glfwSetWindowSizeCallback(window, bridging_GLFWwindowsizefun);
+    return 0; // No return values
+}
+
+EXPORT int wrapper_glfwSetWindowCloseCallback(CallState& st) {
+    // Extract user-defined callback (function in bytecode)
+    auto arg2 = st.stack.back(); st.stack.pop_back();
+    auto userCallback = arg2.AsCallable();
+    
+
+    // Extract window handle
+    auto arg1 = st.stack.back(); st.stack.pop_back();
+    auto window = reinterpret_cast<GLFWwindow*>(arg1.As<eptr>());
+    
+
+    callState = &st;
+    // Register the bridging function in GLFW
+    windowCallbacks["bridging_GLFWwindowclosefun"] = userCallback;
+    glfwSetWindowCloseCallback(window, bridging_GLFWwindowclosefun);
     return 0; // No return values
 }
 
@@ -210,6 +241,7 @@ std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
     {"glfwWindowHint", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT}, wrapper_glfwWindowHint, ICallable::INF_ARGS, "glfwWindowHint", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glfwSwapInterval", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glfwSwapInterval, ICallable::INF_ARGS, "glfwSwapInterval", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glfwSetWindowSizeCallback", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::FUNCTION}, wrapper_glfwSetWindowSizeCallback, ICallable::INF_ARGS, "glfwSetWindowSizeCallback", CallFlags::ExternalDLL)},
+    {"glfwSetWindowCloseCallback", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::PTR, ValueType::FUNCTION}, wrapper_glfwSetWindowCloseCallback, ICallable::INF_ARGS, "glfwSetWindowCloseCallback", CallFlags::ExternalDLL)},
 };
 
 
@@ -219,6 +251,7 @@ std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
 }
 std::unordered_map<std::string, eint> constants = {
     {"GLFW_KEY_ESCAPE", 256},
+    {"GLFW_KEY_SPACE", 32},
     {"GLFW_PRESS", 1},
 };
  EXPORT TypeTable* getTypeTable() {
@@ -237,6 +270,7 @@ std::unordered_map<std::string, eint> constants = {
     (*typeMap)["glfwWindowHint"] = ValueType::NIL;
     (*typeMap)["glfwSwapInterval"] = ValueType::NIL;
     (*typeMap)["glfwSetWindowSizeCallback"] = ValueType::FUNCTION;
+    (*typeMap)["glfwSetWindowCloseCallback"] = ValueType::FUNCTION;
 
     return typeMap;
 }

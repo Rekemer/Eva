@@ -48,18 +48,17 @@ namespace Eva
 		return nativeReturnTypes.at(name);
 	}
 
-	void CallUserCallback(eCallable call, size_t startIndex, CallState* st, const std::vector<ValueContainer>& args)
+	void CallUserCallback(eCallable call, CallState* st, const std::vector<ValueContainer>& args)
 	{
 		auto argAmount = call->argCount;
 		assert(st != nullptr);
-		std::cout << "Call callback\n";
+		st->stack.push_back(call);
 		for (auto& arg : args)
 		{
 			st->stack.push_back(arg);
 		}
-		call->Call(*st, startIndex);
-		
-
+		st->argumentCount = argAmount;
+		call->Call(*st, st->GetStartIndex());
 	}
 }
 

@@ -10,5 +10,6 @@ namespace Eva
 		// which is start of counting
 		// for the function 
 		int stackIndex = -1;
+		bool defer = false;
 	};
 }

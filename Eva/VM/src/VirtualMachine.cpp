@@ -329,6 +329,17 @@ if (child== ValueType::FLOAT)\
 		auto frame = &callFrames[callState.nextToCurrentCallFrame - 1];
 		while (true)
 		{
+			while (!frame->defer && !callState.deferredCallbacks.empty())
+			{
+				auto& call = callState.deferredCallbacks.front();
+				call();
+				if (frame != &callFrames[callState.nextToCurrentCallFrame - 1])
+				{
+					frame = &callFrames[callState.nextToCurrentCallFrame - 1];
+					frame->defer = true;
+				}
+				callState.deferredCallbacks.pop();
+			}
 			// check if there are strings to be freed
 			// it doesn't have to be here, only for debugging
 			// usually memory is freed when we want to allocate new memory
@@ -336,6 +347,11 @@ if (child== ValueType::FLOAT)\
 			auto inst = frame->function->opCode[frame->ip++];
 			//std::cout << std::format("instr index: {}\n",frame->ip - 1);
 			//globalVariables.Print();
+
+
+			
+
+
 			switch (static_cast<InCode>(inst))
 			{
 			case InCode::CONST_VALUE:
@@ -553,9 +569,19 @@ if (child== ValueType::FLOAT)\
 					vmStack.resize(0);
 				}
 				else
-					vmStack.resize(callFrames[callState.nextToCurrentCallFrame - 1].stackIndex);
+					vmStack.resize(callFrames[callState.nextToCurrentCallFrame - 1].stackIndex == - 1 ? 0 : callFrames[callState.nextToCurrentCallFrame - 1].stackIndex);
+				
+				// ignore return value to prevent stack corruption
+				if(!frame->defer)
 				vmStack.push_back(res);
+
 				callState.nextToCurrentCallFrame--;
+
+				if (frame->defer)
+				{
+					frame->defer = false;
+				}
+
 				frame = &callFrames[prevCallFrameIndex];
 				break;
 			}
@@ -658,10 +684,8 @@ if (child== ValueType::FLOAT)\
 					// It's a native function, we stay in the current frame
 					// Possibly pop the function and its arguments from the stack
 					// if that's your calling convention
-					if (frame != &callFrames[callState.nextToCurrentCallFrame - 1])
-					{
-						frame = &callFrames[callState.nextToCurrentCallFrame - 1];
-					}
+
+					
 				}
 
 

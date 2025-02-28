@@ -111,7 +111,7 @@ def generate_callback_wrappers(data):
     wrapper_functions = []
     bridging_functions = []
     bridging_functions.append("CallState* callState = nullptr;")
-    for table in data["tables"]:
+    for table in data.get("tables", []):
         name = table["name"]
         key = table["key"]
         value = table["value"]
@@ -140,11 +140,10 @@ def generate_callback_wrappers(data):
     auto arg1 = st.stack.back(); st.stack.pop_back();
     auto window = reinterpret_cast<GLFWwindow*>(arg1.As<eptr>());
     
-    // Store callback in our mapping
-    windowCallbacks[window] = userCallback;
 
     callState = &st;
     // Register the bridging function in GLFW
+    windowCallbacks["bridging_{callback_name}"] = userCallback;
     {fn_name}(window, bridging_{callback_name});
     return 0; // No return values
 }}"""
@@ -161,11 +160,14 @@ def generate_callback_wrappers(data):
 
 
             bridging_fn = f"""void bridging_{callback_name}({bridging_args}) {{
-    auto it = windowCallbacks.find(arg0);
+    auto it = windowCallbacks.find("bridging_{callback_name}");
     if (it != windowCallbacks.end()) {{
         
         auto userCallback = it->second;
-        CallUserCallback(userCallback, callState->GetStartIndex(), std::vector<ValueContainer>{{{bridging_call_args}}});
+         callState->deferredCallbacks.push([=]() {{
+             CallUserCallback(userCallback, callState, std::vector<ValueContainer>{{{bridging_call_args}}});
+        }});
+       
     }}
 }}"""
             bridging_functions.append(bridging_fn)

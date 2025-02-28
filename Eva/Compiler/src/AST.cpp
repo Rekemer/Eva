@@ -523,6 +523,7 @@ void Print(const Expression* tree, int level) {
 		 auto entry = function->paramScope.types.Get(name);
 		 body->types.Add(name, entry->value.type);
 	 }
+	 funcValue->argCount = function->arguments.size();
 	 EndBlock();
 	 return function;
  }

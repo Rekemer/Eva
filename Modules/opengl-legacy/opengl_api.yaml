@@ -85,6 +85,13 @@ functions:
       - type: GLfloat  # x
       - type: GLfloat  # y
       - type: GLfloat  # z
+  - name: glViewport
+    return: void
+    args:
+      - type: GLint 
+      - type: GLint  
+      - type: GLint  
+      - type: GLint  
 
 constants:
   - name: GL_COLOR_BUFFER_BIT

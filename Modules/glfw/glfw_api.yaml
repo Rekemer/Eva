@@ -89,7 +89,13 @@ functions:
     args:
       - type: "GLFWwindow*"  # Window handle
       - type: "GLFWwindowsizefun" # Function pointer
-
+  
+  - name: glfwSetWindowCloseCallback 
+    return: "GLFWwindowclosefun"  # Returns the previous callback function
+    is_callback: "true"
+    args:
+      - type: "GLFWwindow*"  # Window handle
+      - type: "GLFWwindowclosefun" # Function pointer
 callbacks:
   # Defines the GLFW window resize callback function type
   - name: GLFWwindowsizefun
@@ -98,13 +104,20 @@ callbacks:
       - type: "GLFWwindow*"  # Window handle
       - type: int            # New width
       - type: int            # New height
+  - name: GLFWwindowclosefun
+    return: void
+    args:
+      - type: "GLFWwindow*"  # Window handle
+      
 # test
 constants:
   - name: GLFW_KEY_ESCAPE
     value: 256
+  - name: GLFW_KEY_SPACE
+    value: 32
   - name: GLFW_PRESS
     value: 1
 tables:
   - name: "windowCallbacks"
-    key: "GLFWwindow*"
+    key: "std::string_view"
     value : "eCallable" 

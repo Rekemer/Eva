@@ -128,4 +128,4 @@ support implicit conversion of bool to int glfwSetWindowShouldClose(window,1 ) a
 
 we pass predefined function to setCallback and this function invokes user defined function which moves to new callframe 
 
-
+fix Print("Window resized:" + width +" x " + height);

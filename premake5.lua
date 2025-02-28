@@ -4,7 +4,7 @@ workspace "Eva"
 	architecture "x86_64"
 	startproject "Eva-Compiler"
     language "C++"
-    cppdialect "C++20"
+    cppdialect "C++latest"
 	configurations
 	{
 		"Debug",
