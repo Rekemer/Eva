@@ -16,6 +16,7 @@ C_TYPE_MAP = {
     "const char*": "ValueType::STRING",
     "GLenum": "ValueType::INT",
     "GLfloat": "ValueType::FLOAT",
+    "GLdouble": "ValueType::FLOAT",
     "GLint": "ValueType::INT",
 }
 
@@ -27,6 +28,7 @@ C_EVA_MAP = {
     "GLenum":        "eint",
     "float":      "efloat",
     "GLfloat":      "efloat",
+    "GLdouble":      "efloat",
     "double":     "efloat",   
     "GLFWwindow*":  "eptr",
     "GLFWmonitor*": "eptr",

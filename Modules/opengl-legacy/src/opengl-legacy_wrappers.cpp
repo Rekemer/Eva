@@ -154,6 +154,21 @@ EXPORT int wrapper_glViewport(CallState& st) {
     return 0;
 }
 
+EXPORT int wrapper_glOrtho(CallState& st) {
+    auto arg5 = st.stack.back();
+    st.stack.pop_back();    auto arg4 = st.stack.back();
+    st.stack.pop_back();    auto arg3 = st.stack.back();
+    st.stack.pop_back();    auto arg2 = st.stack.back();
+    st.stack.pop_back();    auto arg1 = st.stack.back();
+    st.stack.pop_back();    auto arg0 = st.stack.back();
+    st.stack.pop_back();
+// remove callable
+	st.stack.pop_back();
+    glOrtho(static_cast<GLdouble>(arg0.As<efloat>()), static_cast<GLdouble>(arg1.As<efloat>()), static_cast<GLdouble>(arg2.As<efloat>()), static_cast<GLdouble>(arg3.As<efloat>()), static_cast<GLdouble>(arg4.As<efloat>()), static_cast<GLdouble>(arg5.As<efloat>()));
+// no return
+    return 0;
+}
+
 CallState* callState = nullptr;
 
 std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
@@ -170,6 +185,7 @@ std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
     {"glTranslatef", &wrapper_glTranslatef},
     {"glRotatef", &wrapper_glRotatef},
     {"glViewport", &wrapper_glViewport},
+    {"glOrtho", &wrapper_glOrtho},
 };
 
 std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
@@ -186,6 +202,7 @@ std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
     {"glTranslatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glTranslatef, ICallable::INF_ARGS, "glTranslatef", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glRotatef", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glRotatef, ICallable::INF_ARGS, "glRotatef", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glViewport", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT, ValueType::INT, ValueType::INT, ValueType::INT}, wrapper_glViewport, ICallable::INF_ARGS, "glViewport", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glOrtho", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glOrtho, ICallable::INF_ARGS, "glOrtho", CallFlags::ExternalDLL | CallFlags::VoidCall)},
 };
 
 
@@ -216,6 +233,7 @@ std::unordered_map<std::string, eint> constants = {
     (*typeMap)["glTranslatef"] = ValueType::NIL;
     (*typeMap)["glRotatef"] = ValueType::NIL;
     (*typeMap)["glViewport"] = ValueType::NIL;
+    (*typeMap)["glOrtho"] = ValueType::NIL;
 
     return typeMap;
 }

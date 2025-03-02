@@ -115,8 +115,16 @@ constants:
     value: 256
   - name: GLFW_KEY_SPACE
     value: 32
+  - name: GLFW_KEY_S
+    value: 83
+  - name: GLFW_KEY_W
+    value: 87
   - name: GLFW_PRESS
     value: 1
+  - name: GLFW_KEY_UP
+    value: 265
+  - name: GLFW_KEY_DOWN
+    value: 264
 tables:
   - name: "windowCallbacks"
     key: "std::string_view"

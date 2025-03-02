@@ -91,7 +91,16 @@ functions:
       - type: GLint 
       - type: GLint  
       - type: GLint  
-      - type: GLint  
+      - type: GLint 
+  - name: glOrtho   
+    return: void
+    args:
+      - type: GLdouble 
+      - type: GLdouble  
+      - type: GLdouble  
+      - type: GLdouble  
+      - type: GLdouble  
+      - type: GLdouble  
 
 constants:
   - name: GL_COLOR_BUFFER_BIT

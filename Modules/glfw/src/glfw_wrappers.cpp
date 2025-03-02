@@ -252,7 +252,11 @@ std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
 std::unordered_map<std::string, eint> constants = {
     {"GLFW_KEY_ESCAPE", 256},
     {"GLFW_KEY_SPACE", 32},
+    {"GLFW_KEY_S", 83},
+    {"GLFW_KEY_W", 87},
     {"GLFW_PRESS", 1},
+    {"GLFW_KEY_UP", 265},
+    {"GLFW_KEY_DOWN", 264},
 };
  EXPORT TypeTable* getTypeTable() {
     auto typeMap = new TypeTable{} ;
