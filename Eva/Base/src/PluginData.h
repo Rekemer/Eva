@@ -5,7 +5,8 @@
 #include <unordered_map>
 namespace Eva
 {
-    using TypeTable = std::unordered_map<std::string, Eva::ValueType>;
+    // first element is return type, next are args
+    using TypeTable = std::unordered_map<std::string, std::vector<Eva::ValueType>>;
     // might be not integers potentially
     using ConstTable = std::unordered_map<std::string, eint>;
    

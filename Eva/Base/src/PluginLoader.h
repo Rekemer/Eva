@@ -19,8 +19,10 @@ namespace Eva
 
 
     std::pair<bool, std::string_view> IsPlugin(std::string_view functionName, std::unordered_map<std::string, PluginData>& plugins);
+    
     DLLHandle CastToModule(void* ptr);
-    inline ValueType GetReturnTypeFromPlugin(std::unordered_map<std::string, PluginData>& plugins, std::string_view pluginName, std::string_view name)
+
+    inline std::vector<ValueType> GetReturnTypeFromPlugin(std::unordered_map<std::string, PluginData>& plugins, std::string_view pluginName, std::string_view name)
     {
         auto& data = plugins.at(pluginName.data());
         auto type = data.typeMap->at(name.data());
@@ -33,7 +35,7 @@ namespace Eva
         {
             if (v.typeMap->find(name.data()) != v.typeMap->end())
             {
-                return  v.typeMap->at(name.data());
+                return  v.typeMap->at(name.data())[0];
             }
         }
         assert(false);

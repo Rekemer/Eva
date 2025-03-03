@@ -1452,6 +1452,33 @@ TokenType AST::TypeCheckIfStatement(Node* node)
 	return TokenType::END;
 }
 
+
+TokenType AST::TypeCheckFunctionCallArgs(Call* call, const std::vector<ValueType>& types)
+{
+	auto& argTypes = types;
+	if (call->args.size() != argTypes.size())
+	{
+		ErrorTypeCheck(call->line, "Incorrect number of arguments for function '" + call->name + "'");
+		return TokenType::NIL;
+	}
+
+	for (size_t i = 0; i < call->args.size(); ++i)
+	{
+		auto& arg = call->args[i];
+		auto argType = LiteralToType(TypeCheck(arg.get()));
+		auto paramType = argTypes[i];
+
+		if (!IsCastable(paramType, argType))
+		{
+			std::stringstream ss;
+			ss << "Argument " << i + 1 << " of function '" << call->name << "' expects type "
+				<< ValueToStr(paramType) << ", but got " << ValueToStr(argType);
+			ErrorTypeCheck(call->line, ss.str());
+			return TokenType::NIL;
+		}
+	}
+}
+
 TokenType AST::TypeCheckFunctionCall(Node* node)
 {
 	auto call = static_cast<Call*>(node);
@@ -1463,8 +1490,14 @@ TokenType AST::TypeCheckFunctionCall(Node* node)
 
 	if (call->IsFromDLL())
 	{
-		auto type = GetReturnTypeFromPlugin(compiler->plugins,call->pluginName,call->name);
-		return TypeToLiteral(type);
+		auto types = GetReturnTypeFromPlugin(compiler->plugins,call->pluginName,call->name);
+
+		if (TypeCheckFunctionCallArgs(call, std::vector<ValueType>(types.begin() + 1, types.end())) == TokenType::NIL)
+		{
+			return TokenType::NIL;
+		}
+
+		return TypeToLiteral(types[0]);
 		assert(false && "handle native funcs");
 	}
 
@@ -1478,27 +1511,32 @@ TokenType AST::TypeCheckFunctionCall(Node* node)
 
 
 	auto funcValue = funcEntry->value.AsCallable();
-	if (call->args.size() != funcValue->argTypes.size())
+	if (TypeCheckFunctionCallArgs(call, funcValue->argTypes) == TokenType::NIL)
 	{
-		ErrorTypeCheck(call->line, "Incorrect number of arguments for function '" + call->name + "'");
 		return TokenType::NIL;
 	}
 
-	for (size_t i = 0; i < call->args.size(); ++i)
-	{
-		auto& arg = call->args[i];
-		auto argType = LiteralToType(TypeCheck(arg.get()));
-		auto paramType = funcValue->argTypes[i];
-
-		if (!IsCastable(paramType, argType))
-		{
-			std::stringstream ss;
-			ss << "Argument " << i + 1 << " of function '" << call->name << "' expects type "
-				<< ValueToStr(paramType) << ", but got " << ValueToStr(argType);
-			ErrorTypeCheck(call->line, ss.str());
-			return TokenType::NIL;
-		}
-	}
+	//if (call->args.size() != funcValue->argTypes.size())
+	//{
+	//	ErrorTypeCheck(call->line, "Incorrect number of arguments for function '" + call->name + "'");
+	//	return TokenType::NIL;
+	//}
+	//
+	//for (size_t i = 0; i < call->args.size(); ++i)
+	//{
+	//	auto& arg = call->args[i];
+	//	auto argType = LiteralToType(TypeCheck(arg.get()));
+	//	auto paramType = funcValue->argTypes[i];
+	//
+	//	if (!IsCastable(paramType, argType))
+	//	{
+	//		std::stringstream ss;
+	//		ss << "Argument " << i + 1 << " of function '" << call->name << "' expects type "
+	//			<< ValueToStr(paramType) << ", but got " << ValueToStr(argType);
+	//		ErrorTypeCheck(call->line, ss.str());
+	//		return TokenType::NIL;
+	//	}
+	//}
 
 	// Return the function's return type
 	auto funcTypeEntry = compiler->GetGlobalsType().Get(call->name);

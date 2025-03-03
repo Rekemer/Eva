@@ -63,7 +63,7 @@ namespace Eva
 		TokenType TypeCheckIdentifier(Expression* expr);
 
 		TokenType TypeCheckVariableDeclaration(Expression* expr, TokenType leftType, TokenType rightType);
-
+		TokenType TypeCheckFunctionCallArgs(Call* node,const std::vector<ValueType>& types);
 
 		void UpdateScope(int stackOffset, Scope* prevScope, Scope* newScope);
 		void PartialFold(Node* leftOperandSibling, Node* rightOperandSibling,

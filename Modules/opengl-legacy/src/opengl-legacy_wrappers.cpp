@@ -190,7 +190,7 @@ std::unordered_map<std::string, int(*)(CallState&)> functionTable = {
 
 std::unordered_map<std::string, std::shared_ptr<NativeFunc>> nativeCalls = {
     {"glClearColor", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glClearColor, ICallable::INF_ARGS, "glClearColor", CallFlags::ExternalDLL | CallFlags::VoidCall)},
-    {"glClear", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::NIL}, wrapper_glClear, ICallable::INF_ARGS, "glClear", CallFlags::ExternalDLL | CallFlags::VoidCall)},
+    {"glClear", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glClear, ICallable::INF_ARGS, "glClear", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glBegin", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::INT}, wrapper_glBegin, ICallable::INF_ARGS, "glBegin", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glVertex2f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT}, wrapper_glVertex2f, ICallable::INF_ARGS, "glVertex2f", CallFlags::ExternalDLL | CallFlags::VoidCall)},
     {"glVertex3f", std::make_shared<NativeFunc>(std::vector<ValueType>{ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT}, wrapper_glVertex3f, ICallable::INF_ARGS, "glVertex3f", CallFlags::ExternalDLL | CallFlags::VoidCall)},
@@ -220,20 +220,20 @@ std::unordered_map<std::string, eint> constants = {
 };
  EXPORT TypeTable* getTypeTable() {
     auto typeMap = new TypeTable{} ;
-    (*typeMap)["glClearColor"] = ValueType::NIL;
-    (*typeMap)["glClear"] = ValueType::NIL;
-    (*typeMap)["glBegin"] = ValueType::NIL;
-    (*typeMap)["glVertex2f"] = ValueType::NIL;
-    (*typeMap)["glVertex3f"] = ValueType::NIL;
-    (*typeMap)["glColor3f"] = ValueType::NIL;
-    (*typeMap)["glEnd"] = ValueType::NIL;
-    (*typeMap)["glLoadIdentity"] = ValueType::NIL;
-    (*typeMap)["glPushMatrix"] = ValueType::NIL;
-    (*typeMap)["glPopMatrix"] = ValueType::NIL;
-    (*typeMap)["glTranslatef"] = ValueType::NIL;
-    (*typeMap)["glRotatef"] = ValueType::NIL;
-    (*typeMap)["glViewport"] = ValueType::NIL;
-    (*typeMap)["glOrtho"] = ValueType::NIL;
+    (*typeMap)["glClearColor"] = std::vector<ValueType>{ValueType::NIL, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT};
+    (*typeMap)["glClear"] = std::vector<ValueType>{ValueType::NIL, ValueType::INT};
+    (*typeMap)["glBegin"] = std::vector<ValueType>{ValueType::NIL, ValueType::INT};
+    (*typeMap)["glVertex2f"] = std::vector<ValueType>{ValueType::NIL, ValueType::FLOAT, ValueType::FLOAT};
+    (*typeMap)["glVertex3f"] = std::vector<ValueType>{ValueType::NIL, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT};
+    (*typeMap)["glColor3f"] = std::vector<ValueType>{ValueType::NIL, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT};
+    (*typeMap)["glEnd"] = std::vector<ValueType>{ValueType::NIL};
+    (*typeMap)["glLoadIdentity"] = std::vector<ValueType>{ValueType::NIL};
+    (*typeMap)["glPushMatrix"] = std::vector<ValueType>{ValueType::NIL};
+    (*typeMap)["glPopMatrix"] = std::vector<ValueType>{ValueType::NIL};
+    (*typeMap)["glTranslatef"] = std::vector<ValueType>{ValueType::NIL, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT};
+    (*typeMap)["glRotatef"] = std::vector<ValueType>{ValueType::NIL, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT};
+    (*typeMap)["glViewport"] = std::vector<ValueType>{ValueType::NIL, ValueType::INT, ValueType::INT, ValueType::INT, ValueType::INT};
+    (*typeMap)["glOrtho"] = std::vector<ValueType>{ValueType::NIL, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT, ValueType::FLOAT};
 
     return typeMap;
 }

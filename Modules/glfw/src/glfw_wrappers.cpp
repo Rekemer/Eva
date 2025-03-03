@@ -260,21 +260,21 @@ std::unordered_map<std::string, eint> constants = {
 };
  EXPORT TypeTable* getTypeTable() {
     auto typeMap = new TypeTable{} ;
-    (*typeMap)["glfwInit"] = ValueType::INT;
-    (*typeMap)["glfwTerminate"] = ValueType::NIL;
-    (*typeMap)["glfwCreateWindow"] = ValueType::PTR;
-    (*typeMap)["glfwDestroyWindow"] = ValueType::NIL;
-    (*typeMap)["glfwMakeContextCurrent"] = ValueType::NIL;
-    (*typeMap)["glfwWindowShouldClose"] = ValueType::INT;
-    (*typeMap)["glfwSetWindowShouldClose"] = ValueType::NIL;
-    (*typeMap)["glfwPollEvents"] = ValueType::NIL;
-    (*typeMap)["glfwSwapBuffers"] = ValueType::NIL;
-    (*typeMap)["glfwGetKey"] = ValueType::INT;
-    (*typeMap)["glfwGetTime"] = ValueType::FLOAT;
-    (*typeMap)["glfwWindowHint"] = ValueType::NIL;
-    (*typeMap)["glfwSwapInterval"] = ValueType::NIL;
-    (*typeMap)["glfwSetWindowSizeCallback"] = ValueType::FUNCTION;
-    (*typeMap)["glfwSetWindowCloseCallback"] = ValueType::FUNCTION;
+    (*typeMap)["glfwInit"] = std::vector<ValueType>{ValueType::INT};
+    (*typeMap)["glfwTerminate"] = std::vector<ValueType>{ValueType::NIL};
+    (*typeMap)["glfwCreateWindow"] = std::vector<ValueType>{ValueType::PTR, ValueType::INT, ValueType::INT, ValueType::STRING, ValueType::PTR, ValueType::PTR};
+    (*typeMap)["glfwDestroyWindow"] = std::vector<ValueType>{ValueType::NIL, ValueType::PTR};
+    (*typeMap)["glfwMakeContextCurrent"] = std::vector<ValueType>{ValueType::NIL, ValueType::PTR};
+    (*typeMap)["glfwWindowShouldClose"] = std::vector<ValueType>{ValueType::INT, ValueType::PTR};
+    (*typeMap)["glfwSetWindowShouldClose"] = std::vector<ValueType>{ValueType::NIL, ValueType::PTR, ValueType::INT};
+    (*typeMap)["glfwPollEvents"] = std::vector<ValueType>{ValueType::NIL};
+    (*typeMap)["glfwSwapBuffers"] = std::vector<ValueType>{ValueType::NIL, ValueType::PTR};
+    (*typeMap)["glfwGetKey"] = std::vector<ValueType>{ValueType::INT, ValueType::PTR, ValueType::INT};
+    (*typeMap)["glfwGetTime"] = std::vector<ValueType>{ValueType::FLOAT};
+    (*typeMap)["glfwWindowHint"] = std::vector<ValueType>{ValueType::NIL, ValueType::INT, ValueType::INT};
+    (*typeMap)["glfwSwapInterval"] = std::vector<ValueType>{ValueType::NIL, ValueType::INT};
+    (*typeMap)["glfwSetWindowSizeCallback"] = std::vector<ValueType>{ValueType::FUNCTION, ValueType::PTR, ValueType::FUNCTION};
+    (*typeMap)["glfwSetWindowCloseCallback"] = std::vector<ValueType>{ValueType::FUNCTION, ValueType::PTR, ValueType::FUNCTION};
 
     return typeMap;
 }

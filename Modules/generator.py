@@ -18,6 +18,7 @@ C_TYPE_MAP = {
     "GLfloat": "ValueType::FLOAT",
     "GLdouble": "ValueType::FLOAT",
     "GLint": "ValueType::INT",
+    "GLbitfield":"ValueType::INT",
 }
 
 
@@ -90,7 +91,16 @@ def generate_metatable(data):
     lines.append("    auto typeMap = new TypeTable{} ;")
     for func in data["functions"]:
         ret_type = func["return"]
-        line = f'    (*typeMap)["{func["name"]}"] = {C_TYPE_MAP[ret_type]};'
+        args = func["args"]
+
+    # Collect all types: first is return type, rest are argument types
+        all_types = [C_TYPE_MAP[ret_type]] + [C_TYPE_MAP[arg["type"]] for arg in args]
+
+    # Convert list to C++ vector syntax
+        vector_literal = "std::vector<ValueType>{" + ", ".join(all_types) + "}"
+
+    # Generate mapping line
+        line = f'    (*typeMap)["{func["name"]}"] = {vector_literal};'
         lines.append(line)
 
             

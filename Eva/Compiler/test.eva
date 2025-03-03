@@ -32,16 +32,16 @@ ballY := 0.0;
 fun DrawRectangle(centerX: float, centerY: float, halfWidth: float, halfHeight: float) 
 {
     // Calculate the rectangle’s corners
-    xMin := centerX - halfWidth;
-    xMax := centerX + halfWidth;
-    yMin := centerY - halfHeight;
-    yMax := centerY + halfHeight;
+    //xMin := centerX - halfWidth;
+    //xMax := centerX + halfWidth;
+    //yMin := centerY - halfHeight;
+    //yMax := centerY + halfHeight;
 
     glBegin(GL_QUADS);
-        glVertex2f(xMin, yMin);
-        glVertex2f(xMax, yMin);
-        glVertex2f(xMax, yMax);
-        glVertex2f(xMin, yMax);
+        glVertex2f(centerX - halfWidth,  centerY - halfHeight);
+        glVertex2f(centerX + halfWidth,  centerY - halfHeight);
+        glVertex2f(centerX + halfWidth, centerY + halfHeight);
+        glVertex2f(centerX - halfWidth, centerY + halfHeight);
     glEnd();
 }
 
