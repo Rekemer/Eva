@@ -172,12 +172,11 @@ namespace Eva
 		// should be different call class
 		std::string pluginName;
 
-		bool isUserFunc()  const { return (flags & CallFlags::UserFunc) == static_cast<CallFlags>(0);
-		};
+		bool isUserFunc()  const { return HasFlag(flags, CallFlags::UserFunc); }
 
-		bool IsBuiltIn()   const { return (flags & CallFlags::BuiltIn) != static_cast<CallFlags>(0); }
-		bool IsFromDLL()   const { return (flags & CallFlags::ExternalDLL) != static_cast<CallFlags>(0); }
-		bool IsCFunction() const { return (flags & (CallFlags::BuiltIn | CallFlags::ExternalDLL)) != static_cast<CallFlags>(0); }
+		bool IsBuiltIn()   const { return (HasFlag(flags ,CallFlags::BuiltIn));}
+		bool IsFromDLL()   const { return (HasFlag(flags ,CallFlags::ExternalDLL)); }
+		bool IsCFunction() const { return (HasFlag(flags, (CallFlags::BuiltIn | CallFlags::ExternalDLL))); }
 
 	};
 }

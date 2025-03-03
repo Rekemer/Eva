@@ -46,12 +46,13 @@ std::ostream& operator<<(std::ostream& os, const Instruction& v)
 		}
 		os << ") ";
 	}
+	if (rightValue.type != ValueType::NIL ) PrintValue(os, rightValue, v.operRight.version, v.operRight.isConstant);
 	if (v.instrType == TokenType::LEFT_PAREN)
 	{
-		//os << "\n(arg block)\n";
-		//PrintBlock(v.argBlock);
+		
+		os << std::format("\n\n{} arg block\n", v.operRight.value.AsString());
+		PrintBlock(v.argBlock);
 	}
-	if (rightValue.type != ValueType::NIL ) PrintValue(os, rightValue, v.operRight.version, v.operRight.isConstant);
 	if (v.targets.size() > 0)
 	{
 		for (auto block : v.targets)
@@ -1853,6 +1854,10 @@ void CFG::CreateVariable(const Node* tree, TokenType type)
 	{
 		isVariableCritical = false;
 		MakeCritical(instruction);
+		if (parseFunc.size() > 0)
+		{
+			isCurrentFuncCritical = true;
+		}
 	}
 	instruction.returnType = rightOp.type;
 	currentBlock->instructions.push_back(instruction);

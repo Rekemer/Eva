@@ -1468,6 +1468,9 @@ TokenType AST::TypeCheckFunctionCallArgs(Call* call, const std::vector<ValueType
 		auto argType = LiteralToType(TypeCheck(arg.get()));
 		auto paramType = argTypes[i];
 
+		// cannot be bothered to handle it, we need to know whehter identifier is a function or a  variable, we need resolute names 
+		if (paramType == ValueType::FUNCTION) continue;
+		
 		if (!IsCastable(paramType, argType))
 		{
 			std::stringstream ss;
