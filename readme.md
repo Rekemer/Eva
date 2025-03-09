@@ -1,7 +1,8 @@
 # Eva Programming Language
 
-The experimental basic toy language is inspired by Clox from *Crafting Interpreters*, however, Eva has an AST representation of the program and types.  
+The experimental basic toy language is inspired by Clox from *Crafting Interpreters*, however, Eva has an AST and SSA representation of the program and types.  
 The main purpose of the language is to learn more about how to build them.
+The AST and SSA representations are made the way I understand them - they might lack grace 
 
 ### Features
 - **Constant Folding**: If possible, calculate constant values at compile time
