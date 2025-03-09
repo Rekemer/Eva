@@ -1,4 +1,4 @@
-import "GLFW"
+/*import "GLFW"
 import "OpenGL-Legacy"
 
 //--------------------------
@@ -176,9 +176,10 @@ fun main()
     glfwTerminate();
 
 }
-
-
-
+*/
+a := 4;
+b := a + 3;
+c := b + 2;
 
 
 
