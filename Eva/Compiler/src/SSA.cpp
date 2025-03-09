@@ -1088,7 +1088,7 @@ void CFG::ConstPropagation()
 		{
 			for (auto& [defVarKey, indices] : block->defs)
 			{
-
+				if (defVarKey.second == varKey && indices.size() == 1 && defsBlocks.size() == 1)
 				for (auto idx : indices)
 				{
 
@@ -1424,7 +1424,10 @@ void CFG::ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList)
 	{
 		auto varKey = workList.front();
 		workList.pop_front();
-
+		if (varKey.second == "lol_0")
+		{
+			std::cout << "sd";
+		}
 		const std::string& varName = varKey.second;
 		//if (isIterator[varName])
 		//{
@@ -1792,6 +1795,10 @@ void  CFG::InitLocal(Operand& op,const std::string& name)
 }
 void CFG::InitGlobal(Operand& op,const std::string& name)
 {
+	if (name == "paddleHeight" && writeToVariable)
+	{
+		std::cout << "sd";
+	}
 	if (writeToVariable)
 	{
 		AddLocalInfo(localAssigned, name, currentBlock);

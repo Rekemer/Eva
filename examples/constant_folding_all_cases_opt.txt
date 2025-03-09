@@ -1,0 +1,70 @@
+arg[1]: -spath=./test.eva
+arg[2]: -bpath=C:\dev\ProgrammingLanguage\Eva\Eva\Intermediates/test.json
+
+[global_start]
+a_0 =  DECLARE 2
+c0_0 =  DECLARE 15
+c_0 =  DECLARE 8
+c1_0 =  DECLARE 8
+c2_0 =  DECLARE 10
+c3_0 =  DECLARE 2
+c4_0 =  DECLARE 6
+c5_0 =  DECLARE 8
+c6_0 =  DECLARE 1
+d_0 =  DECLARE 1
+b_0 =  DECLARE 3
+check_0 =  DECLARE 1
+
+FUNCTION: global
+-------------Debug-----------
+[0] CONST_VALUE
+[1] 2
+[2] SET_GLOBAL_VAR
+[3] a
+[4] CONST_VALUE
+[5] 15
+[6] SET_GLOBAL_VAR
+[7] c0
+[8] CONST_VALUE
+[9] 8
+[10] SET_GLOBAL_VAR
+[11] c
+[12] CONST_VALUE
+[13] 8
+[14] SET_GLOBAL_VAR
+[15] c1
+[16] CONST_VALUE
+[17] 10
+[18] SET_GLOBAL_VAR
+[19] c2
+[20] CONST_VALUE
+[21] 2
+[22] SET_GLOBAL_VAR
+[23] c3
+[24] CONST_VALUE
+[25] 6
+[26] SET_GLOBAL_VAR
+[27] c4
+[28] CONST_VALUE
+[29] 8
+[30] SET_GLOBAL_VAR
+[31] c5
+[32] CONST_VALUE
+[33] 1
+[34] SET_GLOBAL_VAR
+[35] c6
+[36] CONST_VALUE
+[37] 1
+[38] SET_GLOBAL_VAR
+[39] d
+[40] CONST_VALUE
+[41] 3
+[42] SET_GLOBAL_VAR
+[43] b
+[44] TRUE
+[45] SET_GLOBAL_VAR
+[46] check
+-------------Debug-----------
+
+C:\dev\ProgrammingLanguage\Eva\Eva\bin\Eva-Compiler\Debug-windows-x86_64\Eva-Compiler.exe (процесс 18736) завершил работу с кодом 0 (0x0).
+Нажмите любую клавишу, чтобы закрыть это окно:
