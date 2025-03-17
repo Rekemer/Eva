@@ -25,8 +25,8 @@ struct TestCase {
 
     cmd doesn't recognise / slashes at all, need to use \ 
 */ 
-const std::string_view COMPILER_PATH = ".\\..\\bin\\Eva-Compiler\\Debug-windows-x86_64\\Eva-Compiler.exe";
-const std::string_view VM_PATH = ".\\..\\bin\\Eva-VM\\Debug-windows-x86_64\\Eva-VM.exe";
+const std::string_view COMPILER_PATH = ".\\..\\bin\\Eva-Compiler\\Release-windows-x86_64\\Eva-Compiler.exe";
+const std::string_view VM_PATH = ".\\..\\bin\\Eva-VM\\Release-windows-x86_64\\Eva-VM.exe";
 const std::string_view TEST_CASES_DIR = ".\\tests\\";
 const std::string_view TEST_CASES_BIN_DIR = ".\\tests_bin";
 // Function to discover all test cases

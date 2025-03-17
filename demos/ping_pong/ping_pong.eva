@@ -105,30 +105,30 @@ fun UpdateGame(deltaTime: float) {
         ballSpeedX = -ballSpeedX;
     }
 }
-
-//--------------------------
-// Initialization
-//--------------------------
-if !glfwInit() {
-    Print("Failed to initialize GLFW");
-}
-
-window := glfwCreateWindow(640, 480, "Ping Pong ", nullptr, nullptr);
-if !window {
-    Print("Failed to create window");
-} else {
-    Print("Window created successfully");
-}
-
-glfwMakeContextCurrent(window);
-glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0); // Coordinate system from -1..+1 on each axis
-
-// Track time for frame-independent movement
-lastTime := glfwGetTime();
-
-
 fun main() 
 {
+    //--------------------------
+    // Initialization
+    //--------------------------
+    if !glfwInit() {
+        Print("Failed to initialize GLFW");
+    }
+    
+    window := glfwCreateWindow(640, 480, "Ping Pong ", nullptr, nullptr);
+    if !window {
+        Print("Failed to create window");
+    } else {
+        Print("Window created successfully");
+    }
+    
+    glfwMakeContextCurrent(window);
+    glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0); // Coordinate system from -1..+1 on each axis
+    
+    // Track time for frame-independent movement
+    lastTime := glfwGetTime();
+
+
+
 
     //--------------------------
     // Main loop
@@ -176,8 +176,6 @@ fun main()
     glfwTerminate();
 
 }
-
-
 
 
 

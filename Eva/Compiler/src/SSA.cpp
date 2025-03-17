@@ -2559,7 +2559,7 @@ Operand CFG::ConvertExpressionAST(const Node* tree)
 		}
 		getAsParam = false;
 		prevBlock->instructions[funcCallIndex].operLeft = Operand{ ValueContainer{(int)call->args.size()},true,SYSTEM_VER };
-		if (!HasFlag(callFlags, CallFlags::VoidCall) && !writeToVariable && !(isReturn.size() > 0))
+		if (!HasFlag(callFlags, CallFlags::VoidCall) && !isCurrentFuncCritical && !writeToVariable && !(isReturn.size() > 0))
 		{
 			Instruction instr{ TokenType::BLOCK,{}, Operand{1,true,IS_TEMP},{} };
 			MakeCritical(instr);
