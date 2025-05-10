@@ -69,7 +69,6 @@ namespace Eva
 		RETURN,
 		STORE_TEMP,
 		LOAD_TEMP,
-
 	};
 
 }

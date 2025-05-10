@@ -1,10 +1,207 @@
-fun str() : int
+import "GLFW"
+import "OpenGL-Legacy"
+
+//--------------------------
+// Game constants
+//--------------------------
+// Speeds now represent "units per second" instead of "units per frame."
+paddleHeight := 0.2;
+paddleWidth  := 0.02;
+paddleSpeed  := 1.0;      // 1.0 units per second (adjust as you like!)
+
+ballSize  := 0.03;
+ballSpeedX := 0.8;        // 0.5 units per second horizontally
+ballSpeedY := 0.8;        // 0.5 units per second vertically
+//--------------------------
+// Paddles
+//--------------------------
+leftPaddleX  := -0.9;
+rightPaddleX :=  0.9;
+leftPaddleY  :=  0.0;
+rightPaddleY :=  0.0;
+
+//--------------------------
+// Ball
+//--------------------------
+ballX := 0.0;
+ballY := 0.0;
+
+//--------------------------
+// Drawing
+//--------------------------
+fun DrawRectangle(centerX: float, centerY: float, halfWidth: float, halfHeight: float) 
 {
-	return 2;
+    xMin := centerX - halfWidth;
+    xMax := centerX + halfWidth;
+    yMin := centerY - halfHeight;
+    yMax := centerY + halfHeight;
+
+    glBegin(GL_QUADS);
+        glVertex2f(xMin, yMin);
+        glVertex2f(xMax, yMin);
+        glVertex2f(xMax, yMax);
+        glVertex2f(xMin, yMax);
+    glEnd();
 }
 
-fun main() : int 
-{
-	Print(str());
-	return 0;
+fun DrawGame() {
+    // Clear screen
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Draw left paddle
+    glColor3f(1.0, 1.0, 1.0);
+    DrawRectangle(leftPaddleX, leftPaddleY, paddleWidth, paddleHeight);
+
+    // Draw right paddle
+    DrawRectangle(rightPaddleX, rightPaddleY, paddleWidth, paddleHeight);
+
+    // Draw ball
+    glColor3f(1.0, 1.0, 0.0);
+    DrawRectangle(ballX, ballY, ballSize, ballSize);
 }
+
+//--------------------------
+// Game update
+//--------------------------
+fun UpdateGame(deltaTime: float) {
+    // Move the ball according to deltaTime
+    ballX += ballSpeedX * deltaTime;
+    ballY += ballSpeedY * deltaTime;
+    //Print(ballX, " ", ballY);
+    // Bounce off top/bottom walls
+    if (ballY + ballSize > 1.0 || ballY - ballSize < -1.0) {
+        ballSpeedY = -ballSpeedY;
+    }
+
+    // Check collision with left paddle
+    overlapXLeft := (ballX + ballSize >= (leftPaddleX - paddleWidth)) &&
+                    (ballX - ballSize <= (leftPaddleX + paddleWidth));
+    overlapYLeft := (ballY + ballSize >= (leftPaddleY - paddleHeight)) &&
+                    (ballY - ballSize <= (leftPaddleY + paddleHeight));
+
+    if (overlapXLeft && overlapYLeft) {
+        ballSpeedX = -ballSpeedX;
+        // Nudge ball so it isn't stuck in the paddle
+        ballX = leftPaddleX + paddleWidth + ballSize;
+    }
+    
+    // Check collision with right paddle
+    overlapXRight := (ballX + ballSize >= (rightPaddleX - paddleWidth)) &&
+                     (ballX - ballSize <= (rightPaddleX + paddleWidth));
+    overlapYRight := (ballY + ballSize >= (rightPaddleY - paddleHeight)) &&
+                     (ballY - ballSize <= (rightPaddleY + paddleHeight));
+    
+    if (overlapXRight && overlapYRight) {
+        ballSpeedX = -ballSpeedX;
+        // Nudge ball so it isn't stuck in the paddle
+        ballX = rightPaddleX - paddleWidth - ballSize;
+    }
+
+    // Reset ball if completely out of bounds
+    if (ballX < -1.0 || ballX > 1.0) {
+        ballX = 0.0;
+        ballY = 0.0;
+        // Reverse X so it heads the other way
+        ballSpeedX = -ballSpeedX;
+    }
+}
+
+fun my_callback(window : pointer, width: int, height: int) {
+    Print("Window resized:" , width, " x ", height);
+    glViewport(0,0,width,height);
+}
+fun my_callback2(window : pointer, width: int, height: int) {
+    Print("Window resized2:" , width, " x ", height);
+    glViewport(0,0,width,height);
+}
+fun close_callback(window : pointer) {
+    Print("Window closed!:");
+}
+
+fun main() 
+{
+    //--------------------------
+    // Initialization
+    //--------------------------
+    if !glfwInit() {
+        Print("Failed to initialize GLFW");
+    }
+    
+    window := glfwCreateWindow(640, 480, "Ping Pong ", nullptr, nullptr);
+    if !window {
+        Print("Failed to create window");
+    } else {
+        Print("Window created successfully");
+    }
+    
+    glfwMakeContextCurrent(window);
+    glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0); // Coordinate system from -1..+1 on each axis
+    
+    // Track time for frame-independent movement
+    lastTime := glfwGetTime();
+
+    glfwSetWindowSizeCallback(window, my_callback);
+    glfwSetWindowCloseCallback(window, close_callback);
+
+
+    //--------------------------
+    // Main loop
+    //--------------------------
+    while !glfwWindowShouldClose(window) 
+    {
+        // Compute delta time (seconds since last frame)
+        currentTime := glfwGetTime();
+        deltaTime   := currentTime - lastTime;
+        lastTime    = currentTime;
+     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+  {
+             glfwSetWindowSizeCallback(window, my_callback2);
+  }
+        // Player input (scaled by deltaTime for consistent speed)
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            leftPaddleY += paddleSpeed * deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            leftPaddleY -= paddleSpeed * deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            rightPaddleY += paddleSpeed * deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            rightPaddleY -= paddleSpeed * deltaTime;
+        }
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    	{
+                glfwSetWindowShouldClose(window, 1);
+    	}
+        // (Optional) clamp paddles so they don't go off-screen
+        // leftPaddleY  = clamp(leftPaddleY,  -1.0 + paddleHeight, 1.0 - paddleHeight);
+        // rightPaddleY = clamp(rightPaddleY, -1.0 + paddleHeight, 1.0 - paddleHeight);
+    
+        // Update game logic with deltaTime
+        UpdateGame(deltaTime);
+    
+        // Render
+        DrawGame();
+    
+        // Swap buffers and poll events
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+    
+    glfwDestroyWindow(window);
+    glfwTerminate();
+
+}
+
+
+
+
+
+
+
+
+
+
+
+

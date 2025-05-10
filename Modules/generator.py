@@ -156,6 +156,7 @@ def generate_callback_wrappers(data):
     callState = &st;
     // Register the bridging function in GLFW
     windowCallbacks["bridging_{callback_name}"] = userCallback;
+     st.stack.pop_back();
     {fn_name}(window, bridging_{callback_name});
     return 0; // No return values
 }}"""

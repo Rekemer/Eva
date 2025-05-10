@@ -39,44 +39,19 @@ namespace Eva
 
 		}
 		void Execute();
-		void GenerateBytecodeCFG(const CFG& cfg);
-		void GenerateBytecodeAST(const Node const* node);
 		const std::vector<ValueContainer>& GetStack() { return vmStack; };
-		//std::shared_ptr<String> AllocateString(const char* ptr, size_t size);
-		//std::shared_ptr<String> AddStrings(std::shared_ptr<String> s, std::shared_ptr<String> s1);
 
-		void ClearLocal();
 		void DumpGlobalToFile(std::string_view filepath);
 		HashTable& GetGlobals() { return globalVariables; };
 		HashTable& GetGlobalsType() { return globalVariablesTypes; };
 		ValueType GetGlobalType(const std::string& str);
 		~VirtualMachine();
 	private:
-
-		Block* HandleBranch(std::vector<Block*> branches, const Instruction& branch);
-		void GenerateBlockInstructions(Block* block);
-		ValueType GenerateAST(const Node* tree);
-		void GenerateCFG(Block* block);
-		void GenerateConstant(const ValueContainer& v);
-		void GenerateCFGOperand(const Operand& operand, ValueType instrType);
-
-		void ClearScope(const Scope* scope, StackSim& stackSim,
-			std::vector<Bytecode>& opCode);
 		void CastWithDeclared(ValueType assignedType, ValueType declared);
-		//void CollectStrings();
 		void BeginContinue(int startLoopIndex);
 		int BeginBreak();
 		void EndContinue();
 		void PatchBreak(int prevSizeBreak);
-		void SetVariable(std::vector<Bytecode>& opCode,
-			const std::string& name, int depth);
-		ValueType GetVariable(std::vector<Bytecode>& opCode, const std::string& name, int depth);
-
-		ValueType GetLocalType(const std::string& str);
-
-		ValueType GetVariableType(const std::string& name, int depthOfDeclaration);
-		// returns index to be patchd for a jump if loop is finished
-		int GenerateLoopCondition(const Node* node);
 		bool AreEqual(const ValueContainer& a, const ValueContainer& b);
 
 	public:

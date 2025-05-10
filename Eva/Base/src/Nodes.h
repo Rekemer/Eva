@@ -9,8 +9,6 @@
 #include <type_traits> 
 namespace Eva
 {
-
-
 	struct Node
 	{
 		TokenType type;
@@ -19,13 +17,6 @@ namespace Eva
 		Node() = default;
 		Node(const Node&) = delete;
 		Node(Node&&) = default;
-		/*Node::Node(const Node& e)
-		{
-			childrenCount = e.childrenCount;
-			type = e.type;
-			line = e.line;
-
-		}*/
 		virtual ~Node()
 		{
 
@@ -41,7 +32,6 @@ namespace Eva
 			return (T*)(this);
 		}
 	};
-
 	struct Expression : public Node
 	{
 		ValueContainer value;
@@ -54,9 +44,6 @@ namespace Eva
 		std::unique_ptr<Node> right = nullptr;
 
 	};
-
-
-
 	struct Scope : public Node
 	{
 		std::vector<std::unique_ptr<Node>> expressions;
@@ -160,9 +147,6 @@ namespace Eva
 		std::string name;
 		std::vector<std::unique_ptr<Node>> arguments;
 	};
-
-	
-
 	struct Call : public Node
 	{
 		// can store return type?

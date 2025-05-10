@@ -23,9 +23,7 @@ namespace Eva
 		void ParseNumber();
 		void ParseAlpha();
 		void ParseString();
-		void ParseBool();
 		void ParseDeclaration();
-		void ParseStatement();
 		void Eat();
 		void EatWhiteSpace();
 		void EatOdinaryComments();

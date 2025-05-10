@@ -67,8 +67,6 @@ namespace Eva
 		case TokenType::CLASS:
 		case TokenType::NIL:
 		case TokenType::OR:
-		case TokenType::SUPER:
-		case TokenType::THIS:
 		case TokenType::ERROR:
 		case TokenType::END:
 			return false;
@@ -248,11 +246,7 @@ namespace Eva
 			}
 		}
 	}
-	void Lexer::ParseBool()
-	{
-		EatWhiteSpace();
-
-	}
+	
 	// parse sequence of characters
 	void Lexer::ParseAlpha()
 	{
@@ -599,10 +593,7 @@ namespace Eva
 			startSymbol = currentSymbol;
 
 			ParseDeclaration();
-
-			//ParseStatement();
 			ParseString();
-			ParseBool();
 			ParseNumber();
 			ParseOperator();
 

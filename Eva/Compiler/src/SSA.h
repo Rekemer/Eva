@@ -205,126 +205,125 @@ namespace Eva
 	class Tree;
 	class Compiler;
 	// control flow graph
-	class CFG
-	{
-	public:
-		CFG()
+		class CFG
 		{
-			startBlock = currentBlock = CreateBlock(currentFunc, "[global_start]", {});
-		}
-		Compiler* compiler;
-		void BuildDominatorTree();
-		void ConvertAST(const Node* tree);
-		void ResolveFunctions();
-		void TopSort();
-		void BuildDF();
-		void InsertPhi();
-		void DeadCode();
-		void ConstPropagation();
-		void Debug();
-	private:
-		void MarkFuncIfCritical(Instruction& funcCall, bool isNative);
-		bool UpdateOperand(Operand& op);
-		void PropagateTempValues(Block* block, size_t startIndex, Instruction& initialInstr, std::deque<std::pair<int, std::string>>& workList);
-		void ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList);
-		void MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*, Instruction*>>& workList);
-		Instruction CreatePhi(const std::string& name);
-		void Sweep(Block* block);
-		void Mark(Block* b, std::queue<std::pair<Block*, Instruction*>>& workList);
+		public:
+			CFG()
+			{
+				startBlock = currentBlock = CreateBlock(currentFunc, "[global_start]", {});
+			}
+			Compiler* compiler;
+			void BuildDominatorTree();
+			void ConvertAST(const Node* tree);
+			void ResolveFunctions();
+			void TopSort();
+			void BuildDF();
+			void InsertPhi();
+			void DeadCode();
+			void ConstPropagation();
+			void Debug();
+		private:
+			void MarkFuncIfCritical(Instruction& funcCall, bool isNative);
+			bool UpdateOperand(Operand& op);
+			void PropagateTempValues(Block* block, size_t startIndex, Instruction& initialInstr, std::deque<std::pair<int, std::string>>& workList);
+			void ConstProp(Block* b, std::deque<std::pair<int, std::string>>& workList);
+			void MarkOperand(Block* block, Operand& oper, std::queue<std::pair<Block*, Instruction*>>& workList);
+			Instruction CreatePhi(const std::string& name);
+			void Sweep(Block* block);
+			void Mark(Block* b, std::queue<std::pair<Block*, Instruction*>>& workList);
 
-		void AddUse(int depth, const std::string& name, int index, Block* b);
-		void AddDef(int depth, const std::string& name, int index, Block* b);
-		Block* CreateConditionBlock(const std::string& name, Block* currentBlock);
-		Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
+			void AddUse(int depth, const std::string& name, int index, Block* b);
+			void AddDef(int depth, const std::string& name, int index, Block* b);
+			Block* CreateConditionBlock(const std::string& name, Block* currentBlock);
+			Block* CreateBranchBlock(Block* parentBlock, Instruction& branch, Node* flows, const std::string& BlockName, const std::string& mergeName);
 
-		int NewName(const std::string& name, Block* b);
+			int NewName(const std::string& name, Block* b);
 
-		void Rename(Block* b);
-		void FindDoms();
-		void FindIDoms();
-		Block* CreateMergeBlock(std::vector<Block*> parents);
-		Operand CreateTemp();
-		void CreateVariable(const Node* tree, TokenType type);
-		Operand InitVariable(const std::string& name, int depth);
+			void Rename(Block* b);
+			void FindDoms();
+			void FindIDoms();
+			Block* CreateMergeBlock(std::vector<Block*> parents);
+			Operand CreateTemp();
+			void CreateVariable(const Node* tree, TokenType type);
+			Operand InitVariable(const std::string& name, int depth);
 
-		void InitLocal(Operand& op, const std::string& name);
-		void InitGlobal(Operand& op, const std::string& name);
+			void InitLocal(Operand& op, const std::string& name);
+			void InitGlobal(Operand& op, const std::string& name);
 
-		void CreateVariableFrom(const Node* tree, const Operand& rightOp);
-		Operand ConvertExpressionAST(const Node* tree);
-		void ConvertStatementAST(const Node* tree);
-		void EmitPop(Block* currentBlock, int popAmount);
-		bool IsStatement(const Node* node);
-		Block* CreateBlock(const std::string& currentFunction, const std::string& name, std::vector<Block*>  parents);
-		Operand BinaryInstr(const Expression* expr, TokenType type);
-		Operand UnaryInstr(const Expression* expr, TokenType type);
-		//breadth first search
-		void Bfs(Block* start, std::function<void(Block*)> action);
+			void CreateVariableFrom(const Node* tree, const Operand& rightOp);
+			Operand ConvertExpressionAST(const Node* tree);
+			void ConvertStatementAST(const Node* tree);
+			void EmitPop(Block* currentBlock, int popAmount);
+			bool IsStatement(const Node* node);
+			Block* CreateBlock(const std::string& currentFunction, const std::string& name, std::vector<Block*>  parents);
+			Operand BinaryInstr(const Expression* expr, TokenType type);
+			Operand UnaryInstr(const Expression* expr, TokenType type);
+			//breadth first search
+			void Bfs(Block* start, std::function<void(Block*)> action);
 
-	public:
-		// whenever we hit condition we create a new block
-		Block* currentBlock = nullptr;
-		Block* startBlock = nullptr;
-		// Scope
-		Scope* currentScope = nullptr;
+		public:
+			// whenever we hit condition we create a new block
+			Block* currentBlock = nullptr;
+			Block* startBlock = nullptr;
+			// Scope
+			Scope* currentScope = nullptr;
 
-		std::unordered_map<std::string, CFGFunction> functionCFG;
-		std::string currentFunc = "global";
-	private:
-		std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
-		std::unordered_map<int, int> removedLocalTotal;
+			std::unordered_map<std::string, CFGFunction> functionCFG;
+			std::string currentFunc = "global";
+		private:
+			std::unordered_map<std::pair<int, std::string>, int, pair_hash> removedLocal;
+			std::unordered_map<int, int> removedLocalTotal;
 
-		bool isCurrentFuncCritical = false;
-		std::unordered_map<std::string, bool> isFuncCritical;
+			bool isCurrentFuncCritical = false;
+			std::unordered_map<std::string, bool> isFuncCritical;
 
-		// to mark functons calls as critical if not func not defined yet
-		// we can define functions after we use them
-		// we might want to mark them as critical 
-		// 1 int is func call
-		// 2 int is potential variable storing return result
-		std::vector<std::tuple<Block*, int>> checkCritical;
+			// to mark functons calls as critical if not func not defined yet
+			// we can define functions after we use them
+			// we might want to mark them as critical 
+			// 1 int is func call
+			// 2 int is potential variable storing return result
+			std::vector<std::tuple<Block*, int>> checkCritical;
 
-		std::stack<bool> parseFunc;
-		std::stack<bool> isReturn;
-		// int is a version
-		std::unordered_map<std::string, int> variableCounterGlobal;
-		std::unordered_map<std::string, int> variableCounterLocal;
+			std::stack<bool> parseFunc;
+			std::stack<bool> isReturn;
+			// int is a version
+			std::unordered_map<std::string, int> variableCounterLocal;
 
-		std::unordered_map<std::string, std::vector<Block*>> localAssigned;
-		std::unordered_map<std::string, std::vector<Block*>> localUses;
+			std::unordered_map<std::string, std::vector<Block*>> localAssigned;
+			std::unordered_map<std::string, std::vector<Block*>> localUses;
 
-		std::unordered_map < std::pair<Block*, std::string>, std::vector<int >, pair_hash_block> globalDefs;
-		std::unordered_map < std::pair<Block*, std::string>, std::vector<int >, pair_hash_block>globalUses;
+			std::unordered_map < std::pair<Block*, std::string>, std::vector<int >, pair_hash_block> globalDefs;
+			std::unordered_map < std::pair<Block*, std::string>, std::vector<int >, pair_hash_block>globalUses;
 
-		bool writeToVariable = false;
+			bool writeToVariable = false;
 
-		// we can remove a variable 
-		// that stores return variable of a critical fucntion
-		// and yet the variable is not used anywhere, hence variable is removed
-		// a headache is that we don't know how to pop temp value from stack
-		bool isVariableCritical = false;
-		std::stack<int> forDepth;
-		int tempVersion = 0;
-		std::unordered_map<std::string, Block > graph;
-		// for renaming stage
-		std::unordered_map<std::string, std::stack<std::pair<int, Block*>>> variableStack;
-		//std::unordered_map<std::string, std::stack<int>> variableStack;
+			// we can remove a variable 
+			// that stores return variable of a critical fucntion
+			// and yet the variable is not used anywhere, hence variable is removed
+			// a headache is that we don't know how to pop temp value from stack
+			bool isVariableCritical = false;
+			std::stack<int> forDepth;
+			int tempVersion = 0;
+			std::unordered_map<std::string, Block > graph;
+			// for renaming stage
+			std::unordered_map<std::string, std::stack<std::pair<int, Block*>>> variableStack;
+			//std::unordered_map<std::string, std::stack<int>> variableStack;
 
-		// so we do not pop variables that are already taken care of by the end of loops
-		std::unordered_set<std::string> notPoped;
-		bool isNotPop = false;
+			// so we do not pop variables that are already taken care of by the end of loops
+			std::unordered_set<std::string> notPoped;
+			bool isNotPop = false;
 
-		// topologically sorted graph
-		std::vector<Block*> tpgSort;
-		// so we do not pop variables that are already taken care of by the end of loops
-		bool getAsParam = false;
-		ValueType paramType = ValueType::NIL;
-		// Map from variable identifier to its lattice value
-		LatticeMap value;
+			// topologically sorted graph
+			std::vector<Block*> tpgSort;
+			// so we do not pop variables that are already taken care of by the end of loops
+			bool getAsParam = false;
+			ValueType paramType = ValueType::NIL;
+			// Map from variable identifier to its lattice value
+			LatticeMap value;
 
-		std::unordered_set<Block*> visitedBlocks;
+			std::unordered_set<Block*> visitedBlocks;
 
-		std::stack<bool> parseLoop;
+			std::stack<bool> parseLoop;
 
-	};
+		};
 }

@@ -5,6 +5,7 @@
 #include "Function.h"
 #include "Tokens.h"
 #include <cassert>
+#include <algorithm>
 #include <unordered_set>
 #include <format>
 
@@ -887,6 +888,7 @@ void CFG::Sweep(Block* block)
 					}
 
 				}
+				// adjusting operand indicies
 				// declare a variable
 				if (it->instrType == TokenType::DECLARE && it->result.IsVariable() && it->result.depth > 0)
 				{

@@ -36,8 +36,6 @@ namespace Eva
 			{TokenType::NIL, "NIL"},
 			{TokenType::OR, "OR"},
 			{TokenType::RETURN, "RETURN"},
-			{TokenType::SUPER, "SUPER"},
-			{TokenType::THIS, "THIS"},
 			{TokenType::TRUE, "TRUE"},
 			{TokenType::VAR, "VAR"},
 			{TokenType::WHILE, "WHILE"},

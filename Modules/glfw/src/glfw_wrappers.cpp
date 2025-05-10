@@ -188,6 +188,7 @@ EXPORT int wrapper_glfwSetWindowSizeCallback(CallState& st) {
     callState = &st;
     // Register the bridging function in GLFW
     windowCallbacks["bridging_GLFWwindowsizefun"] = userCallback;
+     st.stack.pop_back();
     glfwSetWindowSizeCallback(window, bridging_GLFWwindowsizefun);
     return 0; // No return values
 }
@@ -206,6 +207,7 @@ EXPORT int wrapper_glfwSetWindowCloseCallback(CallState& st) {
     callState = &st;
     // Register the bridging function in GLFW
     windowCallbacks["bridging_GLFWwindowclosefun"] = userCallback;
+     st.stack.pop_back();
     glfwSetWindowCloseCallback(window, bridging_GLFWwindowclosefun);
     return 0; // No return values
 }

@@ -25,6 +25,20 @@ fun RenderTriangle(angle : float)
     glPopMatrix();
 }
 
+
+fun my_callback(window : pointer, width: int, height: int) {
+    Print("Window resized:" , width, " x ", height);
+    glViewport(0,0,width,height);
+}
+fun my_callback2(window : pointer, width: int, height: int) {
+    Print("Window resized2:" , width, " x ", height);
+    glViewport(0,0,width,height);
+}
+fun close_callback(window : pointer) {
+    Print("Window closed!:");
+}
+
+
 if !glfwInit() {
 	Print("Fail: ", "GFLW init failed");
 }
@@ -40,18 +54,28 @@ else
 	Print ("Window is init", window);
 }
 
+glfwSetWindowSizeCallback(window, my_callback);
+glfwSetWindowCloseCallback(window, close_callback);
+
 glfwMakeContextCurrent(window);
 angle := 0.0;
-
+speed := 10;
+lastTime := glfwGetTime();
 while !glfwWindowShouldClose(window)
 {
-    Print("Loop runs");
+   // Print("Loop runs");
 	// Process input
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 	{
             glfwSetWindowShouldClose(window, 1);
 	}
-
+     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+  {
+             glfwSetWindowSizeCallback(window, my_callback2);
+  }
+    currentTime := glfwGetTime();
+    deltaTime   := currentTime - lastTime;
+    lastTime    = currentTime;
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT);
     RenderTriangle(angle);   
@@ -61,7 +85,7 @@ while !glfwWindowShouldClose(window)
     glfwPollEvents();
 
     // Increase the rotation angle
-    angle += 1.0;
+    angle += 1.0 * deltaTime * speed;
     if (angle > 360.0) {angle -= 360.0;}
 	glfwPollEvents();
 }

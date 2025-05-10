@@ -255,19 +255,6 @@ if (child== ValueType::FLOAT)\
 			m_BreakIndexes.pop();
 		}
 	}
-	void VirtualMachine::GenerateConstant(const ValueContainer& v)
-	{
-		if (v.type == ValueType::BOOL)
-		{
-			auto instr = v.As<ebool>() ? (Bytecode)InCode::TRUE : (Bytecode)InCode::FALSE;
-			currentFunc->opCode.push_back(instr);
-			return;
-		}
-		currentFunc->opCode.push_back((uint8_t)InCode::CONST_VALUE);
-		currentFunc->constants.push_back(v);
-		currentFunc->opCode.push_back(currentFunc->constants.size() - 1);
-	}
-
 	VirtualMachine::~VirtualMachine()
 	{
 	}

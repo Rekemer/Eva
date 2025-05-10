@@ -15,6 +15,7 @@ namespace Eva
         int nextToCurrentCallFrame = -1;
         int argumentCount = -1;
         std::queue<std::function<void()>> deferredCallbacks;
+
         CallState(std::vector<ValueContainer>& stack,
             PluginTable& pluginTable,
             std::array<CallFrame, callFrameAmount>& callFrames,

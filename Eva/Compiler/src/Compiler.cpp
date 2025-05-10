@@ -793,10 +793,6 @@ void Compiler::GenerateBlockInstructions(Block* block)
 			}
 			break;
 		}
-		case TokenType::SUPER:
-			break;
-		case TokenType::THIS:
-			break;
 		case TokenType::TRUE:
 			break;
 
